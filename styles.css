@@ -25,12 +25,13 @@ header.hero p{margin:5px 0 0;opacity:.9;font-size:13px}
 .page{display:block}
 .page[hidden]{display:none!important}
 .topnav{display:flex;flex-wrap:wrap;gap:9px;margin:16px 0 4px}
-.navbtn{border:1.5px solid var(--line);background:var(--white);color:var(--ink2);border-radius:999px;
-  padding:9px 18px;font:700 13px inherit;cursor:pointer;transition:.18s;white-space:nowrap;
-  box-shadow:var(--sh)}
-.navbtn:hover{border-color:var(--dusty);color:var(--rose-d)}
+.navbtn{border:1.5px solid var(--line);background:linear-gradient(135deg,var(--blush2),var(--blush));
+  color:var(--rose-d);border-radius:999px;padding:10px 20px;font:700 13px inherit;
+  cursor:pointer;transition:.2s;white-space:nowrap;box-shadow:var(--sh)}
+.navbtn:hover{transform:translateY(-1px);border-color:var(--dusty);
+  background:linear-gradient(135deg,#FCE3EC,#F8D3E1);color:var(--rose-d);box-shadow:var(--sh2)}
 .navbtn.on{background:linear-gradient(135deg,var(--rose),var(--rose-d));color:#fff;border-color:transparent;
-  box-shadow:0 4px 14px rgba(201,59,114,.32)}
+  box-shadow:0 5px 16px rgba(201,59,114,.38)}
 .pagehint{margin:14px 2px 0;font-size:11.5px;color:var(--ink2);background:var(--blush);
   border:1px solid var(--line);border-radius:12px;padding:10px 14px}
 
@@ -128,7 +129,14 @@ th.sortable{cursor:pointer} th.sortable:hover{color:var(--rose-d)}
 
 /* charts */
 svg{display:block;width:100%;overflow:visible}
-.chart-cap svg{max-height:380px;margin:0 auto}
+.chart-cap svg{max-height:460px;margin:0 auto}
+/* IVR branch graph: bigger + clearer, readable labels */
+#chIvrBar svg{max-height:520px}
+#chIvrBar .atxt{font-size:12px;font-weight:700;fill:var(--ink)}
+#chIvrBar .vtxt{font-size:11.5px;font-weight:800;fill:var(--ink)}
+#chIvrAband svg{max-height:420px}
+#chIvrAband .atxt{font-size:12px;font-weight:700;fill:var(--ink)}
+#chIvrAband .vtxt{font-size:11.5px;font-weight:800;fill:var(--ink)}
 .axis{stroke:#F0DCE6;stroke-width:1}
 .atxt{font-size:9.8px;fill:var(--ink2)}
 .vtxt{font-size:9.5px;fill:var(--ink2);font-weight:700}
