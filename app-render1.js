@@ -51,8 +51,9 @@ function render(){
     + kpi("Abandon Rate", pf(M.abandRate), nf(M.abandoned)+" calls", "alt")
     + kpi("Abandoned &mdash; No IVR Branch", nf(M.noIvrAband), pf(M.noIvrPct)+" of all abandoned", "bad")
     + kpi("Abandoned &mdash; With IVR Branch", nf(M.ivrAband), M.abandoned? pf(M.ivrAband/M.abandoned*100)+" of all abandoned":"", "alt")
+    + kpi("Calls Received by Agents", nf(M.agentReceived), "answered + missed &middot; excludes IVR-abandoned &amp; OOH", "agent")
     + kpi("Agents Handling Calls", nf(new Set(sliceAgents().filter(r=>r.st==="answered").map(r=>r.ag)).size),
-          "distinct agents with answered calls", "alt");
+        "distinct agents with answered calls", "alt");
 
   /* ---- trend / volume ---- */
   const byP = groupBy(rows, r=>periodKey(r.d, gran));

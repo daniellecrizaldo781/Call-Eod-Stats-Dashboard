@@ -15,13 +15,13 @@ function renderIvr(rows, M, gran){
   });
   const noIvr = byI.get(NO_IVR);
   $("ivrKpis").innerHTML =
-      kpi("Abandoned &mdash; No IVR Branch", nf(M.noIvrAband), pf(M.noIvrPct)+" of total abandoned", "bad")
-    + kpi("No-IVR Total Calls", nf(noIvr?noIvr.total:0), noIvr? pf(noIvr.abandRate)+" abandon rate":"none in range", "alt")
-    + kpi("Active IVR Branches", nf(list.filter(x=>x[0]!==NO_IVR).length), "in current filter")
-    + kpi("Most Abandoned Branch", topCnt?esc(topCnt[0]):"\u2014", topCnt? nf(topCnt[1].abandoned)+" abandoned calls":"", "bad")
-    + kpi("Highest Abandon Rate", topRate?esc(topRate[0]):"\u2014",
-          topRate? pf(topRate[1].abandRate)+" of "+nf(topRate[1].total)+" calls":"min 25 calls", "warn")
-    + kpi("Busiest Branch", list.length?esc(list[0][0]):"\u2014", list.length? nf(list[0][1].total)+" calls":"", "alt");
+      kpi("Abandoned &mdash; No IVR Branch", nf(M.noIvrAband), pf(M.noIvrPct)+" of total abandoned", "bad big")
+    + kpi("No-IVR Total Calls", nf(noIvr?noIvr.total:0), noIvr? pf(noIvr.abandRate)+" abandon rate":"none in range", "alt big")
+    + kpi("Active IVR Branches", nf(list.filter(x=>x[0]!==NO_IVR).length), "in current filter", "big")
+    + kpi("Most Abandoned Branch", topCnt?esc(topCnt[0]):"&mdash;", topCnt? nf(topCnt[1].abandoned)+" abandoned calls":"", "bad big")
+    + kpi("Highest Abandon Rate", topRate?esc(topRate[0]):"&mdash;",
+          topRate? pf(topRate[1].abandRate)+" of "+nf(topRate[1].total)+" calls":"min 25 calls", "warn big")
+    + kpi("Busiest Branch", list.length?esc(list[0][0]):"&mdash;", list.length? nf(list[0][1].total)+" calls":"", "alt big");
 
   groupedHBars("chIvrBar", list.slice(0,12).map(([k,m])=>({label:k,
     vals:{answered:m.answered, abandoned:m.abandoned, missed:m.missed}})), ["answered","abandoned","missed"]);

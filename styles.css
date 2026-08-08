@@ -75,6 +75,11 @@ select:focus,input[type=date]:focus{outline:0;border-color:var(--rose);box-shado
 .kpi:before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--rose)}
 .kpi.alt:before{background:var(--lav2)} .kpi.good:before{background:var(--ok)}
 .kpi.bad:before{background:var(--bad)} .kpi.warn:before{background:var(--warn)}
+.kpi.agent:before{background:#6FB3C9}
+.kpi.agent .k-v{color:#2C7E97}
+/* enlarge the number vs the label on the IVR branch summary chips */
+.kpi.big .k-v{font-size:28px}
+.kpi.big .k-l{font-size:10px}
 .kpi .k-l{font-size:9.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--mauve)}
 .kpi .k-v{font-size:22px;font-weight:800;margin-top:4px;letter-spacing:-.02em}
 .kpi .k-s{font-size:10.5px;color:var(--ink2);margin-top:3px}

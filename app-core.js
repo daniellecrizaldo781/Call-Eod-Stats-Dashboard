@@ -85,6 +85,9 @@ function finish(m){
   m.abandRate  = m.total ? m.abandoned/m.total*100 : 0;
   m.aht        = m.answered ? m.sec/m.answered : 0;
   m.noIvrPct   = m.abandoned ? m.noIvrAband/m.abandoned*100 : 0;
+  // Calls that actually reached an agent's phone (answered + missed).
+  // Excludes IVR-abandoned and out-of-business-hours calls, which never rang an agent.
+  m.agentReceived = m.answered + m.missed;
   return m;
 }
 function groupBy(rows, keyFn){
