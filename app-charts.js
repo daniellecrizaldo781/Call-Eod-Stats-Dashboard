@@ -5,7 +5,11 @@ function tipOn(e,t){ TIP.textContent=t; TIP.style.opacity=1;
 function tipOff(){ TIP.style.opacity=0; }
 const esc = s => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
 function svg(w,h,inner){ return '<svg viewBox="0 0 '+w+' '+h+'" preserveAspectRatio="xMidYMid meet">'+inner+'</svg>'; }
+/* Mark any element that directly holds an <svg> so CSS can let it scroll
+   sideways on narrow screens (works without :has() support). */
+function markChartBox(el){ if (el && el.querySelector && el.querySelector(":scope > svg")) el.classList.add("chartbox"); }
 function bindTips(el){
+  markChartBox(el);
   el.querySelectorAll("[data-t]").forEach(n=>{
     n.addEventListener("mousemove",e=>tipOn(e,n.getAttribute("data-t")));
     n.addEventListener("mouseleave",tipOff);

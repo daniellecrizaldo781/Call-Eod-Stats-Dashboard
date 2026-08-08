@@ -10,6 +10,17 @@ function tbl(el, cols, rows, opts){
   rows.forEach(r=>{ h += '<tr'+(r._cls?' class="'+r._cls+'"':'')+(r._click?' style="cursor:pointer" data-click="'+esc(r._click)+'"':'')+'>'
       + cols.map(c=>'<td class="'+(c.n?"n":"")+'">'+r[c.k]+"</td>").join("")+"</tr>"; });
   el.innerHTML = h+"</tbody>";
+  makeTableResponsive(el);
+}
+/* Ensure every table sits in a horizontally scrollable box so it can never
+   overflow its card on a narrow screen. Idempotent — safe on every re-render. */
+function makeTableResponsive(el){
+  const p = el.parentNode;
+  if (!p || p.classList.contains("tscroll") || p.classList.contains("scroll")) return;
+  const box = document.createElement("div");
+  box.className = "tscroll";
+  p.insertBefore(box, el);
+  box.appendChild(el);
 }
 function barCell(v, max, txt){
   const w = max? Math.max(2, v/max*100) : 0;

@@ -76,6 +76,7 @@ td{padding:7px 9px;border-bottom:1px solid #FAEDF3}
 tbody tr:hover{background:var(--blush)}
 tbody tr.tot{font-weight:700;background:var(--blush2)}
 .scroll{max-height:430px;overflow:auto}
+.scroll>table{min-width:560px}
 .scroll::-webkit-scrollbar{width:9px;height:9px}
 .scroll::-webkit-scrollbar-thumb{background:var(--dusty);border-radius:9px}
 th.sortable{cursor:pointer} th.sortable:hover{color:var(--rose-d)}
@@ -122,3 +123,89 @@ footer{margin-top:36px;text-align:center;font-size:11.5px;color:var(--mauve)}
   box-shadow:0 3px 10px rgba(201,59,114,.32)}
 .cmpnote{margin-top:12px;padding:11px 15px;border-radius:12px;background:var(--lav);
   border:1px solid #E0D2F2;font-size:12.5px;color:#5B3D7A}
+
+/* ============================================================
+   RESPONSIVE  —  tablet & phone
+   Tables and charts get horizontal scrolling rather than being
+   crushed; everything else stacks to one column.
+   ============================================================ */
+
+/* any table can scroll sideways instead of overflowing the card */
+.tscroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.tscroll table{min-width:560px}
+.grid>*{min-width:0}
+
+@media(max-width:1180px){
+  .wrap{padding:18px 18px 60px}
+}
+
+/* ---- tablet ---- */
+@media(max-width:900px){
+  .wrap{padding:14px 13px 54px}
+  .filters{gap:12px;padding:14px}
+  .fgroup{flex:1 1 168px;min-width:0}
+  .fgroup select,.fgroup input{width:100%}
+  .kpis{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:11px}
+  .scroll{max-height:none}
+}
+
+/* ---- phone ---- */
+@media(max-width:640px){
+  body{font-size:13px}
+  .wrap{padding:11px 11px 46px}
+
+  header.hero{padding:18px 16px;border-radius:16px}
+  header.hero h1{font-size:17px;line-height:1.25}
+  header.hero p{font-size:11.5px}
+  header.hero:after{display:none}          /* decorative blob wastes space */
+  .hero-meta{flex-direction:column;gap:4px;align-items:flex-start;font-size:11px}
+
+  /* filters: one control per row, full width, easy to tap */
+  .filters{flex-direction:column;align-items:stretch;gap:11px;padding:13px;border-radius:14px}
+  .fgroup{flex:1 1 auto;width:100%}
+  .pills{display:flex;width:100%}
+  .pill{flex:1;text-align:center;padding:9px 6px;font-size:11.5px}
+  select,input[type=date]{width:100%;font-size:15px;padding:9px 11px}  /* 16px-ish stops iOS zoom */
+  #btnReset{width:100%;padding:10px}
+
+  /* KPIs two-up so numbers stay readable */
+  .kpis{grid-template-columns:repeat(2,1fr);gap:9px}
+  .kpi{padding:12px 11px;border-radius:13px}
+  .kpi .k-v{font-size:19px}
+  .kpi .k-l{font-size:8.8px;letter-spacing:.4px}
+  .kpi .k-s{font-size:9.8px}
+
+  .card{min-width:0;padding:13px 12px;border-radius:14px}
+  .grid>*{min-width:0}
+  .card-hd{flex-wrap:wrap;gap:7px}
+  .card h3{font-size:12.5px}
+  .sect h2{font-size:13.5px}
+  .grid{gap:12px;margin-top:12px}
+
+  /* charts keep a usable width and scroll sideways */
+  .chartbox{overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%}
+  .chartbox>svg{min-width:520px}
+  .card>div:has(>svg){overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%}
+  .card>div:has(>svg)>svg{min-width:520px}
+  .chart-cap svg{max-height:none}
+  /* bump SVG label sizes: they shrink with the viewBox on small screens */
+  .atxt{font-size:13px} .vtxt{font-size:12.5px} .axis{font-size:12px}
+
+  .tscroll table{min-width:620px}
+  table{font-size:11.5px}
+  th{font-size:9px;letter-spacing:.3px}
+  td{padding:6px 7px}
+
+  .chipbox{max-height:150px;gap:6px}
+  .pchip{padding:6px 11px;font-size:11px}
+  .legend{gap:9px;font-size:10px}
+  .notice{font-size:11px;padding:10px 12px}
+  .cmpnote{font-size:11.5px;padding:9px 12px}
+  .exec{font-size:12.5px;line-height:1.55}
+  #tip{display:none}                        /* no hover on touch devices */
+}
+
+@media(max-width:380px){
+  .kpis{grid-template-columns:1fr}
+  header.hero h1{font-size:15.5px}
+}
