@@ -130,11 +130,14 @@ th.sortable{cursor:pointer} th.sortable:hover{color:var(--rose-d)}
 /* charts */
 svg{display:block;width:100%;overflow:visible}
 .chart-cap svg{max-height:460px;margin:0 auto}
-/* IVR branch graph: bigger + clearer, readable labels */
-#chIvrBar svg{max-height:520px}
+/* IVR page: charts span the full width */
+.ivr-wide{display:flex;flex-direction:column;gap:18px}
+.ivr-wide .card{width:100%}
+.ivr-wide .chart-cap svg{margin:0;max-height:560px}
+#chIvrAband{width:100%}
+#chIvrAband svg{max-height:480px}
 #chIvrBar .atxt{font-size:12px;font-weight:700;fill:var(--ink)}
 #chIvrBar .vtxt{font-size:11.5px;font-weight:800;fill:var(--ink)}
-#chIvrAband svg{max-height:420px}
 #chIvrAband .atxt{font-size:12px;font-weight:700;fill:var(--ink)}
 #chIvrAband .vtxt{font-size:11.5px;font-weight:800;fill:var(--ink)}
 .axis{stroke:#F0DCE6;stroke-width:1}
