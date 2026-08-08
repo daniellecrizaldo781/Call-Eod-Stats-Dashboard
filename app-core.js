@@ -80,11 +80,12 @@ function acc(m,r){
 }
 function agg(rows){ const m=blank(); rows.forEach(r=>acc(m,r)); return finish(m); }
 function finish(m){
-  // Calls that actually reached an agent's phone (answered + missed).
-  // Excludes IVR-abandoned and out-of-business-hours calls, which never rang an agent.
-  m.agentReceived = m.answered + m.missed;
-  // Unanswered = calls that reached an agent but were NOT answered (i.e. missed).
-  m.unanswered = m.agentReceived - m.answered;   // == m.missed
+  // Calls received by an agent's phone = all calls minus IVR-menu-abandoned (never reached an
+  // agent) minus outside-business-hours calls. No-IVR-branch abandoneds ARE counted, because the
+  // caller reached an agent and then abandoned (per the raw sheet definition).
+  m.agentReceived = m.total - m.ivrAband - m.ooh;
+  // Unanswered = calls that reached an agent but were NOT answered.
+  m.unanswered = m.agentReceived - m.answered;
   m.answerRate = m.agentReceived ? m.answered  /m.agentReceived*100 : 0;   // answered / calls received by agents
   m.missRate   = m.agentReceived ? m.unanswered /m.agentReceived*100 : 0;   // unanswered / calls received by agents
   m.abandRate  = m.total ? m.abandoned/m.total*100 : 0;

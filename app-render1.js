@@ -40,10 +40,10 @@ function render(){
   /* ---- KPIs (exact set requested) ---- */
   $("kpiRow").innerHTML =
       kpi("Total Calls", nf(M.total), fmtD(F.from)+" \u2013 "+fmtD(F.to))
-    + kpi("Total Calls Received by Agents", nf(M.agentReceived), "answered + missed \u00b7 excludes IVR-abandoned & OOH", "agent")
+    + kpi("Total Calls Received by Agents", nf(M.agentReceived), "total \u2212 IVR-abandoned \u2212 OOH", "agent")
     + kpi("Total Unanswered", nf(M.unanswered), pf(M.missRate)+" of agent calls", "bad")
     + kpi("Answered", nf(M.answered), pf(M.answerRate)+" answer rate", "good")
-    + kpi("Missed", nf(M.missed), pf(M.missRate)+" missed rate", "bad");
+    + kpi("Missed", nf(M.missed), pf(M.missed/M.agentReceived*100)+" of agent calls", "bad");
   $("kpiRow2").innerHTML =
       kpi("Abandoned \u2014 No IVR Branch", nf(M.noIvrAband), pf(M.noIvrPct)+" of all abandoned", "bad")
     + kpi("Total Abandoned in IVR", nf(M.ivrAband), M.abandoned? pf(M.ivrAband/M.abandoned*100)+" of all abandoned":"", "alt")
