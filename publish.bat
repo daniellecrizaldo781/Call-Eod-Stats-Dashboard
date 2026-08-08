@@ -25,8 +25,9 @@ if errorlevel 1 goto pushfail
 
 echo.
 echo ============================================================
-echo  Published. Your team link is live in about a minute:
-echo  https://daniellecrizaldo781.github.io/Call-Eod-Stats-Dashboard/
+echo  Pushed to GitHub. Cloudflare Pages redeploys automatically.
+echo  Your team link is live in about 30 seconds.
+echo  (See CLOUDFLARE-SETUP.md if you have not set this up yet.)
 echo ============================================================
 echo.
 pause
