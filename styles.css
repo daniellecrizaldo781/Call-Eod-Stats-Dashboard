@@ -21,6 +21,31 @@ header.hero h1{font-size:22px}
 header.hero p{margin:5px 0 0;opacity:.9;font-size:13px}
 .hero-meta{position:absolute;right:30px;top:26px;text-align:right;font-size:12px;opacity:.92;z-index:2;max-width:46%}
 
+/* SPA page navigation */
+.page{display:block}
+.page[hidden]{display:none!important}
+.topnav{display:flex;flex-wrap:wrap;gap:9px;margin:16px 0 4px}
+.navbtn{border:1.5px solid var(--line);background:var(--white);color:var(--ink2);border-radius:999px;
+  padding:9px 18px;font:700 13px inherit;cursor:pointer;transition:.18s;white-space:nowrap;
+  box-shadow:var(--sh)}
+.navbtn:hover{border-color:var(--dusty);color:var(--rose-d)}
+.navbtn.on{background:linear-gradient(135deg,var(--rose),var(--rose-d));color:#fff;border-color:transparent;
+  box-shadow:0 4px 14px rgba(201,59,114,.32)}
+.pagehint{margin:14px 2px 0;font-size:11.5px;color:var(--ink2);background:var(--blush);
+  border:1px solid var(--line);border-radius:12px;padding:10px 14px}
+
+/* agent page controls + ranking */
+.agent-controls{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end;background:var(--white);
+  border:1px solid var(--line);border-radius:var(--r);padding:14px 18px;margin:14px 0 4px;box-shadow:var(--sh)}
+.ranklist-wrap{padding:2px 0}
+.ranklist{display:flex;flex-direction:column;gap:9px}
+.rankrow{display:grid;grid-template-columns:34px 1fr auto auto;align-items:center;gap:10px;
+  padding:9px 12px;border-radius:12px;background:var(--blush);border:1px solid var(--line)}
+.rn{font-weight:800;color:var(--rose-d);font-size:14px;text-align:center}
+.ra{font-weight:700;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rc{font-weight:800;color:var(--ink);font-variant-numeric:tabular-nums}
+.rp{font-size:11px;color:var(--mauve);font-weight:700;min-width:46px;text-align:right}
+
 /* filter bar */
 .filters{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end;background:var(--white);
   border:1px solid var(--line);border-radius:var(--r);padding:16px 18px;margin:18px 0;box-shadow:var(--sh)}

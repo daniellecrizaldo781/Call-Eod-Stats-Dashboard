@@ -135,6 +135,7 @@ function render(){
 
   renderIvr(rows, M, gran);
   renderAgents();
+  renderAgentInsights();
   renderCompare(rows, M);
   renderSummary(M, pv, gran);
 }

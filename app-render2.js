@@ -30,19 +30,6 @@ function renderIvr(rows, M, gran){
   hBars("chIvrAband", ab.map(([k,m])=>({label:k, value:m.abandoned,
     color: k===NO_IVR? "#D9455F":"#B99BDD", note:pf(m.abandRate)+" abandon rate \u00b7 "+nf(m.total)+" total"})), {unit:"abandoned"});
 
-  const imax = Math.max(1,...list.map(x=>x[1].total));
-  tbl($("tIvr"),
-    [{t:"IVR Branch",k:"b"},{t:"Total Calls",k:"t",n:1},{t:"Answered",k:"a",n:1},{t:"Missed",k:"m",n:1},
-     {t:"Abandoned",k:"ab",n:1},{t:"OOH",k:"o",n:1},{t:"Answer Rate",k:"ar",n:1},{t:"Abandon Rate",k:"abr",n:1},{t:"AHT",k:"aht",n:1}],
-    list.map(([k,m])=>({_click:k, _cls: k===NO_IVR?"tot":"",
-      b:(k===NO_IVR? '<span class="tag" style="background:#FBD9E1;color:#B32B47">'+esc(k)+'</span>' : esc(k)),
-      t:barCell(m.total,imax), a:nf(m.answered), m:nf(m.missed), ab:nf(m.abandoned), o:nf(m.ooh),
-      ar:pf(m.answerRate), abr:pf(m.abandRate), aht:mmss(m.aht)}))
-      .concat([{_cls:"tot", b:"TOTAL", t:nf(M.total), a:nf(M.answered), m:nf(M.missed), ab:nf(M.abandoned),
-                o:nf(M.ooh), ar:pf(M.answerRate), abr:pf(M.abandRate), aht:mmss(M.aht)}]));
-  $("tIvr").querySelectorAll("[data-click]").forEach(tr=>tr.onclick=()=>{
-    $("fIvr").value = tr.getAttribute("data-click"); F.ivr = $("fIvr").value; render(); });
-
   /* IVR x channel */
   const cross = groupBy(rows, r=>r.ch+SEP+r.ivr);
   const rowsX = [...cross.entries()].map(([k,m])=>{ const p=k.split(SEP);
@@ -66,7 +53,65 @@ function renderIvr(rows, M, gran){
       ab:nf(r.m.abandoned), t:nf(r.m.total), abr:pf(r.m.abandRate)})));
 }
 
-/* ---------- Agents ---------- */
+/* ---------- Agents (shared) ---------- */
+function agentRowsInScope(){
+  // channel + date range only — agents carry no IVR/line dimension
+  return AROWS.filter(r => r.d>=F.from && r.d<=F.to && (F.chan==="ALL"||r.ch===F.chan));
+}
+
+/* ---------- Agent page: dynamic Daily / Weekly / Monthly insights ---------- */
+function renderAgentInsights(){
+  const g = F.agGran;
+  const scope = agentRowsInScope();
+  const keys = [...new Set(scope.map(r=>periodKey(r.d, g)))].sort();
+  if (!keys.length){
+    $("agPeriod").innerHTML = '<option value="">No data</option>';
+    $("agKpis").innerHTML = kpi("No Data", "\u2014", "no agent calls in the current filters", "warn");
+    $("chAgentCalls").innerHTML = '<div class="empty">No agent data for the current filters.</div>';
+    $("agRank").innerHTML = '<div class="empty">No agent data for the current filters.</div>';
+    return;
+  }
+  if (!F.agPeriod || !keys.includes(F.agPeriod)) F.agPeriod = keys[keys.length-1];  // latest
+  const sel = $("agPeriod");
+  sel.innerHTML = keys.map(k=>'<option value="'+k+'">'+esc(periodLabel(k,g))+'</option>').join("");
+  sel.value = F.agPeriod;
+
+  const [a,b] = periodBounds(F.agPeriod, g);
+  const rows = scope.filter(r=>r.d>=a && r.d<=b);
+  const byA = new Map();
+  rows.forEach(r=>{ if(!byA.has(r.ag)) byA.set(r.ag,{calls:0,total:0}); const o=byA.get(r.ag);
+    o.total+=r.n; if(r.st==="answered") o.calls+=r.n; });
+  const list = [...byA.entries()].map(([k,o])=>({ag:k, ...o})).sort((x,y)=>y.calls-x.calls);
+  const totalCalls = list.reduce((s,x)=>s+x.calls,0);
+  const active = list.filter(x=>x.calls>0).length;
+  const busiest = list[0];
+  const label = g==="daily"?"Day":g==="weekly"?"Week":"Month";
+
+  $("agChartTitle").textContent = "Calls Handled by Agent \u2014 "+(g==="daily"?"Daily":g==="weekly"?"Weekly":"Monthly");
+  hBars("chAgentCalls", list.map(x=>({label:x.ag, value:x.calls,
+    note: nf(x.calls)+" calls handled"+(x.total!==x.calls? " of "+nf(x.total)+" total":"")})),
+    {unit:"calls", labelW:150, color:"#E8578E"});
+
+  $("agKpis").innerHTML =
+      kpi("Total Calls Handled", nf(totalCalls), periodLabel(F.agPeriod,g), "good")
+    + kpi("Active Agents", nf(active), "handling calls in period", "alt")
+    + kpi("Busiest Agent", busiest?esc(busiest.ag):"\u2014", busiest? nf(busiest.calls)+" calls":"", "alt")
+    + kpi("Avg per Agent", active? nf(Math.round(totalCalls/active)):"0", "calls handled, this period", "");
+
+  const top = list.slice(0,6);
+  $("agRank").innerHTML = '<div class="ranklist">' + top.map((x,i)=>{
+      const w = totalCalls? x.calls/totalCalls*100 : 0;
+      return '<div class="rankrow"><span class="rn">#'+(i+1)+'</span>'
+        + '<span class="ra">'+esc(x.ag)+'</span>'
+        + '<span class="rc">'+nf(x.calls)+'</span>'
+        + '<span class="rp">'+w.toFixed(1)+'%</span></div>';
+    }).join("") + '</div>'
+    + '<p style="margin:12px 0 0;color:var(--ink2);font-size:11.5px">Top '+top.length+' of '+list.length
+    + ' agents by calls handled for '+esc(periodLabel(F.agPeriod,g))+'. Switch the View toggle to compare '
+    + 'daily, weekly or monthly performance.</p>';
+}
+
+/* ---------- Agents (table) ---------- */
 function renderAgents(){
   const ar = sliceAgents();
   const byA = new Map();
@@ -91,15 +136,4 @@ function renderAgents(){
      {t:"AHT",k:"aht",n:1},{t:"Answered",k:"an",n:1},{t:"Missed",k:"m",n:1},{t:"Talk Time",k:"tt",n:1}],
     list.map((r,i)=>({i:i+1, a:esc(r.ag), c:'<span class="tag'+(chOf(r)==="OHA"?"":" lav")+'">'+chOf(r)+'</span>',
       n:barCell(r.answered,mx), aht:mmss(r.aht), an:nf(r.answered), m:nf(r.missed), tt:mmss(r.sec)})));
-
-  const tot = list.reduce((a,r)=>({n:a.n+r.answered, s:a.s+r.sec, on:a.on+r.oha.n, os:a.os+r.oha.s,
-    nn:a.nn+r.non.n, ns:a.ns+r.non.s}), {n:0,s:0,on:0,os:0,nn:0,ns:0});
-  tbl($("tAht"),
-    [{t:"Agent",k:"a"},{t:"OHA Calls",k:"oc",n:1},{t:"OHA AHT",k:"oa",n:1},{t:"Non-OHA Calls",k:"nc",n:1},
-     {t:"Non-OHA AHT",k:"na",n:1},{t:"Overall Calls",k:"tc",n:1},{t:"Overall AHT",k:"ta",n:1}],
-    list.slice().sort((a,b)=>b.answered-a.answered).map(r=>({a:esc(r.ag),
-      oc:nf(r.oha.n), oa:r.oha.n?mmss(r.oha.s/r.oha.n):"\u2014", nc:nf(r.non.n),
-      na:r.non.n?mmss(r.non.s/r.non.n):"\u2014", tc:nf(r.answered), ta:mmss(r.aht)}))
-      .concat([{_cls:"tot", a:"TEAM", oc:nf(tot.on), oa:tot.on?mmss(tot.os/tot.on):"\u2014", nc:nf(tot.nn),
-        na:tot.nn?mmss(tot.ns/tot.nn):"\u2014", tc:nf(tot.n), ta:tot.n?mmss(tot.s/tot.n):"\u2014"}]));
 }

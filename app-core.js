@@ -36,7 +36,8 @@ function periodKey(d,g){ return g==="weekly"?weekStart(d) : g==="monthly"?monthS
 function periodLabel(k,g){ return g==="weekly"?fmtWeek(k) : g==="monthly"?fmtMonth(k) : fmtD(k); }
 
 /* ---- filter state ---- */
-const F = {chan:"ALL", ivr:"ALL", preset:"Last Week", gran:"weekly", from:MIN_D, to:MAX_D, picks:new Set()};
+const F = {chan:"ALL", ivr:"ALL", preset:"Last Week", gran:"weekly", from:MIN_D, to:MAX_D, picks:new Set(),
+  page:"main", agGran:"weekly", agPeriod:null};
 
 function presetRange(p){
   const today = MAX_D;                       // "today" = latest date in data

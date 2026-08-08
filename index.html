@@ -9,6 +9,13 @@
   <div class="hero-meta"><div id="metaRange">&mdash;</div><div id="metaGen" style="opacity:.75"></div></div>
 </header>
 
+<!-- page navigation (SPA) -->
+<nav class="topnav">
+  <button class="navbtn on" id="navMain" data-page="main">&#127968; Main Dashboard</button>
+  <button class="navbtn" id="navIvr" data-page="ivr">&#128241; IVR Branch Performance</button>
+  <button class="navbtn" id="navAgent" data-page="agent">&#128100; Agent Performance</button>
+</nav>
+
 <div class="filters">
   <div class="fgroup"><span class="flabel">Main Channel</span>
     <div class="pills" id="chanPills">
@@ -30,6 +37,9 @@
 </div>
 
 <div class="notice" id="dqNotice"></div>
+
+<!-- ============================ PAGE 1: MAIN DASHBOARD ============================ -->
+<section class="page" id="pageMain">
 
 <!-- KPIs -->
 <div class="sect"><h2>Executive KPIs</h2><span class="chip" id="kpiScope"></span><div class="line"></div></div>
@@ -74,28 +84,7 @@
   <span class="sub" id="wowIvrSub"></span></div>
   <div class="scroll"><table id="tWowIvr"></table></div></div>
 
-<!-- IVR -->
-<div class="sect"><h2>IVR Branch Performance</h2><span class="chip">Separate from OHA / Non-OHA</span><div class="line"></div></div>
-<div class="kpis" id="ivrKpis"></div>
-<div class="grid g2" style="margin-top:16px">
-  <div class="card"><div class="card-hd"><h3>IVR Branch &mdash; Answered vs Abandoned</h3></div><div id="chIvrBar" class="chart-cap"></div>
-    <div class="legend"><span><i style="background:#E8578E"></i>Answered</span>
-      <span><i style="background:#B99BDD"></i>Abandoned</span>
-      <span><i style="background:#D9455F"></i>Missed</span></div></div>
-  <div class="card"><div class="card-hd"><h3>Abandoned Calls by IVR Branch</h3></div><div id="chIvrAband" class="chart-cap"></div></div>
-</div>
-<div class="card" style="margin-top:16px"><div class="card-hd"><h3>IVR Branch Table</h3>
-  <span class="sub">Click a row to filter the whole dashboard by that branch</span></div>
-  <div class="scroll"><table id="tIvr"></table></div></div>
-
-<div class="grid g2e" style="margin-top:16px">
-  <div class="card"><div class="card-hd"><h3>IVR Branch &times; Channel</h3></div>
-    <div class="scroll"><table id="tIvrChan"></table></div></div>
-  <div class="card"><div class="card-hd"><h3 id="ivrPeriodTitle">IVR Branch by Period</h3></div>
-    <div class="scroll"><table id="tIvrDaily"></table></div></div>
-</div>
-
-<!-- Period table -->
+<!-- Period performance -->
 <div class="sect"><h2>Period Performance</h2><div class="line"></div></div>
 <div class="card">
   <div class="card-hd"><h3 id="periodTitle">Period Performance</h3>
@@ -117,42 +106,72 @@
 <div class="card" style="margin-top:16px"><div class="card-hd"><h3>Hourly Breakdown</h3></div>
   <div class="scroll"><table id="tHour"></table></div></div>
 
-<!-- Agents -->
+</section>
+
+<!-- ============================ PAGE 2: IVR BRANCH PERFORMANCE ============================ -->
+<section class="page" id="pageIvr" hidden>
+<div class="sect"><h2>IVR Branch Performance</h2><span class="chip">Separate from OHA / Non-OHA</span><div class="line"></div></div>
+<div class="kpis" id="ivrKpis"></div>
+<div class="grid g2" style="margin-top:16px">
+  <div class="card"><div class="card-hd"><h3>IVR Branch &mdash; Answered vs Abandoned</h3></div><div id="chIvrBar" class="chart-cap"></div>
+    <div class="legend"><span><i style="background:#E8578E"></i>Answered</span>
+      <span><i style="background:#B99BDD"></i>Abandoned</span>
+      <span><i style="background:#D9455F"></i>Missed</span></div></div>
+  <div class="card"><div class="card-hd"><h3>Abandoned Calls by IVR Branch</h3></div><div id="chIvrAband" class="chart-cap"></div></div>
+</div>
+
+<div class="grid g2e" style="margin-top:16px">
+  <div class="card"><div class="card-hd"><h3>IVR Branch &times; Channel</h3></div>
+    <div class="scroll"><table id="tIvrChan"></table></div></div>
+  <div class="card"><div class="card-hd"><h3 id="ivrPeriodTitle">IVR Branch by Period</h3></div>
+    <div class="scroll"><table id="tIvrDaily"></table></div></div>
+</div>
+<p class="pagehint">Abandoned calls with <b>no IVR branch selected</b> are tracked separately and shown above
+(&ldquo;Abandoned &mdash; No IVR Branch&rdquo; KPI and the red bar in the Abandoned-by-Branch chart).</p>
+</section>
+
+<!-- ============================ PAGE 3: AGENT PERFORMANCE ============================ -->
+<section class="page" id="pageAgent" hidden>
 <div class="sect"><h2>Agent Performance</h2><div class="line"></div></div>
-<div class="grid">
-  <div class="card"><div class="card-hd"><h3>Agent Table</h3>
+
+<div class="agent-controls">
+  <div class="fgroup"><span class="flabel">View</span>
+    <div class="pills" id="agGranPills">
+      <button class="pill" data-v="daily">Daily</button>
+      <button class="pill on" data-v="weekly">Weekly</button>
+      <button class="pill" data-v="monthly">Monthly</button>
+    </div></div>
+  <div class="fgroup"><span class="flabel">Period</span><select id="agPeriod" style="min-width:180px"></select></div>
+</div>
+
+<div class="kpis" id="agKpis" style="margin-top:16px"></div>
+
+<div class="grid g2" style="margin-top:16px">
+  <div class="card"><div class="card-hd"><h3 id="agChartTitle">Calls Handled by Agent</h3>
+    <span class="sub">answered calls per agent &middot; sorted high &rarr; low</span></div>
+    <div id="chAgentCalls" class="chart-cap"></div></div>
+  <div class="card"><div class="card-hd"><h3>Top Performing Agents</h3>
+    <span class="sub">by calls handled in the selected period</span></div>
+    <div id="agRank" class="ranklist-wrap"></div></div>
+</div>
+
+<div class="card" style="margin-top:16px"><div class="card-hd"><h3>Agent Table</h3>
     <select id="fAgentSort" style="min-width:170px">
       <option value="calls_desc">Highest Calls</option><option value="calls_asc">Lowest Calls</option>
       <option value="aht_asc">Best AHT</option><option value="aht_desc">Highest AHT</option>
       <option value="name">Name (A&ndash;Z)</option></select></div>
-    <div class="scroll"><table id="tAgent"></table></div></div>
-</div>
-<div class="card" style="margin-top:16px"><div class="card-hd"><h3>AHT Analysis &mdash; OHA vs Non-OHA per Agent</h3></div>
-  <div class="scroll"><table id="tAht"></table></div></div>
-
-<!-- Data mgmt -->
-<div class="sect"><h2>Data &amp; Validation</h2><div class="line"></div></div>
-<div class="card">
-  <div class="card-hd"><h3>Live Google Sheets Sync</h3></div>
-  <p style="margin:0 0 10px;color:var(--ink2)">This dashboard reads two Google Sheets. Add rows there, run the
-  sync, refresh the page &mdash; no Excel files, no manual export.</p>
-  <pre style="background:var(--blush);padding:12px 14px;border-radius:12px;overflow:auto;font-size:11.5px;margin:0 0 8px">cd ~/call-eod-dashboard
-python sync_sheets.py              <span style="color:#A96A94"># pull both sheets once</span>
-python sync_sheets.py --watch      <span style="color:#A96A94"># auto-refresh every 10 min</span></pre>
-  <p style="margin:0 0 14px;color:var(--ink2);font-size:12px">Or double-click <b>update_dashboard.bat</b>.
-  Duplicates are blocked by <b>call id</b>; the write is atomic so a refresh mid-sync can never show partial data.</p>
-  <div id="dqTable"></div>
-</div>
+  <div class="scroll"><table id="tAgent"></table></div></div>
+</section>
 
 <footer>Pink Executive BI &mdash; built from your Aircall EOD exports &middot; all figures computed live from <code>data.js</code></footer>
 </div>
 <div class="tip" id="tip"></div>
-<script src="data.js?v=2"></script>
-<script src="app-core.js?v=2"></script>
-<script src="app-charts.js?v=2"></script>
-<script src="app-period.js?v=2"></script>
-<script src="app-render1.js?v=2"></script>
-<script src="app-render2.js?v=2"></script>
-<script src="app-render3.js?v=2"></script>
-<script src="app-init.js?v=2"></script>
+<script src="data.js?v=3"></script>
+<script src="app-core.js?v=3"></script>
+<script src="app-charts.js?v=3"></script>
+<script src="app-period.js?v=3"></script>
+<script src="app-render1.js?v=3"></script>
+<script src="app-render2.js?v=3"></script>
+<script src="app-render3.js?v=3"></script>
+<script src="app-init.js?v=3"></script>
 </body></html>

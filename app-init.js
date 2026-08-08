@@ -22,16 +22,14 @@ function renderDQ(){
   $("dqNotice").innerHTML = "&#128203; <b>Data quality:</b> "+nf(ROWS.reduce((a,r)=>a+r.n,0))
     + " calls loaded across "+ALL_DATES.length+" days ("+fmtDY(MIN_D)+" \u2013 "+fmtDY(MAX_D)+"). "
     + (parts.length? parts.join(" &middot; ") : "No issues detected.");
-
-  const rowsDQ = Object.keys(i).map(k=>({c:map[k]||k, n:nf(i[k]),
-    s: k==="no_ivr_branch" ? '<span class="tag">Valid category</span>'
-      : k==="duplicate_skipped" ? '<span class="tag lav">Prevented</span>'
-      : '<span class="tag" style="background:#FBD9E1;color:#B32B47">Review</span>'}));
-  tbl($("dqTable"), [{t:"Validation check",k:"c"},{t:"Records",k:"n",n:1},{t:"Status",k:"s"}], rowsDQ);
-  const t=document.createElement("table"); // dqTable is a div -> wrap
-  if ($("dqTable").tagName==="DIV"){ const inner=$("dqTable").innerHTML; $("dqTable").innerHTML="<table>"+inner+"</table>"; }
 }
 function wire(){
+  document.querySelectorAll(".topnav .navbtn").forEach(b=>b.onclick=()=>setPage(b.dataset.page));
+  $("agGranPills").addEventListener("click", e=>{
+    const b = e.target.closest(".pill"); if(!b) return;
+    [...$("agGranPills").children].forEach(x=>x.classList.remove("on"));
+    b.classList.add("on"); F.agGran = b.dataset.v; F.agPeriod=null; render();
+  });
   $("chanPills").addEventListener("click", e=>{
     const b = e.target.closest(".pill"); if(!b) return;
     [...$("chanPills").children].forEach(x=>x.classList.remove("on"));
@@ -46,14 +44,22 @@ function wire(){
   $("pickLast2").onclick = () => pickRecent(2);
   $("pickLast4").onclick = () => pickRecent(4);
   $("fAgentSort").onchange = () => renderAgents();
+  $("agPeriod").onchange = () => { F.agPeriod = $("agPeriod").value; render(); };
   $("cmpA").onchange = () => render();
   $("cmpB").onchange = () => render();
   $("btnReset").onclick = () => {
     F.chan="ALL"; F.ivr="ALL"; F.preset="Last Week"; F.gran="weekly"; F.picks.clear();
+    F.agGran="weekly"; F.agPeriod=null;
     [...$("chanPills").children].forEach((x,i)=>x.classList.toggle("on", i===0));
+    [...$("agGranPills").children].forEach((x,i)=>x.classList.toggle("on", i===1));
     $("fIvr").value="ALL"; $("fPreset").value="Last Week"; $("fGran").value="weekly";
     applyPreset(); buildPeriodOptions(); render();
   };
+}
+function setPage(p){
+  F.page = p;
+  document.querySelectorAll(".page").forEach(s => { s.hidden = (s.id !== "page"+p.charAt(0).toUpperCase()+p.slice(1)); });
+  document.querySelectorAll(".topnav .navbtn").forEach(b => b.classList.toggle("on", b.dataset.page===p));
 }
 (function init(){
   fillSelects();
@@ -63,4 +69,5 @@ function wire(){
   wire();
   renderDQ();
   render();
+  setPage("main");
 })();
