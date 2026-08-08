@@ -1,6 +1,10 @@
 /* ---------- IVR section ---------- */
 function renderIvr(rows, M, gran){
-  const byI = groupBy(rows, r=>r.ivr);
+  // The IVR breakdown must always show ALL branches within the current
+  // channel/date scope — independent of the selected IVR filter. Otherwise
+  // clicking a row (which sets F.ivr) collapses this table to one row.
+  const ivrRows = sliceAllIvr();
+  const byI = groupBy(ivrRows, r=>r.ivr);
   const list = [...byI.entries()].sort((a,b)=>b[1].total-a[1].total);
 
   // highest abandonment (count) and highest abandonment RATE (min volume guard)

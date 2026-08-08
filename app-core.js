@@ -59,6 +59,10 @@ function pass(r, opt){
   return true;
 }
 function slice(opt){ return ROWS.filter(r=>pass(r,opt)); }
+/* Like slice() but forces the IVR filter to ALL — used by the IVR Branch
+   Performance breakdown, which must always list every branch regardless of
+   the selected IVR filter (otherwise clicking a row collapses the table). */
+function sliceAllIvr(opt){ return ROWS.filter(r=>pass(r, Object.assign({}, opt||F, {ivr:"ALL"}))); }
 function sliceAgents(opt){
   const o = opt||F;
   // agent rows carry no ivr/line dimension -> ignore those filters (documented in UI)
