@@ -46,8 +46,8 @@ function render(){
     + kpi("Out of Business Hours", nf(M.ooh), M.total? pf(M.ooh/M.total*100)+" of volume":"", "warn")
     + kpi("AHT", mmss(M.aht), "avg over "+nf(M.answered)+" answered calls");
   $("kpiRow2").innerHTML =
-      kpi("Answer Rate", pf(M.answerRate), nf(M.answered)+" / "+nf(M.total), M.answerRate>=70?"good":M.answerRate>=50?"warn":"bad")
-    + kpi("Missed Rate", pf(M.missRate), nf(M.missed)+" calls", "bad")
+      kpi("Answer Rate", pf(M.answerRate), nf(M.answered)+" / "+nf(M.agentReceived)+" agent calls", M.answerRate>=70?"good":M.answerRate>=50?"warn":"bad")
+    + kpi("Missed Rate", pf(M.missRate), nf(M.unanswered)+" / "+nf(M.agentReceived)+" agent calls", "bad")
     + kpi("Abandon Rate", pf(M.abandRate), nf(M.abandoned)+" calls", "alt")
     + kpi("Abandoned &mdash; No IVR Branch", nf(M.noIvrAband), pf(M.noIvrPct)+" of all abandoned", "bad")
     + kpi("Abandoned &mdash; With IVR Branch", nf(M.ivrAband), M.abandoned? pf(M.ivrAband/M.abandoned*100)+" of all abandoned":"", "alt")
