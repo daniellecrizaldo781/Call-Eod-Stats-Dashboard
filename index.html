@@ -1,0 +1,158 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Call EOD Stats Dashboard</title><link rel="stylesheet" href="styles.css"></head>
+<body><div class="wrap">
+
+<header class="hero">
+  <h1>&#128151; CALL EOD STATS DASHBOARD</h1>
+  <p>OHA &amp; Non-OHA Inbound Call Performance &mdash; Team Lead Command Center</p>
+  <div class="hero-meta"><div id="metaRange">&mdash;</div><div id="metaGen" style="opacity:.75"></div></div>
+</header>
+
+<div class="filters">
+  <div class="fgroup"><span class="flabel">Main Channel</span>
+    <div class="pills" id="chanPills">
+      <button class="pill on" data-v="ALL">All Channels</button>
+      <button class="pill" data-v="OHA">OHA</button>
+      <button class="pill" data-v="NON-OHA">Non-OHA</button></div></div>
+
+  <div class="fgroup"><span class="flabel">IVR Branch</span><select id="fIvr"></select></div>
+  <div class="fgroup"><span class="flabel">Preset</span><select id="fPreset">
+    <option>Today</option><option>Yesterday</option><option>This Week</option>
+    <option selected>Last Week</option><option>This Month</option><option>Last Month</option>
+    <option>All Data</option><option>Custom Range</option></select></div>
+  <div class="fgroup"><span class="flabel">Granularity</span><select id="fGran">
+    <option value="daily">Daily</option><option value="weekly" selected>Weekly</option>
+    <option value="monthly">Monthly</option></select></div>
+  <div class="fgroup" id="wrapFrom"><span class="flabel">From</span><input type="date" id="fFrom"></div>
+  <div class="fgroup" id="wrapTo"><span class="flabel">To</span><input type="date" id="fTo"></div>
+  <div class="fgroup"><span class="flabel">&nbsp;</span><button class="btn ghost" id="btnReset">Reset</button></div>
+</div>
+
+<div class="notice" id="dqNotice"></div>
+
+<!-- KPIs -->
+<div class="sect"><h2>Executive KPIs</h2><span class="chip" id="kpiScope"></span><div class="line"></div></div>
+<div class="kpis" id="kpiRow"></div>
+<div class="kpis" id="kpiRow2" style="margin-top:14px"></div>
+
+<!-- Summary -->
+<div class="grid" style="margin-top:16px"><div class="summary" id="execSummary"></div></div>
+
+<!-- Volume + donut -->
+<div class="sect"><h2>Volume &amp; Mix</h2><div class="line"></div></div>
+<div class="grid g2">
+  <div class="card"><div class="card-hd"><h3 id="trendTitle">Call Volume</h3>
+    <span class="sub" id="trendSub"></span></div><div id="chTrend"></div>
+    <div class="legend"><span><i style="background:#E8578E"></i>Answered</span>
+      <span><i style="background:#D9455F"></i>Missed</span>
+      <span><i style="background:#B99BDD"></i>Abandoned</span>
+      <span><i style="background:#D9A0B8"></i>Out of Hours</span></div></div>
+  <div class="card"><div class="card-hd"><h3>Call Type Distribution</h3></div><div id="chDonut"></div></div>
+</div>
+
+<div class="grid g2" style="margin-top:16px">
+  <div class="card"><div class="card-hd"><h3>Calls by Hour</h3><span class="sub" id="peakSub"></span></div>
+    <div id="chHour"></div>
+    <div class="legend"><span><i style="background:#E8578E"></i>Answered</span>
+      <span><i style="background:#D9455F"></i>Missed</span>
+      <span><i style="background:#B99BDD"></i>Abandoned</span>
+      <span><i style="background:#D9A0B8"></i>OOH</span></div></div>
+  <div class="card"><div class="card-hd"><h3>Answer Rate Trend</h3></div><div id="chRate"></div></div>
+</div>
+
+<!-- Comparisons -->
+<div class="sect"><h2>Comparisons</h2><div class="line"></div></div>
+<div class="grid">
+  <div class="card"><div class="card-hd"><h3>Period over Period</h3>
+    <select id="cmpA" style="min-width:150px"></select>
+    <span style="color:var(--mauve);font-weight:700">vs</span>
+    <select id="cmpB" style="min-width:150px"></select></div>
+    <table id="tWow"></table></div>
+</div>
+<div class="card" style="margin-top:16px"><div class="card-hd"><h3>IVR Branch &mdash; Period over Period</h3>
+  <span class="sub" id="wowIvrSub"></span></div>
+  <div class="scroll"><table id="tWowIvr"></table></div></div>
+
+<!-- IVR -->
+<div class="sect"><h2>IVR Branch Performance</h2><span class="chip">Separate from OHA / Non-OHA</span><div class="line"></div></div>
+<div class="kpis" id="ivrKpis"></div>
+<div class="grid g2" style="margin-top:16px">
+  <div class="card"><div class="card-hd"><h3>IVR Branch &mdash; Answered vs Abandoned</h3></div><div id="chIvrBar" class="chart-cap"></div>
+    <div class="legend"><span><i style="background:#E8578E"></i>Answered</span>
+      <span><i style="background:#B99BDD"></i>Abandoned</span>
+      <span><i style="background:#D9455F"></i>Missed</span></div></div>
+  <div class="card"><div class="card-hd"><h3>Abandoned Calls by IVR Branch</h3></div><div id="chIvrAband" class="chart-cap"></div></div>
+</div>
+<div class="card" style="margin-top:16px"><div class="card-hd"><h3>IVR Branch Table</h3>
+  <span class="sub">Click a row to filter the whole dashboard by that branch</span></div>
+  <div class="scroll"><table id="tIvr"></table></div></div>
+
+<div class="grid g2e" style="margin-top:16px">
+  <div class="card"><div class="card-hd"><h3>IVR Branch &times; Channel</h3></div>
+    <div class="scroll"><table id="tIvrChan"></table></div></div>
+  <div class="card"><div class="card-hd"><h3 id="ivrPeriodTitle">IVR Branch by Period</h3></div>
+    <div class="scroll"><table id="tIvrDaily"></table></div></div>
+</div>
+
+<!-- Period table -->
+<div class="sect"><h2>Period Performance</h2><div class="line"></div></div>
+<div class="card">
+  <div class="card-hd"><h3 id="periodTitle">Period Performance</h3>
+    <span class="sub" id="periodSub"></span></div>
+  <div id="periodPickWrap">
+    <div class="flabel" style="margin-bottom:7px">Pick periods to compare
+      <span style="text-transform:none;letter-spacing:0;font-weight:500;color:var(--ink2)">
+        &mdash; click any weeks below. Leave all unpicked to just use the date range.</span></div>
+    <div class="chipbox" id="periodPick"></div>
+    <div style="display:flex;gap:9px;margin:10px 0 4px">
+      <button class="btn ghost" id="pickClear">Clear picks</button>
+      <button class="btn ghost" id="pickLast2">Last 2</button>
+      <button class="btn ghost" id="pickLast4">Last 4</button>
+    </div>
+  </div>
+  <div class="scroll" style="margin-top:12px"><table id="tPeriod"></table></div>
+  <div id="periodDelta"></div>
+</div>
+<div class="card" style="margin-top:16px"><div class="card-hd"><h3>Hourly Breakdown</h3></div>
+  <div class="scroll"><table id="tHour"></table></div></div>
+
+<!-- Agents -->
+<div class="sect"><h2>Agent Performance</h2><div class="line"></div></div>
+<div class="grid">
+  <div class="card"><div class="card-hd"><h3>Agent Table</h3>
+    <select id="fAgentSort" style="min-width:170px">
+      <option value="calls_desc">Highest Calls</option><option value="calls_asc">Lowest Calls</option>
+      <option value="aht_asc">Best AHT</option><option value="aht_desc">Highest AHT</option>
+      <option value="name">Name (A&ndash;Z)</option></select></div>
+    <div class="scroll"><table id="tAgent"></table></div></div>
+</div>
+<div class="card" style="margin-top:16px"><div class="card-hd"><h3>AHT Analysis &mdash; OHA vs Non-OHA per Agent</h3></div>
+  <div class="scroll"><table id="tAht"></table></div></div>
+
+<!-- Data mgmt -->
+<div class="sect"><h2>Data &amp; Validation</h2><div class="line"></div></div>
+<div class="card">
+  <div class="card-hd"><h3>Live Google Sheets Sync</h3></div>
+  <p style="margin:0 0 10px;color:var(--ink2)">This dashboard reads two Google Sheets. Add rows there, run the
+  sync, refresh the page &mdash; no Excel files, no manual export.</p>
+  <pre style="background:var(--blush);padding:12px 14px;border-radius:12px;overflow:auto;font-size:11.5px;margin:0 0 8px">cd ~/call-eod-dashboard
+python sync_sheets.py              <span style="color:#A96A94"># pull both sheets once</span>
+python sync_sheets.py --watch      <span style="color:#A96A94"># auto-refresh every 10 min</span></pre>
+  <p style="margin:0 0 14px;color:var(--ink2);font-size:12px">Or double-click <b>update_dashboard.bat</b>.
+  Duplicates are blocked by <b>call id</b>; the write is atomic so a refresh mid-sync can never show partial data.</p>
+  <div id="dqTable"></div>
+</div>
+
+<footer>Pink Executive BI &mdash; built from your Aircall EOD exports &middot; all figures computed live from <code>data.js</code></footer>
+</div>
+<div class="tip" id="tip"></div>
+<script src="data.js"></script>
+<script src="app-core.js"></script>
+<script src="app-charts.js"></script>
+<script src="app-period.js"></script>
+<script src="app-render1.js"></script>
+<script src="app-render2.js"></script>
+<script src="app-render3.js"></script>
+<script src="app-init.js"></script>
+</body></html>
