@@ -29,6 +29,9 @@ jobs:
         run: pip install --quiet openpyxl
 
       - name: Sync from Google Sheets
+        env:
+          OHA_SHEET: ${{ secrets.OHA_SHEET }}
+          NONOHA_SHEET: ${{ secrets.NONOHA_SHEET }}
         run: python sync_sheets.py
 
       - name: Bump cache-buster in index.html

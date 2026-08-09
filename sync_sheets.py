@@ -12,9 +12,22 @@ import build_data as B   # reuse the exact same parsing/classification logic
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 
+# Sheet IDs + tab (gid) come from GitHub repo secrets (env vars), NOT hardcoded,
+# so they are never publicly visible in this repo. Format: "SHEET_ID|GID".
+# Fall back to env only (no plaintext IDs committed).
+def _sheet_from_env(name, channel):
+    raw = os.environ.get(name)
+    if not raw or "|" not in raw:
+        raise RuntimeError(
+            "Missing repo secret %s — set it in Settings > Secrets and variables > Actions "
+            "with value SHEET_ID|GID" % name
+        )
+    sid, gid = raw.split("|", 1)
+    return (channel, sid.strip(), gid.strip())
+
 SHEETS = [
-    ("OHA",     "15Z-j8RJqu-18rBA6esc45wTfGss_Xz7Q5TPpsJ4n7So", "1089205208"),
-    ("NON-OHA", "1YCRRmvrhalb8OHt_1UO2vX0iQljgkT6ZrHNEaYY1CuY", "735681200"),
+    _sheet_from_env("OHA_SHEET", "OHA"),
+    _sheet_from_env("NONOHA_SHEET", "NON-OHA"),
 ]
 URL = "https://docs.google.com/spreadsheets/d/{}/export?format=csv&gid={}"
 

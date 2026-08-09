@@ -20,10 +20,12 @@ That's it. The `.bat` pulls both Google Sheets, rebuilds the data, and reopens t
 
 The dashboard reads two Google Sheets (both must be shared as *Anyone with the link → Viewer*):
 
-| Channel | Sheet |
+| Channel | Secret name |
 |---|---|
-| **OHA** | `15Z-j8RJqu-18rBA6esc45wTfGss_Xz7Q5TPpsJ4n7So` |
-| **Non-OHA** | `1YCRRmvrhalb8OHt_1UO2vX0iQljgkT6ZrHNEaYY1CuY` |
+| **OHA** | `OHA_SHEET` (value = `SHEET_ID|GID`) |
+| **Non-OHA** | `NONOHA_SHEET` (value = `SHEET_ID|GID`) |
+
+> The Sheet IDs are stored as **GitHub repo secrets** (Settings → Secrets and variables → Actions), not in this file, so they are not publicly visible.
 
 ### Manual sync
 
