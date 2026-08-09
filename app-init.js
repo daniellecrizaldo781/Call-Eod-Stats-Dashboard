@@ -52,9 +52,10 @@ function wire(){
   $("bkBrand").onchange = e => { BK.brand = e.target.value; bkRender(); };
   $("bkConcern").onchange = e => { BK.concern = e.target.value; bkRender(); };
   $("bkBranchPick").onchange = () => bkRender();
+  $("bkDriversBrand").onchange = e => { BK.driversBrand = e.target.value; bkRender(); };
   $("bkReset").onclick = () => {
-    BK.brand="ALL"; BK.concern="ALL";
-    $("bkBrand").value="ALL"; $("bkConcern").value="ALL";
+    BK.brand="ALL"; BK.concern="ALL"; BK.driversBrand="ALL";
+    $("bkBrand").value="ALL"; $("bkConcern").value="ALL"; $("bkDriversBrand").value="ALL";
     bkRender();
   };
   // Refresh Data button: hard-reload to pull the latest synced data.js

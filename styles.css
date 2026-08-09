@@ -19,10 +19,12 @@ header.hero:after{content:"";position:absolute;right:-60px;top:-70px;width:260px
   border-radius:50%;background:rgba(255,255,255,.12)}
 header.hero h1{font-size:22px}
 header.hero p{margin:5px 0 0;opacity:.9;font-size:13px}
-.hero-meta{position:absolute;right:30px;top:26px;text-align:right;font-size:12px;opacity:.92;z-index:2;max-width:46%}
-.btn.refresh{position:absolute;left:30px;bottom:20px;background:rgba(255,255,255,.18);color:#fff;
-  border:1px solid rgba(255,255,255,.5);backdrop-filter:blur(2px)}
-.btn.refresh:hover{background:rgba(255,255,255,.3);transform:translateY(-1px)}
+.hero-meta{position:absolute;right:30px;top:74px;text-align:right;font-size:12px;opacity:.92;z-index:2;max-width:46%}
+.btn.refresh{position:absolute;right:30px;top:24px;background:rgba(255,255,255,.92);color:#C2185B;
+  border:1px solid rgba(255,255,255,.7);box-shadow:0 2px 8px rgba(120,20,80,.18);font-weight:600;
+  padding:8px 14px;border-radius:11px;cursor:pointer;font-size:12.5px;
+  display:inline-flex;align-items:center;gap:7px;z-index:3}
+.btn.refresh:hover{background:#fff;transform:translateY(-1px)}
 .btn.refresh:disabled{opacity:.7;cursor:progress}
 
 /* Call Breakdown controls — reuse filters styling */

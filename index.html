@@ -1,6 +1,6 @@
 <!DOCTYPE html><html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Call EOD Stats Dashboard</title><link rel="stylesheet" href="styles.css"></head>
+<title>Call EOD Stats Dashboard</title><link rel="stylesheet" href="styles.css?v=20260809d"></head>
 <body><div class="wrap">
 
 <header class="hero">
@@ -150,7 +150,8 @@
   <span class="chip" id="bkBranchScope"></span><div class="line"></div></div>
 <div class="grid g2" style="margin-top:14px">
   <div class="card"><div class="card-hd"><h3>Top Call Drivers (all branches)</h3>
-    <span class="sub">by subcategory volume</span></div>
+    <span class="sub">by subcategory volume</span>
+    <select id="bkDriversBrand" style="margin-left:auto;min-width:200px"></select></div>
     <div id="chBkDrivers" class="chart-cap"></div></div>
   <div class="card"><div class="card-hd"><h3>Branch Volume</h3>
     <span class="sub">tickets per branch (Category)</span></div>
@@ -163,17 +164,12 @@
   <div id="chBkBranchDrill" class="chart-cap"></div></div>
 
 <div class="sect" style="margin-top:18px"><h2>Refunds</h2><div class="line"></div></div>
-<div class="grid g2" style="margin-top:14px">
-  <div class="card"><div class="card-hd"><h3>Refund Reasons</h3>
-    <span class="sub">ticket count by refund type</span></div>
-    <div id="chBkRefundDonut" class="chart-cap"></div></div>
-  <div class="card"><div class="card-hd"><h3>Top Refund Reasons (Subcategory)</h3>
+<div class="card" style="margin-top:14px"><div class="card-hd"><h3>Top Refund Reasons (Subcategory)</h3>
     <span class="sub">among refunded tickets</span></div>
     <div id="chBkRefundSub" class="chart-cap"></div></div>
-</div>
 <div class="card" style="margin-top:16px"><div class="card-hd"><h3>Refunded Amount by Brand</h3>
-  <span class="sub">total $ refunded per brand</span></div>
-  <div id="chBkRefundBrand" class="chart-cap"></div></div>
+    <span class="sub">total $ refunded per brand</span></div>
+    <div id="chBkRefundBrand" class="chart-cap"></div></div>
 </section>
 
 <!-- ============================ PAGE 3: AGENT PERFORMANCE ============================ -->
@@ -212,13 +208,13 @@
 <footer>Created by Danielle Ann Mari Crizaldo &mdash; Call Team Lead</footer>
 </div>
 <div class="tip" id="tip"></div>
-<script src="data.js?v=20260809b"></script>
-<script src="app-core.js?v=20260809b"></script>
-<script src="app-charts.js?v=20260809b"></script>
-<script src="app-period.js?v=20260809b"></script>
-<script src="app-render1.js?v=20260809b"></script>
-<script src="app-render2.js?v=20260809b"></script>
-<script src="app-render3.js?v=20260809b"></script>
-<script src="app-breakdown.js?v=20260809b"></script>
-<script src="app-init.js?v=20260809b"></script>
+<script src="data.js?v=20260809d"></script>
+<script src="app-core.js?v=20260809d"></script>
+<script src="app-charts.js?v=20260809d"></script>
+<script src="app-period.js?v=20260809d"></script>
+<script src="app-render1.js?v=20260809d"></script>
+<script src="app-render2.js?v=20260809d"></script>
+<script src="app-render3.js?v=20260809d"></script>
+<script src="app-breakdown.js?v=20260809d"></script>
+<script src="app-init.js?v=20260809d"></script>
 </body></html>
