@@ -72,11 +72,6 @@ function bkRender(){
   hBars("chBkDrivers", topSubs, {color:"#E8578E", labelW:210,
     note: driversScope==="All Brands" ? "all brands" : driversScope});
 
-  // ---- Branch volume ----
-  const branchRows = [...byCat.entries()].sort((a,b)=>b[1]-a[1]).slice(0,14)
-    .map(([k,v])=>({label:k, value:v}));
-  hBars("chBkBranch", branchRows, {color:"#B99BDD", labelW:170});
-
   // ---- Per-branch drill ----
   const pick = $("bkBranchPick").value || "ALL";
   $("bkBranchScope").textContent = scope;
