@@ -1,0 +1,51 @@
+name: Sync dashboard data
+
+# Refreshes data.js from the public Google Sheets on a schedule.
+# Uses GitHub's built-in GITHUB_TOKEN — no personal token, no local Git Bash.
+on:
+  schedule:
+    - cron: "7 * * * *"          # every hour at 7 minutes past
+  workflow_dispatch: {}           # also runnable manually from the Actions tab
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install --quiet openpyxl
+
+      - name: Sync from Google Sheets
+        run: python sync_sheets.py
+
+      - name: Bump cache-buster in index.html
+        # Force browsers to re-fetch after an auto-sync (no hard refresh needed).
+        run: |
+          TODAY=$(date +%Y%m%d)
+          sed -i -E "s/\?v=[0-9]+\"/?v=${TODAY}\"/g" index.html
+          echo "cache-buster set to v=${TODAY}"
+
+      - name: Commit and push if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data.js index.html
+          if git diff --cached --quiet; then
+            echo "No changes to data.js"
+          else
+            git commit -m "auto: refresh data.js from Google Sheets"
+            git push
+          fi
