@@ -119,7 +119,8 @@ function lineChart(elId, pts, opts){
 }
 
 /* donut */
-function donut(elId, parts){
+function donut(elId, parts, opts){
+  const o = Object.assign({center:"TOTAL CALLS", centerSub:null}, opts||{});
   const el = document.getElementById(elId);
   const tot = parts.reduce((a,p)=>a+p.value,0);
   if (!tot){ el.innerHTML='<div class="empty">No data for the current filters.</div>'; return; }
@@ -135,7 +136,7 @@ function donut(elId, parts){
     a0=a1;
   });
   s += '<text x="'+cx+'" y="'+(cy-4)+'" text-anchor="middle" font-size="27" font-weight="800" fill="#3A2233">'+nf(tot)+'</text>'
-     + '<text x="'+cx+'" y="'+(cy+16)+'" text-anchor="middle" font-size="11" fill="#6B4A5E">TOTAL CALLS</text>';
+     + '<text x="'+cx+'" y="'+(cy+16)+'" text-anchor="middle" font-size="11" fill="#6B4A5E">'+(o.centerSub || o.center)+'</text>';
   parts.forEach((p,i)=>{
     const y = 52+i*30;
     s += '<rect x="272" y="'+y+'" width="12" height="12" rx="3" fill="'+p.color+'"/>'

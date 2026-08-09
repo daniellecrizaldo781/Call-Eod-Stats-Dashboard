@@ -47,6 +47,21 @@ function wire(){
   $("agPeriod").onchange = () => { F.agPeriod = $("agPeriod").value; render(); };
   $("cmpA").onchange = () => render();
   $("cmpB").onchange = () => render();
+
+  // ---- Call Breakdown page wiring ----
+  $("bkBrand").onchange = e => { BK.brand = e.target.value; bkRender(); };
+  $("bkConcern").onchange = e => { BK.concern = e.target.value; bkRender(); };
+  $("bkBranchPick").onchange = () => bkRender();
+  $("bkReset").onclick = () => {
+    BK.brand="ALL"; BK.concern="ALL";
+    $("bkBrand").value="ALL"; $("bkConcern").value="ALL";
+    bkRender();
+  };
+  // Refresh Data button: hard-reload to pull the latest synced data.js
+  $("btnRefresh").onclick = () => {
+    const b = $("btnRefresh"); b.disabled = true; b.textContent = "↻ Refreshing…";
+    setTimeout(() => location.reload(true), 150);
+  };
   $("btnReset").onclick = () => {
     F.chan="ALL"; F.ivr="ALL"; F.preset="Last Week"; F.gran="weekly"; F.picks.clear();
     F.agGran="weekly"; F.agPeriod=null;
@@ -60,6 +75,10 @@ function setPage(p){
   F.page = p;
   document.querySelectorAll(".page").forEach(s => { s.hidden = (s.id !== "page"+p.charAt(0).toUpperCase()+p.slice(1)); });
   document.querySelectorAll(".topnav .navbtn").forEach(b => b.classList.toggle("on", b.dataset.page===p));
+  // Call Breakdown page: default to the full date range so all ticket data shows
+  // (the sheet only spans a few days, so a narrow preset like "Last Week" would hide most of it).
+  if (p === "break"){ F.preset = "All Data"; applyPreset(); if ($("fPreset")) $("fPreset").value = "All Data"; }
+  render();   // re-render so the now-visible page is populated
 }
 (function init(){
   fillSelects();
@@ -68,6 +87,7 @@ function setPage(p){
   buildPeriodOptions();
   wire();
   renderDQ();
+  if (window.bkFillSelects) bkFillSelects();   // populate Call Breakdown dropdowns
   render();
   setPage("main");
 })();

@@ -31,6 +31,56 @@ SHEETS = [
 ]
 URL = "https://docs.google.com/spreadsheets/d/{}/export?format=csv&gid={}"
 
+# Optional 3rd sheet: the "Call Breakdown" ticket export (brands, branches, refund reasons).
+# Stored as repo secret BREAKDOWN_SHEET = "SHEET_ID|GID". If unset, breakdown is skipped.
+BREAKDOWN_SECRET = os.environ.get("BREAKDOWN_SHEET")
+
+
+def _money(v):
+    if v is None:
+        return 0.0
+    s = str(v).replace("$", "").replace(",", "").strip()
+    try:
+        return round(float(s), 2)
+    except ValueError:
+        return 0.0
+
+
+def build_breakdown():
+    """Pull the Call Breakdown ticket sheet into a compact array of row dicts.
+    Returns [] if the secret is missing (so the rest of the dashboard is unaffected)."""
+    if not BREAKDOWN_SECRET or "|" not in BREAKDOWN_SECRET:
+        print("BREAKDOWN_SHEET not set — skipping Call Breakdown data", flush=True)
+        return []
+    sid, gid = BREAKDOWN_SECRET.split("|", 1)
+    print("fetching Call Breakdown ...", flush=True)
+    text = fetch(sid.strip(), gid.strip())
+    rows = list(rows_from_csv(text))
+    if not rows:
+        print("  (empty breakdown sheet)", flush=True)
+        return []
+    out = []
+    n = 0
+    for idx, r in rows:
+        g = lambda k: r[idx[k]] if k in idx and idx[k] < len(r) else None
+        d = parse_date_cell(g("date"))
+        if not d:
+            continue
+        brand = (str(g("brand") or "Unknown")).strip() or "Unknown"
+        out.append({
+            "d": d,                                   # ISO date
+            "brand": brand,
+            "channel": (str(g("channel") or "ALL")).strip() or "ALL",
+            "concern": (str(g("concern type") or "Unknown")).strip() or "Unknown",
+            "cat": (str(g("category") or "Unknown")).strip() or "Unknown",     # = branch
+            "sub": (str(g("subcategory") or "Unknown")).strip() or "Unknown",  # = call driver
+            "res": (str(g("resolution") or "Unknown")).strip() or "Unknown",
+            "refund": _money(g("total amount refunded")),
+        })
+        n += 1
+    print("  Call Breakdown", n, "tickets", flush=True)
+    return out
+
 
 def fetch(sid, gid):
     url = URL.format(sid, gid)
@@ -156,6 +206,7 @@ def build():
         "issues": dict(issues),
         "noIvrLabel": B.NO_IVR,
         "rowsPerSheet": per_sheet,
+        "breakdown": build_breakdown(),
     }
     out = os.path.join(BASE, "data.js")
     tmp = out + ".tmp"

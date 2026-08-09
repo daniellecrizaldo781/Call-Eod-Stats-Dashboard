@@ -136,4 +136,5 @@ function render(){
   renderAgentInsights();
   renderCompare(rows, M);
   renderSummary(M, pv, gran);
+  bkRender();   // Call Breakdown page (no-op unless that page is active)
 }

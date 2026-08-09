@@ -7,12 +7,14 @@
   <h1>&#128151; CALL EOD STATS DASHBOARD</h1>
   <p>OHA &amp; Non-OHA Inbound Call Performance &mdash; Team Lead Command Center</p>
   <div class="hero-meta"><div id="metaRange">&mdash;</div><div id="metaGen" style="opacity:.75"></div></div>
+  <button class="btn ghost refresh" id="btnRefresh" title="Reload the latest synced data from Google Sheets">&#8635; Refresh Data</button>
 </header>
 
 <!-- page navigation (SPA) -->
 <nav class="topnav">
   <button class="navbtn on" id="navMain" data-page="main">&#127968; Main Dashboard</button>
   <button class="navbtn" id="navIvr" data-page="ivr">&#128241; IVR Branch Performance</button>
+  <button class="navbtn" id="navBreak" data-page="break">&#128202; Call Breakdown</button>
   <button class="navbtn" id="navAgent" data-page="agent">&#128100; Agent Performance</button>
 </nav>
 
@@ -130,6 +132,50 @@
 (&ldquo;Abandoned &mdash; No IVR Branch&rdquo; KPI and the red bar in the Abandoned-by-Branch chart).</p>
 </section>
 
+<!-- ============================ PAGE: CALL BREAKDOWN ============================ -->
+<section class="page" id="pageBreak" hidden>
+<div class="sect"><h2>Call Breakdown &mdash; Branches, Drivers &amp; Refunds</h2>
+  <span class="chip">ticket-level detail from the Call Breakdown sheet</span><div class="line"></div></div>
+
+<div class="break-controls">
+  <div class="fgroup"><span class="flabel">Brand</span><select id="bkBrand" style="min-width:200px"></select></div>
+  <div class="fgroup"><span class="flabel">Concern Type</span><select id="bkConcern">
+    <option value="ALL">All Concerns</option></select></div>
+  <div class="fgroup"><span class="flabel">&nbsp;</span><button class="btn ghost" id="bkReset">Reset</button></div>
+</div>
+
+<div class="kpis" id="bkKpis" style="margin-top:14px"></div>
+
+<div class="sect" style="margin-top:18px"><h2>Call Drivers by Branch</h2>
+  <span class="chip" id="bkBranchScope"></span><div class="line"></div></div>
+<div class="grid g2" style="margin-top:14px">
+  <div class="card"><div class="card-hd"><h3>Top Call Drivers (all branches)</h3>
+    <span class="sub">by subcategory volume</span></div>
+    <div id="chBkDrivers" class="chart-cap"></div></div>
+  <div class="card"><div class="card-hd"><h3>Branch Volume</h3>
+    <span class="sub">tickets per branch (Category)</span></div>
+    <div id="chBkBranch" class="chart-cap"></div></div>
+</div>
+
+<div class="card" style="margin-top:16px"><div class="card-hd"><h3>Per-Branch Top Call Drivers</h3>
+  <span class="sub">pick a branch to drill in</span>
+  <select id="bkBranchPick" style="min-width:200px;margin-left:auto"></select></div>
+  <div id="chBkBranchDrill" class="chart-cap"></div></div>
+
+<div class="sect" style="margin-top:18px"><h2>Refunds</h2><div class="line"></div></div>
+<div class="grid g2" style="margin-top:14px">
+  <div class="card"><div class="card-hd"><h3>Refund Reasons</h3>
+    <span class="sub">ticket count by refund type</span></div>
+    <div id="chBkRefundDonut" class="chart-cap"></div></div>
+  <div class="card"><div class="card-hd"><h3>Top Refund Reasons (Subcategory)</h3>
+    <span class="sub">among refunded tickets</span></div>
+    <div id="chBkRefundSub" class="chart-cap"></div></div>
+</div>
+<div class="card" style="margin-top:16px"><div class="card-hd"><h3>Refunded Amount by Brand</h3>
+  <span class="sub">total $ refunded per brand</span></div>
+  <div id="chBkRefundBrand" class="chart-cap"></div></div>
+</section>
+
 <!-- ============================ PAGE 3: AGENT PERFORMANCE ============================ -->
 <section class="page" id="pageAgent" hidden>
 <div class="sect"><h2>Agent Performance</h2><div class="line"></div></div>
@@ -166,12 +212,13 @@
 <footer>Created by Danielle Ann Mari Crizaldo &mdash; Call Team Lead</footer>
 </div>
 <div class="tip" id="tip"></div>
-<script src="data.js?v=20260809"></script>
-<script src="app-core.js?v=20260809"></script>
-<script src="app-charts.js?v=20260809"></script>
-<script src="app-period.js?v=20260809"></script>
-<script src="app-render1.js?v=20260809"></script>
-<script src="app-render2.js?v=20260809"></script>
-<script src="app-render3.js?v=20260809"></script>
-<script src="app-init.js?v=20260809"></script>
+<script src="data.js?v=20260809b"></script>
+<script src="app-core.js?v=20260809b"></script>
+<script src="app-charts.js?v=20260809b"></script>
+<script src="app-period.js?v=20260809b"></script>
+<script src="app-render1.js?v=20260809b"></script>
+<script src="app-render2.js?v=20260809b"></script>
+<script src="app-render3.js?v=20260809b"></script>
+<script src="app-breakdown.js?v=20260809b"></script>
+<script src="app-init.js?v=20260809b"></script>
 </body></html>

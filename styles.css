@@ -20,6 +20,14 @@ header.hero:after{content:"";position:absolute;right:-60px;top:-70px;width:260px
 header.hero h1{font-size:22px}
 header.hero p{margin:5px 0 0;opacity:.9;font-size:13px}
 .hero-meta{position:absolute;right:30px;top:26px;text-align:right;font-size:12px;opacity:.92;z-index:2;max-width:46%}
+.btn.refresh{position:absolute;left:30px;bottom:20px;background:rgba(255,255,255,.18);color:#fff;
+  border:1px solid rgba(255,255,255,.5);backdrop-filter:blur(2px)}
+.btn.refresh:hover{background:rgba(255,255,255,.3);transform:translateY(-1px)}
+.btn.refresh:disabled{opacity:.7;cursor:progress}
+
+/* Call Breakdown controls — reuse filters styling */
+.break-controls{display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;margin:16px 0 4px;
+  background:var(--white);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;box-shadow:var(--sh)}
 
 /* SPA page navigation */
 .page{display:block}
