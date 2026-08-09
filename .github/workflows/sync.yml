@@ -32,6 +32,7 @@ jobs:
         env:
           OHA_SHEET: ${{ secrets.OHA_SHEET }}
           NONOHA_SHEET: ${{ secrets.NONOHA_SHEET }}
+          BREAKDOWN_SHEET: ${{ secrets.BREAKDOWN_SHEET }}
         run: python sync_sheets.py
 
       - name: Bump cache-buster in index.html
