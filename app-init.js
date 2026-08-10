@@ -49,7 +49,9 @@ function wire(){
   $("chanPills").addEventListener("click", e=>{
     const b = e.target.closest(".pill"); if(!b) return;
     [...$("chanPills").children].forEach(x=>x.classList.remove("on"));
-    b.classList.add("on"); F.chan = b.dataset.v; render();
+    b.classList.add("on"); F.chan = b.dataset.v;
+    if (F.page === "break") bkFillSelects();   // rebuild brand dropdowns for the channel
+    render();
   });
   $("fIvr").onchange  = e => { F.ivr = e.target.value; render(); };
   $("fPreset").onchange = e => { F.preset = e.target.value; applyPreset(); render(); };

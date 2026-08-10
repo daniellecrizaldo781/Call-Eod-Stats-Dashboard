@@ -11,9 +11,24 @@ const BK_COL = ["#E8578E","#D9455F","#B99BDD","#D9A0B8","#C76BA0","#9B6BB0","#F0
                "#7E5BA6","#B56B94","#D98FB8","#A86BB0","#E8578E","#C76BA0","#9B6BB0","#F0A6C4"];
 
 function bkAll(){ return (D.breakdown || []); }
+// A brand belongs to OHA if its name starts with "Oricle" (the Oricle Hearing Aid line).
+function isOricle(b){ return typeof b === "string" && b.toLowerCase().indexOf("oricle") === 0; }
+// Main Channel = OHA -> only Oricle brands; = NON-OHA -> everything else; = ALL -> no restriction.
+function bkChannelMatch(r){
+  if (F.chan === "OHA") return isOricle(r.brand);
+  if (F.chan === "NON-OHA") return !isOricle(r.brand);
+  return true;
+}
+// Brands offered in the break-page brand dropdowns, narrowed by Main Channel.
+function bkBrandList(){
+  const all = [...new Set(bkAll().map(r=>r.brand))].sort((a,b)=>a.localeCompare(b));
+  if (F.chan === "ALL") return all;
+  return all.filter(b => F.chan === "OHA" ? isOricle(b) : !isOricle(b));
+}
 function bkFiltered(){
   return bkAll().filter(r =>
     r.d >= F.from && r.d <= F.to &&
+    bkChannelMatch(r) &&
     (BK.brand === "ALL" || r.brand === BK.brand) &&
     (BK.concern === "ALL" || r.concern === BK.concern));
 }
@@ -27,11 +42,15 @@ function bkRefundRows(rows){ return rows.filter(r => r.refund > 0); }
 function bkRefundSum(rows){ return bkRefundRows(rows).reduce((a,r)=>a+r.refund,0); }
 
 function bkFillSelects(){
-  const brands = [...new Set(bkAll().map(r=>r.brand))].sort((a,b)=>a.localeCompare(b));
+  // Brand dropdowns (page-wide + drivers) are narrowed by the Main Channel selection
+  const brands = bkBrandList();
   const opts = '<option value="ALL">All Brands</option>' +
     brands.map(b=>'<option value="'+esc(b)+'">'+esc(b)+'</option>').join("");
   $("bkBrand").innerHTML = opts;
   $("bkDriversBrand").innerHTML = opts;            // same list, independent filter
+  // If the current page-wide brand is no longer in the channel-narrowed list, reset it.
+  if (BK.brand !== "ALL" && !brands.includes(BK.brand)) BK.brand = "ALL";
+  if (BK.driversBrand !== "ALL" && !brands.includes(BK.driversBrand)) BK.driversBrand = "ALL";
   const concerns = [...new Set(bkAll().map(r=>r.concern))].sort((a,b)=>a.localeCompare(b));
   $("bkConcern").innerHTML = '<option value="ALL">All Concerns</option>' +
     concerns.map(c=>'<option value="'+esc(c)+'">'+esc(c)+'</option>').join("");
