@@ -33,8 +33,8 @@ function render(){
   const gran = F.gran;
   // when a specific week or month is picked for the daily breakdown, scope the volume + answer-rate charts to it
   const dw = F.dayScope && F.dayScope !== "ALL" ? F.dayScope : null;
-  const dwRows = dw ? (dw.length === 10 ? ROWS.filter(r => r.d >= dw && r.d <= (addD(dw,6) > MAX_D ? MAX_D : addD(dw,6)))
-                                        : ROWS.filter(r => r.d >= dw && r.d <= monthEnd(dw))) : rows;
+  const dwRows = dw ? (dw.length === 10 ? rows.filter(r => r.d >= dw && r.d <= (addD(dw,6) > MAX_D ? MAX_D : addD(dw,6)))
+                                        : rows.filter(r => r.d >= dw && r.d <= monthEnd(dw))) : rows;
   const dwM = dw ? agg(dwRows) : M;
 
   $("metaRange").textContent = fmtDY(F.from)+"  \u2192  "+fmtDY(F.to);
