@@ -74,12 +74,13 @@ function applyQuarter(qKey){
   } else {
     const [yr, q] = qKey.split("-Q"); const qi = +q;
     const start = yr+"-"+String((qi-1)*3+1).padStart(2,"0")+"-01";
-    const endM = qi*3; const end = yr+"-"+String(endM).padStart(2,"0")+"-01";
+    const nm = qi*3 + 1;                         // first month AFTER the quarter
+    const ny = nm > 12 ? (+yr + 1) : yr;
+    const nm2 = nm > 12 ? 1 : nm;
+    const endNext = ny+"-"+String(nm2).padStart(2,"0")+"-01";   // 1st of month after quarter
+    const end = addD(endNext, -1);               // last day of the quarter
     F.from = start < MIN_D ? MIN_D : start;
-    F.to   = addD(end,0) > MAX_D ? MAX_D : end;   // end month 01, clamp later
-    // include full last month of quarter
-    F.to   = addD(end,0);
-    if (F.to > MAX_D) F.to = MAX_D;
+    F.to   = end   > MAX_D ? MAX_D : end;
   }
   syncDateInputs();
 }
