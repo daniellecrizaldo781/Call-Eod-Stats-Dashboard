@@ -30,27 +30,86 @@ function renderIvr(rows, M, gran){
   hBars("chIvrAband", ab.map(([k,m])=>({label:k, value:m.abandoned,
     color: k===NO_IVR? "#D9455F":"#B99BDD", note:pf(m.abandRate)+" abandon rate \u00b7 "+nf(m.total)+" total"})), {unit:"abandoned"});
 
-  /* IVR x channel */
-  const cross = groupBy(rows, r=>r.ch+SEP+r.ivr);
-  const rowsX = [...cross.entries()].map(([k,m])=>{ const p=k.split(SEP);
-    return {ch:p[0], ivr:p[1], m:m}; }).sort((a,b)=> a.ch===b.ch ? b.m.total-a.m.total : a.ch.localeCompare(b.ch));
-  tbl($("tIvrChan"),
-    [{t:"Channel",k:"c"},{t:"IVR Branch",k:"b"},{t:"Total",k:"t",n:1},{t:"Answered",k:"a",n:1},
-     {t:"Abandoned",k:"ab",n:1},{t:"Answer Rate",k:"ar",n:1},{t:"Abandon Rate",k:"abr",n:1}],
-    rowsX.map(r=>({c:'<span class="tag'+(r.ch==="OHA"?"":" lav")+'">'+esc(r.ch)+'</span>', b:esc(r.ivr),
-      t:nf(r.m.total), a:nf(r.m.answered), ab:nf(r.m.abandoned), ar:pf(r.m.answerRate), abr:pf(r.m.abandRate)})));
+  /* IVR Branch by Day/Week/Month — spreadsheet-style pivot, respects channel filter */
+  const pkey = r => periodKey(r.d, gran);
+  const pkeys = [...new Set(rows.map(pkey))].sort();
+  const BRANCHES = IVRS.filter(b=>b!==NO_IVR);   // named branches only, in data order
+  const byPK = groupBy(rows, r=>pkey(r));         // period -> metrics (finish'd)
+  const byPB = {};                                // period -> branch -> metrics
+  BRANCHES.forEach(b=>byPB[b]=new Map());
+  rows.forEach(r=>{ if (r.ivr===NO_IVR) return;
+    const pk=pkey(r); if(!byPB[r.ivr].has(pk)) byPB[r.ivr].set(pk, blank());
+    acc(byPB[r.ivr].get(pk), r); });
+  Object.values(byPB).forEach(m=>m.forEach(v=>finish(v)));
 
-  /* IVR by period */
-  const pf2 = r => periodKey(r.d, gran);
-  const byPI = groupBy(rows, r=>pf2(r)+SEP+r.ivr);
-  const rowsP = [...byPI.entries()].map(([k,m])=>{ const p=k.split(SEP); return {p:p[0], ivr:p[1], m:m}; })
-    .sort((a,b)=> a.p===b.p ? b.m.total-a.m.total : b.p.localeCompare(a.p));
-  $("ivrPeriodTitle").textContent = "IVR Branch by "+(gran==="daily"?"Day":gran==="weekly"?"Week":gran==="none"?"Full Range":"Month");
-  tbl($("tIvrDaily"),
-    [{t:gran==="daily"?"Date":gran==="weekly"?"Week":gran==="none"?"Range":"Month",k:"d"},{t:"IVR Branch",k:"b"},
-     {t:"Answered",k:"a",n:1},{t:"Abandoned",k:"ab",n:1},{t:"Total",k:"t",n:1},{t:"Abandon Rate",k:"abr",n:1}],
-    rowsP.slice(0,400).map(r=>({d:periodLabel(r.p,gran), b:esc(r.ivr), a:nf(r.m.answered),
-      ab:nf(r.m.abandoned), t:nf(r.m.total), abr:pf(r.m.abandRate)})));
+  const totAll = agg(rows);
+  const pLabel = pk => periodLabel(pk, gran);
+  const pSort  = pk => pk;                        // ISO sorts correctly for day/week; month too
+  const rowsSorted = pkeys.slice().sort((a,b)=>pSort(a)<pSort(b)?1:-1);   // newest first
+
+  // header groups
+  const gh = (txt,col,cls) => '<th class="ghead '+cls+'" colspan="'+col+'">'+txt+'</th>';
+  const head = '<thead><tr>'
+    + '<th class="vhead">'+ (gran==="daily"?"Date":gran==="weekly"?"Week":gran==="monthly"?"Month":"Range")
+        + ' <span class="vsub">Total Inbound Calls</span></th>'
+    + gh("Abandoned in IVR", BRANCHES.length*2, "gh-aband")
+    + gh("Call Outcome", 9, "gh-out")
+    + '</tr><tr>'
+    + '<th class="vhead2">&nbsp;</th>'
+    + BRANCHES.map(b=>'<th class="bc" colspan="2">'+esc(b)+'</th>').join("")
+    + '<th class="sc">Total Abandoned in IVR</th>'
+    + '<th class="sc">Abandoned &lt;10s<br>NO IVR</th>'
+    + '<th class="sc">Outside Business Hrs</th>'
+    + '<th class="sc">Agents Unavailable</th>'
+    + '<th class="sc">Total Calls Received by CSR\'s</th>'
+    + '<th class="sc">Total Answered Calls</th>'
+    + '<th class="sc">Total Unanswered Call</th>'
+    + '<th class="sc">Answer Rate</th>'
+    + '<th class="sc">Missed Call Rate</th>'
+    + '</tr></thead>';
+
+  // sub-header row under each branch: Answered / Abandoned
+  const branchSub = '<tr class="sub2"><th></th>'
+    + BRANCHES.map(()=>'<th class="sc2 ans">Answered</th><th class="sc2 aba">Abandoned</th>').join("")
+    + '<th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th></tr>';
+
+  const body = rowsSorted.map(pk=>{ const m = byPK.get(pk);
+    const cells = BRANCHES.map(b=>{ const bm = byPB[b].get(pk) || blank();
+      return '<td class="num ans">'+nf(bm.answered)+'</td><td class="num aba">'+nf(bm.abandoned)+'</td>'; }).join("");
+    return '<tr>'
+      + '<td class="day">'+(gran==="none"?"Full Range":pLabel(pk))+'</td>'
+      + cells
+      + '<td class="num">'+nf(m.ivrAband)+'</td>'
+      + '<td class="num">'+nf(m.noIvrAband)+'</td>'
+      + '<td class="num">'+nf(m.ooh)+'</td>'
+      + '<td class="num">'+nf(m.unanswered)+'</td>'
+      + '<td class="num">'+nf(m.agentReceived)+'</td>'
+      + '<td class="num ans">'+nf(m.answered)+'</td>'
+      + '<td class="num aba">'+nf(m.unanswered)+'</td>'
+      + '<td class="rate">'+pf(m.answerRate)+'</td>'
+      + '<td class="rate">'+pf(m.missRate)+'</td>'
+      + '</tr>'; }).join("");
+
+  const tCells = BRANCHES.map(b=>{ const m = agg(rows.filter(r=>r.ivr===b));
+    return '<td class="num ans tot">'+nf(m.answered)+'</td><td class="num aba tot">'+nf(m.abandoned)+'</td>'; }).join("");
+  const foot = '<tr class="tot">'
+    + '<td class="day">TOTAL</td>'
+    + tCells
+    + '<td class="num tot">'+nf(totAll.ivrAband)+'</td>'
+    + '<td class="num tot">'+nf(totAll.noIvrAband)+'</td>'
+    + '<td class="num tot">'+nf(totAll.ooh)+'</td>'
+    + '<td class="num tot">'+nf(totAll.unanswered)+'</td>'
+    + '<td class="num tot">'+nf(totAll.agentReceived)+'</td>'
+    + '<td class="num ans tot">'+nf(totAll.answered)+'</td>'
+    + '<td class="num aba tot">'+nf(totAll.unanswered)+'</td>'
+    + '<td class="rate tot">'+pf(totAll.answerRate)+'</td>'
+    + '<td class="rate tot">'+pf(totAll.missRate)+'</td>'
+    + '</tr>';
+
+  $("tIvrDay").innerHTML = head + branchSub + '<tbody>' + body + foot + '</tbody>';
+  $("ivrDayTitle").textContent = "IVR Branch by " + (gran==="daily"?"Day":gran==="weekly"?"Week":gran==="monthly"?"Month":"Range");
+  const scopeTxt = F.chan==="ALL" ? "OHA + Non-OHA" : F.chan;
+  $("ivrDaySub").textContent = scopeTxt + " · " + (gran==="none"?"full range":pkeys.length+(gran==="daily"?" days":gran==="weekly"?" weeks":" months"));
 }
 
 /* ---------- Agents (shared) ---------- */

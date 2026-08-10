@@ -305,3 +305,37 @@ footer{margin-top:36px;text-align:center;font-size:11.5px;color:var(--mauve)}
   .kpis{grid-template-columns:1fr}
   header.hero h1{font-size:15.5px}
 }
+
+/* ============================================================
+   IVR Branch by Day/Week/Month — spreadsheet-style pivot
+   ============================================================ */
+.ivrday{font-size:10.5px;border-collapse:separate;border-spacing:0}
+.ivrday thead th{position:sticky;top:0;z-index:3;background:#FBE9F1;border-bottom:2px solid var(--line);
+  text-align:center;vertical-align:middle;padding:9px 8px;white-space:nowrap;font-size:9.5px;letter-spacing:.04em}
+.ivrday .vhead{background:#C9B8E8;color:#3B2A52;text-align:left;vertical-align:middle;font-size:11px;
+  writing-mode:vertical-rl;transform:rotate(180deg);min-width:42px;max-width:42px;white-space:normal;line-height:1.05}
+.ivrday .vhead .vsub{display:block;font-size:8.5px;font-weight:600;opacity:.8;margin-top:4px}
+.ivrday .vhead2{background:#FBE9F1}
+.ivrday .ghead{font-size:10.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase}
+.ivrday .gh-aband{background:#E8A6B8;color:#5A1E2C}
+.ivrday .gh-out{background:#B7C8E8;color:#22324F}
+.ivrday .bc{background:#F6DCE4;color:#7A2740;font-weight:700}
+.ivrday .sc{background:#F3ECFA;color:#5B3D7A;font-weight:600;font-size:9px;line-height:1.2}
+.ivrday .sc2{font-weight:700;font-size:8.5px}
+.ivrday .sc2.ans{background:#D8F0DE;color:#1E6B3A}
+.ivrday .sc2.aba{background:#FAD3DA;color:#9B2336}
+.ivrday .sub2 th{background:#FBF1F5;border-bottom:1px solid var(--line)}
+.ivrday td{padding:6px 8px;border-bottom:1px solid #FAEDF3;text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.ivrday td.day{text-align:left;font-weight:700;background:var(--white);position:sticky;left:0;z-index:2;color:var(--ink)}
+.ivrday td.num{background:#FFFBFD}
+.ivrday td.num.ans{background:#EAF7EE}
+.ivrday td.num.aba{background:#FCE7EC}
+.ivrday td.rate{background:#F2F8E9;color:#2E6B1E;font-weight:700}
+.ivrday tr:hover td{background:#FCEFF5}
+.ivrday tr:hover td.num.ans{background:#DDF2E3}
+.ivrday tr:hover td.num.aba{background:#FBDDE4}
+.ivrday tr.tot{font-weight:800}
+.ivrday tr.tot td, .ivrday tr.tot td.num, .ivrday tr.tot td.num.ans, .ivrday tr.tot td.num.aba, .ivrday tr.tot td.rate{
+  background:#FBE3EC;border-top:2px solid var(--rose)}
+.ivrday tr.tot td.day{background:#FBE3EC}
+.ivrday thead .vhead{z-index:4}

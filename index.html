@@ -1,6 +1,6 @@
 <!DOCTYPE html><html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Call EOD Stats Dashboard</title><link rel="stylesheet" href="styles.css?v=20260810l"></head>
+<title>Call EOD Stats Dashboard</title><link rel="stylesheet" href="styles.css?v=20260810m"></head>
 <body><div class="wrap">
 
 <header class="hero">
@@ -108,7 +108,7 @@
 
 <!-- ============================ PAGE 2: IVR BRANCH PERFORMANCE ============================ -->
 <section class="page" id="pageIvr" hidden>
-<div class="sect"><h2>IVR Branch Performance</h2><span class="chip">Separate from OHA / Non-OHA</span><div class="line"></div></div>
+<div class="sect"><h2>IVR Branch Performance</h2><span class="chip">follows the Main Channel filter above</span><div class="line"></div></div>
 <div class="kpis" id="ivrKpis"></div>
 <div class="ivr-wide" style="margin-top:16px">
   <div class="card"><div class="card-hd"><h3>IVR Branch &mdash; Answered vs Abandoned</h3></div><div id="chIvrBar" class="chart-cap"></div>
@@ -118,11 +118,10 @@
   <div class="card"><div class="card-hd"><h3>Abandoned Calls by IVR Branch</h3></div><div id="chIvrAband" class="chart-cap"></div></div>
 </div>
 
-<div class="grid g2e" style="margin-top:16px">
-  <div class="card"><div class="card-hd"><h3>IVR Branch &times; Channel</h3></div>
-    <div class="scroll"><table id="tIvrChan"></table></div></div>
-  <div class="card"><div class="card-hd"><h3 id="ivrPeriodTitle">IVR Branch by Period</h3></div>
-    <div class="scroll"><table id="tIvrDaily"></table></div></div>
+<div class="card" style="margin-top:16px">
+  <div class="card-hd"><h3 id="ivrDayTitle">IVR Branch by Day</h3>
+    <span class="sub" id="ivrDaySub"></span></div>
+  <div class="scroll" style="max-height:none"><table id="tIvrDay" class="ivrday"></table></div>
 </div>
 <p class="pagehint">Abandoned calls with <b>no IVR branch selected</b> are tracked separately and shown above
 (&ldquo;Abandoned &mdash; No IVR Branch&rdquo; KPI and the red bar in the Abandoned-by-Branch chart).</p>
@@ -199,13 +198,13 @@
 <footer>Created by Danielle Ann Mari Crizaldo &mdash; Call Team Lead</footer>
 </div>
 <div class="tip" id="tip"></div>
-<script src="data.js?v=20260810l"></script>
-<script src="app-core.js?v=20260810l"></script>
-<script src="app-charts.js?v=20260810l"></script>
-<script src="app-period.js?v=20260810l"></script>
-<script src="app-render1.js?v=20260810l"></script>
-<script src="app-render2.js?v=20260810l"></script>
-<script src="app-render3.js?v=20260810l"></script>
-<script src="app-breakdown.js?v=20260810l"></script>
-<script src="app-init.js?v=20260810l"></script>
+<script src="data.js?v=20260810m"></script>
+<script src="app-core.js?v=20260810m"></script>
+<script src="app-charts.js?v=20260810m"></script>
+<script src="app-period.js?v=20260810m"></script>
+<script src="app-render1.js?v=20260810m"></script>
+<script src="app-render2.js?v=20260810m"></script>
+<script src="app-render3.js?v=20260810m"></script>
+<script src="app-breakdown.js?v=20260810m"></script>
+<script src="app-init.js?v=20260810m"></script>
 </body></html>
