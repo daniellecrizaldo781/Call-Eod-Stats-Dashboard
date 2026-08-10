@@ -109,24 +109,12 @@ function render(){
     return {label: noneView ? "Full Range" : (gran==="monthly"?fmtMonth(k):fmtD(k)), v:m.answerRate,
             note:nf(m.answered)+" of "+nf(m.total)+" answered"}; }));
 
-  /* ---- period table (with multi-period picker) ---- */
-  renderPeriodPicker();
-  const picks = [...F.picks].sort();
+  /* ---- period table (follows the date range above) ---- */
+  const picks = [];
   let prows, ptot;
-  if (picks.length){
-    // ignore date range; show exactly the picked periods, each fully aggregated
-    prows = picks.map(k=>{ const [a,b] = periodBounds(k, gran);
-      return {k, m: agg(slice(Object.assign({}, F, {from:a, to:b})))}; });
-    ptot = blank();
-    prows.forEach(r=>{ ["total","answered","missed","abandoned","ooh","sec","noIvrAband","ivrAband"]
-      .forEach(f=> ptot[f] += r.m[f]); });
-    finish(ptot);
-    $("periodSub").textContent = picks.length+" periods selected \u00b7 date range ignored";
-  } else {
-    prows = pk.map(k=>({k, m: byP.get(k)}));
-    ptot = M;
-    $("periodSub").textContent = "following the date range above";
-  }
+  prows = pk.map(k=>({k, m: byP.get(k)}));
+  ptot = M;
+  $("periodSub").textContent = "following the date range above";
   const pmax = Math.max(1, ...prows.map(r=>r.m.total));
   tbl($("tPeriod"),
     [{t:gran==="daily"?"Day":gran==="weekly"?"Week":gran==="none"?"Range":"Month",k:"p"},{t:"Total",k:"t",n:1},{t:"Answered",k:"a",n:1},
@@ -135,10 +123,9 @@ function render(){
     prows.map(r=>{ const m=r.m;
       return {p:periodLabel(r.k,gran), t:barCell(m.total,pmax), a:nf(m.answered), m:nf(m.missed), ab:nf(m.abandoned),
               ni:nf(m.noIvrAband), o:nf(m.ooh), ar:pf(m.answerRate), mr:pf(m.missRate), abr:pf(m.abandRate), aht:mmss(m.aht)}; })
-      .concat([{_cls:"tot", p:picks.length?"COMBINED":"TOTAL", t:nf(ptot.total), a:nf(ptot.answered), m:nf(ptot.missed),
+      .concat([{_cls:"tot", p:"TOTAL", t:nf(ptot.total), a:nf(ptot.answered), m:nf(ptot.missed),
                ab:nf(ptot.abandoned), ni:nf(ptot.noIvrAband), o:nf(ptot.ooh), ar:pf(ptot.answerRate),
                mr:pf(ptot.missRate), abr:pf(ptot.abandRate), aht:mmss(ptot.aht)}]));
-  renderPeriodDelta(prows, gran);
 
   renderIvr(rows, M, gran);
   renderAgents();

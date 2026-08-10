@@ -110,9 +110,6 @@ function wire(){
     } else { F.dayScope = "ALL"; }
     render();
   };
-  $("pickClear").onclick = () => { F.picks.clear(); render(); };
-  $("pickLast2").onclick = () => pickRecent(2);
-  $("pickLast4").onclick = () => pickRecent(4);
   $("fAgentSort").onchange = () => renderAgents();
   $("agPeriod").onchange = () => { F.agPeriod = $("agPeriod").value; render(); };
   $("cmpA").onchange = () => render();
