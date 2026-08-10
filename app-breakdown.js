@@ -68,17 +68,19 @@ function bkFillSelects(){
   $("bkBranchPick").innerHTML = '<option value="ALL">All Branches</option>' +
     cats.map(c=>'<option value="'+esc(c)+'">'+esc(c)+'</option>').join("");
 }
-// Build a checkbox-style brand picker (with a "Select All" control) inside the given container id.
+// Build a compact brand picker: a single trigger pill + a dropdown (checkbox list + Select All).
 function buildBrandPicker(id, set, brands){
   const el = $(id);
   const cur = bkSelLabel(set, brands);
-  let html = '<button type="button" class="selall" data-set="'+id+'">✓ Select All</button>' +
-             '<div class="chklist">';
+  let html = '<button type="button" class="bk-trigger" id="'+id+'Trig" data-set="'+id+'">'+esc(cur)+'</button>' +
+             '<div class="bk-menu">' +
+               '<div class="bk-selall'+(set.size===0?" on":"")+'" data-set="'+id+'">✓ Select All</div>' +
+               '<div class="chklist">';
   brands.forEach(b => {
     const on = set.size === 0 || set.has(b);
     html += '<label class="chk"><input type="checkbox" data-set="'+id+'" value="'+esc(b)+'"'+(on?" checked":"")+'> '+esc(b)+'</label>';
   });
-  html += '</div><div class="chksel" id="'+id+'Sel">'+esc(cur)+'</div>';
+  html += '</div></div>';
   el.innerHTML = html;
 }
 

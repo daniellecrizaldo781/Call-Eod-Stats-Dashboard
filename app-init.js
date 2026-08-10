@@ -72,8 +72,14 @@ function wire(){
   // Brand multi-selects are checkbox lists with a "Select All" button — handle via delegation.
   function bkPickerHandler(e){
     const t = e.target;
-    if (t.classList.contains("selall")){            // "Select All" toggle
-      const id = t.dataset.set;                     // bkBrand or bkDriversBrand
+    // toggle the dropdown open/closed when clicking the trigger pill
+    if (t.classList.contains("bk-trigger")){
+      const menu = t.parentNode.querySelector(".bk-menu");
+      menu.classList.toggle("open");
+      return;
+    }
+    if (t.classList.contains("bk-selall")){             // "Select All" inside the menu
+      const id = t.dataset.set;
       const set = (id === "bkBrand") ? BK.brand : BK.driversBrand;
       const brands = bkBrandList();
       if (set.size === 0) brands.forEach(b => set.add(b));   // currently ALL -> select every brand
@@ -84,8 +90,7 @@ function wire(){
       const id = t.dataset.set;
       const set = (id === "bkBrand") ? BK.brand : BK.driversBrand;
       if (t.checked) set.add(t.value); else set.delete(t.value);
-      // keep the "current selection" label fresh without rebuilding (rebuild would lose scroll)
-      const lbl = $(id + "Sel"); if (lbl) lbl.textContent = bkSelLabel(set, bkBrandList());
+      const trig = $(id + "Trig"); if (trig) trig.textContent = bkSelLabel(set, bkBrandList());
       bkRender(); return;
     }
   }
