@@ -344,3 +344,17 @@ footer{margin-top:36px;text-align:center;font-size:11.5px;color:var(--mauve)}
   background:#FBE3EC;border-top:2px solid var(--rose)}
 .ivrday tr.tot td.day{background:#FBE3EC}
 .ivrday thead .vhead{z-index:4}
+
+/* IVR Branch by Day: show the FULL table with no inner scroll box.
+   On desktop the wide grid shrinks to fit the card width (auto layout) so the
+   entire dataset is visible at once; horizontal scroll is kept only on narrow
+   screens where it can't fit. */
+#ivrBranchDay .scroll{overflow:visible;max-height:none}
+#ivrBranchDay .ivrday{width:100%;min-width:0;table-layout:fixed;font-size:10.5px}
+#ivrBranchDay .ivrday td, #ivrBranchDay .ivrday th{padding:5px 3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#ivrBranchDay .ivrday th.bc{white-space:normal;overflow:visible;font-size:9px;line-height:1.05;padding:5px 3px}
+#ivrBranchDay .ivrday td.day{white-space:normal}
+@media (max-width:860px){
+  #ivrBranchDay .scroll{overflow-x:auto}
+  #ivrBranchDay .ivrday{min-width:880px;width:880px}
+}

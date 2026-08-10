@@ -111,7 +111,14 @@ function renderIvr(rows, M, gran){
     + tCells
     + '</tr>';
 
-  $("tIvrDay").innerHTML = head + branchSub + '<tbody>' + body + outRows + foot + '</tbody>';
+  // column widths: first col = date/header (~7%), remaining 24 branch sub-cols share the rest
+  const branchCols = BRANCHES.length * 2;
+  const datePct = 7, subPct = (100 - datePct) / branchCols;
+  const colgroup = '<colgroup><col style="width:'+datePct+'%">'
+    + BRANCHES.map(()=>'<col style="width:'+subPct.toFixed(3)+'%"><col style="width:'+subPct.toFixed(3)+'%">').join("")
+    + '</colgroup>';
+
+  $("tIvrDay").innerHTML = colgroup + head + branchSub + '<tbody>' + body + outRows + foot + '</tbody>';
   $("ivrDayTitle").textContent = "IVR Branch by " + (gran==="daily"?"Day":gran==="weekly"?"Week":gran==="monthly"?"Month":"Range");
   const scopeTxt = F.chan==="ALL" ? "OHA + Non-OHA" : F.chan;
   $("ivrDaySub").textContent = scopeTxt + " · " + (gran==="none"?"full range":pkeys.length+(gran==="daily"?" days":gran==="weekly"?" weeks":" months"));
