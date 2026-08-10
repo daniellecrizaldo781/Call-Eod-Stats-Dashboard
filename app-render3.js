@@ -1,7 +1,7 @@
 /* ---------- comparisons ---------- */
 function buildPeriodOptions(){
-  const gran = F.gran==="daily" ? "daily" : F.gran;
-  const keys = [...new Set(ROWS.map(r=>periodKey(r.d, gran==="daily"?"daily":gran)))].sort().reverse();
+  const gran = "weekly";   // Period-over-Period comparison is always weekly (whole weeks)
+  const keys = [...new Set(ROWS.map(r=>periodKey(r.d, gran)))].sort().reverse();
   const opts = keys.map(k=>'<option value="'+k+'">'+periodLabel(k,gran)+'</option>').join("");
   const a=$("cmpA"), b=$("cmpB"), pa=a.value, pb=b.value;
   a.innerHTML=opts; b.innerHTML=opts;
@@ -14,8 +14,8 @@ function periodBounds(k, gran){
   return [k,k];
 }
 function renderCompare(rows, M){
-  /* period over period */
-  const gran = F.gran;
+  /* period over period — always compares whole weeks, regardless of the View toggle */
+  const gran = "weekly";
   const ka=$("cmpA").value, kb=$("cmpB").value;
   if (!ka||!kb) return;
   const [a0,a1]=periodBounds(ka,gran), [b0,b1]=periodBounds(kb,gran);
