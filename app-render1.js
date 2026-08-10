@@ -31,9 +31,10 @@ function barCell(v, max, txt){
 function render(){
   const rows = slice(), M = agg(rows);
   const gran = F.gran;
-  // when a specific week is picked for the daily breakdown, scope the volume + answer-rate charts to it
-  const dw = F.dayWeek && F.dayWeek !== "ALL" ? F.dayWeek : null;
-  const dwRows = dw ? ROWS.filter(r => r.d >= dw && r.d <= (addD(dw,6) > MAX_D ? MAX_D : addD(dw,6))) : rows;
+  // when a specific week or month is picked for the daily breakdown, scope the volume + answer-rate charts to it
+  const dw = F.dayScope && F.dayScope !== "ALL" ? F.dayScope : null;
+  const dwRows = dw ? (dw.length === 10 ? ROWS.filter(r => r.d >= dw && r.d <= (addD(dw,6) > MAX_D ? MAX_D : addD(dw,6)))
+                                        : ROWS.filter(r => r.d >= dw && r.d <= monthEnd(dw))) : rows;
   const dwM = dw ? agg(dwRows) : M;
 
   $("metaRange").textContent = fmtDY(F.from)+"  \u2192  "+fmtDY(F.to);
@@ -61,8 +62,9 @@ function render(){
   const byP = groupBy(volRows, r=>periodKey(r.d, gran));
   const pk = [...byP.keys()].sort();
   const noneView = (gran === "none");
-  const wkLabel = dw ? " &middot; "+fmtWeek(dw) : "";
-  $("trendTitle").textContent = noneView ? "Call Volume (Full Range)" : "Call Volume by Day"+(dw?" for "+fmtWeek(dw):"");
+  const scopeLabel = dw ? (dw.length === 10 ? fmtWeek(dw) : fmtMonth(dw)) : "";
+  const wkLabel = dw ? " &middot; "+scopeLabel : "";
+  $("trendTitle").textContent = noneView ? "Call Volume (Full Range)" : "Call Volume by Day"+(dw?" for "+scopeLabel:"");
   // daily & weekly both plot per-day; monthly plots per-month; none plots the full range as one block
   const volKey = (gran==="monthly"||noneView) ? r=>monthStart(r.d) : r=>r.d;
   const byV = groupBy(volRows, volKey); const vk=[...byV.keys()].sort();

@@ -14,6 +14,11 @@ function buildPeriodNav(){
   $("fDayWeek").innerHTML = ['<option value="ALL">All weeks (whole range)</option>']
     .concat(dw.map(s => '<option value="'+s+'">'+fmtWeek(s)+'</option>')).join("");
   $("fDayWeek").value = "ALL";
+  // monthly scope for the daily breakdown chart
+  const dm = listMonths();
+  $("fDayMonth").innerHTML = ['<option value="ALL">All months (whole range)</option>']
+    .concat(dm.map(s => '<option value="'+s+'">'+fmtMonth(s)+'</option>')).join("");
+  $("fDayMonth").value = "ALL";
 }
 function deselectPeriod(id){
   // when one period navigator is used, reset the other to "All" so they don't fight
@@ -62,15 +67,19 @@ function wire(){
   $("fFrom").onchange = e => { if (!$("fFrom").disabled){ F.from = e.target.value; F.picks.clear(); render(); } };
   $("fTo").onchange   = e => { if (!$("fTo").disabled){ F.to   = e.target.value; F.picks.clear(); render(); } };
   // ---- period quick-navigators (WEEK + MONTH, mutually exclusive) ----
-  function syncDayWeek(){ // keep the daily-chart Week selector mirrored with the global Week toggle
+  function syncDayScope(){ // mirror the global Week toggle into the daily-chart Week selector
     const wv = $("fWeek").value;
     if ($("fDayWeek").value !== wv) $("fDayWeek").value = wv;
+    if (wv === "ALL" && $("fDayMonth").value !== "ALL") {} // leave month as-is
+  }
+  function clearDayScope(){ // reset the daily-chart period selectors
+    $("fDayWeek").value = "ALL"; $("fDayMonth").value = "ALL"; F.dayScope = "ALL";
   }
   $("fWeek").onchange = e => {
     deselectPeriod("fWeek");
     const v = e.target.value;
     if (v === "ALL"){ F.from=MIN_D; F.to=MAX_D; } else applyWeek(v);
-    F.dayWeek = v; syncDayWeek();
+    F.dayScope = v; syncDayScope();
     render();
   };
   $("fMonth").onchange = e => {
@@ -81,13 +90,24 @@ function wire(){
   };
   $("fDayWeek").onchange = e => {
     const v = e.target.value;
-    F.dayWeek = v;
     if (v !== "ALL"){ // scope the daily breakdown to this week, force Daily view
+      F.dayScope = v; $("fDayMonth").value = "ALL";
       F.from = v; F.to = addD(v,6) > MAX_D ? MAX_D : addD(v,6);
       if (F.gran !== "daily"){ F.gran = "daily";
         [...$("granPills").children].forEach(x=>x.classList.toggle("on", x.dataset.v==="daily"));
       }
-    }
+    } else { F.dayScope = "ALL"; }
+    render();
+  };
+  $("fDayMonth").onchange = e => {
+    const v = e.target.value;
+    if (v !== "ALL"){ // scope the daily breakdown to this month, force Daily view
+      F.dayScope = v; $("fDayWeek").value = "ALL";
+      F.from = v; F.to = monthEnd(v) > MAX_D ? MAX_D : monthEnd(v);
+      if (F.gran !== "daily"){ F.gran = "daily";
+        [...$("granPills").children].forEach(x=>x.classList.toggle("on", x.dataset.v==="daily"));
+      }
+    } else { F.dayScope = "ALL"; }
     render();
   };
   $("pickClear").onclick = () => { F.picks.clear(); render(); };
@@ -144,7 +164,7 @@ function wire(){
     [...$("chanPills").children].forEach((x,i)=>x.classList.toggle("on", i===0));
     [...$("agGranPills").children].forEach((x,i)=>x.classList.toggle("on", i===1));
     [...$("granPills").children].forEach(x=>x.classList.toggle("on", x.dataset.v==="daily"));
-    $("fWeek").value="ALL"; $("fMonth").value="ALL"; $("fDayWeek").value="ALL"; F.dayWeek="ALL";
+    $("fWeek").value="ALL"; $("fMonth").value="ALL"; clearDayScope();
     applyGran("daily"); buildPeriodOptions(); render();
   };
 }

@@ -27,6 +27,13 @@ const addD = (s,n) => { const d=dt(s); d.setDate(d.getDate()+n); return iso(d); 
 // week starts Monday
 function weekStart(s){ const d=dt(s); const w=(d.getDay()+6)%7; d.setDate(d.getDate()-w); return iso(d); }
 function monthStart(s){ return s.slice(0,7)+"-01"; }
+// last day of the month for a yyyy-mm key (clamped to MAX_D if the month is partial)
+function monthEnd(s){
+  const y=+s.slice(0,4), m=+s.slice(5,7);
+  const last = new Date(y, m, 0); // day 0 of next month = last day of this month
+  let e = iso(last);
+  return e > MAX_D ? MAX_D : e;
+}
 const MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 function fmtD(s){ const d=dt(s); return MON[d.getMonth()]+" "+d.getDate(); }
 function fmtDY(s){ return fmtD(s)+", "+s.slice(0,4); }
@@ -84,7 +91,7 @@ function syncDateInputs(){
   if (document.getElementById("fTo"))   document.getElementById("fTo").value   = F.to;
 }
 const F = {chan:"ALL", ivr:"ALL", gran:"daily", from:MIN_D, to:MAX_D, picks:new Set(),
-  page:"main", agGran:"weekly", agPeriod:null, dayWeek:"ALL"};
+  page:"main", agGran:"weekly", agPeriod:null, dayScope:"ALL"};
 
 /* ---- filtering ---- */
 function pass(r, opt){
