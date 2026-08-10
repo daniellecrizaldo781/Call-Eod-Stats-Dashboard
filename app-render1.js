@@ -55,13 +55,14 @@ function render(){
   /* ---- trend / volume ---- */
   const byP = groupBy(rows, r=>periodKey(r.d, gran));
   const pk = [...byP.keys()].sort();
-  $("trendTitle").textContent = gran==="daily"?"Call Volume by Day":gran==="weekly"?"Call Volume by Day (in range)":"Call Volume by Month";
-  // daily & weekly both plot per-day; monthly plots per-month
-  const volKey = gran==="monthly" ? r=>monthStart(r.d) : r=>r.d;
+  const noneView = (gran === "none");
+  $("trendTitle").textContent = noneView ? "Call Volume (Full Range)" : gran==="daily"?"Call Volume by Day":"Call Volume by Day (in range)";
+  // daily & weekly both plot per-day; monthly plots per-month; none plots the full range as one block
+  const volKey = (gran==="monthly"||noneView) ? r=>monthStart(r.d) : r=>r.d;
   const byV = groupBy(rows, volKey); const vk=[...byV.keys()].sort();
-  $("trendSub").textContent = vk.length+" periods";
+  $("trendSub").textContent = noneView ? "1 period (full range)" : vk.length+" periods";
   stackedBars("chTrend", vk.map(k=>{ const m=byV.get(k);
-    return {label: gran==="monthly"?fmtMonth(k):fmtD(k), total:m.total,
+    return {label: noneView ? "Full Range" : (gran==="monthly"?fmtMonth(k):fmtD(k)), total:m.total,
             vals:{answered:m.answered,missed:m.missed,abandoned:m.abandoned,ooh:m.ooh}}; }));
 
   donut("chDonut", [
@@ -97,7 +98,7 @@ function render(){
 
   /* ---- answer rate trend ---- */
   lineChart("chRate", vk.map(k=>{ const m=byV.get(k);
-    return {label: gran==="monthly"?fmtMonth(k):fmtD(k), v:m.answerRate,
+    return {label: noneView ? "Full Range" : (gran==="monthly"?fmtMonth(k):fmtD(k)), v:m.answerRate,
             note:nf(m.answered)+" of "+nf(m.total)+" answered"}; }));
 
   /* ---- period table (with multi-period picker) ---- */
@@ -120,7 +121,7 @@ function render(){
   }
   const pmax = Math.max(1, ...prows.map(r=>r.m.total));
   tbl($("tPeriod"),
-    [{t:gran==="daily"?"Day":gran==="weekly"?"Week":"Month",k:"p"},{t:"Total",k:"t",n:1},{t:"Answered",k:"a",n:1},
+    [{t:gran==="daily"?"Day":gran==="weekly"?"Week":gran==="none"?"Range":"Month",k:"p"},{t:"Total",k:"t",n:1},{t:"Answered",k:"a",n:1},
      {t:"Missed",k:"m",n:1},{t:"Abandoned",k:"ab",n:1},{t:"No-IVR Aband.",k:"ni",n:1},{t:"OOH",k:"o",n:1},
      {t:"Answer Rate",k:"ar",n:1},{t:"Missed Rate",k:"mr",n:1},{t:"Abandon Rate",k:"abr",n:1},{t:"AHT",k:"aht",n:1}],
     prows.map(r=>{ const m=r.m;

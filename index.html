@@ -1,12 +1,12 @@
 <!DOCTYPE html><html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Call EOD Stats Dashboard</title><link rel="stylesheet" href="styles.css?v=20260810c"></head>
+<title>Call EOD Stats Dashboard</title><link rel="stylesheet" href="styles.css?v=20260810d"></head>
 <body><div class="wrap">
 
-<!-- top-most period navigator (week / quarter) — for quick weekly-data navigation -->
+<!-- top-most navigator: IVR BRANCH (replaces WEEK) + QUARTER for quick navigation -->
 <div class="periodnav">
-  <div class="fgroup"><span class="flabel">WEEK</span>
-    <select id="fWeek" class="pillsel"></select></div>
+  <div class="fgroup"><span class="flabel">IVR BRANCH</span>
+    <select id="fIvrTop" class="pillsel"></select></div>
   <div class="fgroup"><span class="flabel">QUARTER</span>
     <select id="fQuarter" class="pillsel"></select></div>
 </div>
@@ -34,15 +34,13 @@
       <button class="pill" data-v="NON-OHA">Non-OHA</button></div></div>
 
   <div class="fgroup"><span class="flabel">IVR Branch</span><select id="fIvr"></select></div>
-  <div class="fgroup"><span class="flabel">Preset</span><select id="fPreset">
-    <option>Today</option><option>Yesterday</option><option>This Week</option>
-    <option selected>Last Week</option><option>This Month</option><option>Last Month</option>
-    <option>All Data</option><option>Custom Range</option></select></div>
-  <div class="fgroup"><span class="flabel">Granularity</span><select id="fGran">
-    <option value="daily">Daily</option><option value="weekly" selected>Weekly</option>
-    <option value="monthly">Monthly</option></select></div>
-  <div class="fgroup" id="wrapFrom"><span class="flabel">From</span><input type="date" id="fFrom"></div>
-  <div class="fgroup" id="wrapTo"><span class="flabel">To</span><input type="date" id="fTo"></div>
+  <div class="fgroup"><span class="flabel">View</span>
+    <div class="pills" id="granPills">
+      <button class="pill" data-v="none">None</button>
+      <button class="pill on" data-v="daily">Daily</button>
+    </div></div>
+  <div class="fgroup" id="wrapFrom"><span class="flabel">From</span><input type="date" id="fFrom" disabled></div>
+  <div class="fgroup" id="wrapTo"><span class="flabel">To</span><input type="date" id="fTo" disabled></div>
   <div class="fgroup"><span class="flabel">&nbsp;</span><button class="btn ghost" id="btnReset">Reset</button></div>
 </div>
 
@@ -211,13 +209,13 @@
 <footer>Created by Danielle Ann Mari Crizaldo &mdash; Call Team Lead</footer>
 </div>
 <div class="tip" id="tip"></div>
-<script src="data.js?v=20260810c"></script>
-<script src="app-core.js?v=20260810c"></script>
-<script src="app-charts.js?v=20260810c"></script>
-<script src="app-period.js?v=20260810c"></script>
-<script src="app-render1.js?v=20260810c"></script>
-<script src="app-render2.js?v=20260810c"></script>
-<script src="app-render3.js?v=20260810c"></script>
-<script src="app-breakdown.js?v=20260810c"></script>
-<script src="app-init.js?v=20260810c"></script>
+<script src="data.js?v=20260810d"></script>
+<script src="app-core.js?v=20260810d"></script>
+<script src="app-charts.js?v=20260810d"></script>
+<script src="app-period.js?v=20260810d"></script>
+<script src="app-render1.js?v=20260810d"></script>
+<script src="app-render2.js?v=20260810d"></script>
+<script src="app-render3.js?v=20260810d"></script>
+<script src="app-breakdown.js?v=20260810d"></script>
+<script src="app-init.js?v=20260810d"></script>
 </body></html>

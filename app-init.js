@@ -4,28 +4,24 @@ function fillSelects(){
     + IVRS.map(v=>'<option value="'+esc(v)+'">'+esc(v)+'</option>').join("");
 }
 
-// Top-most WEEK / QUARTER navigator — quick weekly-data navigation.
-function buildWeekNav(){
-  const wk = listWeeks();
-  const opts = ['<option value="ALL">All weeks</option>']
-    .concat(wk.map(s => '<option value="'+s+'">'+fmtWeek(s)+(s===weekStart(MAX_D)?' (this week)':'')+'</option>'))
-    .concat(['<option value="__this">This Week</option>','<option value="__last">Last Week</option>']);
-  $("fWeek").innerHTML = opts.join("");
+// Top-most navigator: IVR BRANCH (quick filter, syncs with the main-row IVR Branch) + QUARTER.
+function buildTopNav(){
+  const opts = ['<option value="ALL">All IVR Branches</option>']
+    .concat(IVRS.map(v => '<option value="'+esc(v)+'">'+esc(v)+'</option>')).join("");
+  $("fIvrTop").innerHTML = opts;
+  // reflect current IVR filter (set later in init)
   const q = listQuarters();
   $("fQuarter").innerHTML = ['<option value="ALL">All quarters</option>']
     .concat(q.map(s => '<option value="'+s+'">'+s+'</option>')).join("");
-  // default selection reflects current range: pick the week containing F.from if any
-  const cur = weekStart(F.from);
-  $("fWeek").value = wk.includes(cur) ? cur : "ALL";
   $("fQuarter").value = "ALL";
 }
-
-function applyPreset(){
-  if (F.preset === "Custom Range"){ $("wrapFrom").classList.remove("hide"); $("wrapTo").classList.remove("hide"); return; }
-  const [a,b] = presetRange(F.preset);
-  F.from = a < MIN_D ? MIN_D : a;
-  F.to   = b > MAX_D ? MAX_D : b;
-  $("fFrom").value = F.from; $("fTo").value = F.to;
+function applyGran(gran){
+  // gran = "none" -> chart shows the whole range as one block; "daily" -> one bar per day
+  F.gran = gran;
+  const daily = (gran === "daily");
+  $("fFrom").disabled = !daily; $("fTo").disabled = !daily;
+  ["wrapFrom","wrapTo"].forEach(id => $(id).classList.toggle("off", !daily));
+  F.picks.clear(); buildPeriodOptions(); render();
 }
 function renderDQ(){
   const i = D.issues || {};
@@ -53,20 +49,17 @@ function wire(){
     if (F.page === "break") bkFillSelects();   // rebuild brand dropdowns for the channel
     render();
   });
-  $("fIvr").onchange  = e => { F.ivr = e.target.value; render(); };
-  $("fPreset").onchange = e => { F.preset = e.target.value; applyPreset(); render(); };
-  $("fGran").onchange = e => { F.gran = e.target.value; F.picks.clear(); buildPeriodOptions(); render(); };
-  $("fFrom").onchange = e => { F.from = e.target.value; F.preset="Custom Range"; $("fPreset").value="Custom Range"; render(); };
-  $("fTo").onchange   = e => { F.to   = e.target.value; F.preset="Custom Range"; $("fPreset").value="Custom Range"; render(); };
-  // ---- Top-most WEEK / QUARTER navigator ----
-  $("fWeek").onchange = e => {
-    const v = e.target.value;
-    if (v === "__this"){ const s = weekStart(MAX_D); applyWeek(s); }
-    else if (v === "__last"){ const s = addD(weekStart(MAX_D), -7); applyWeek(s); }
-    else { applyWeek(v); }
-    buildPeriodOptions(); render();
-  };
-  $("fQuarter").onchange = e => { applyQuarter(e.target.value); buildPeriodOptions(); render(); };
+  $("fIvr").onchange  = e => { F.ivr = e.target.value; if ($("fIvrTop")) $("fIvrTop").value = F.ivr; render(); };
+  $("fIvrTop").onchange = e => { F.ivr = e.target.value; $("fIvr").value = F.ivr; render(); };
+  $("granPills").addEventListener("click", e=>{
+    const b = e.target.closest(".pill"); if(!b) return;
+    [...$("granPills").children].forEach(x=>x.classList.remove("on"));
+    b.classList.add("on"); applyGran(b.dataset.v);
+  });
+  $("fFrom").onchange = e => { if (!$("fFrom").disabled){ F.from = e.target.value; F.picks.clear(); render(); } };
+  $("fTo").onchange   = e => { if (!$("fTo").disabled){ F.to   = e.target.value; F.picks.clear(); render(); } };
+  // ---- Top-most IVR BRANCH + QUARTER navigator ----
+  $("fQuarter").onchange = e => { applyQuarter(e.target.value); render(); };
   $("pickClear").onclick = () => { F.picks.clear(); render(); };
   $("pickLast2").onclick = () => pickRecent(2);
   $("pickLast4").onclick = () => pickRecent(4);
@@ -111,28 +104,28 @@ function wire(){
     setTimeout(() => location.reload(true), 150);
   };
   $("btnReset").onclick = () => {
-    F.chan="ALL"; F.ivr="ALL"; F.preset="Last Week"; F.gran="weekly"; F.picks.clear();
+    F.chan="ALL"; F.ivr="ALL"; F.gran="daily"; F.picks.clear();
     F.agGran="weekly"; F.agPeriod=null;
     [...$("chanPills").children].forEach((x,i)=>x.classList.toggle("on", i===0));
     [...$("agGranPills").children].forEach((x,i)=>x.classList.toggle("on", i===1));
-    $("fIvr").value="ALL"; $("fPreset").value="Last Week"; $("fGran").value="weekly";
-    applyPreset(); buildPeriodOptions(); render();
+    [...$("granPills").children].forEach(x=>x.classList.toggle("on", x.dataset.v==="daily"));
+    $("fIvr").value="ALL"; $("fIvrTop").value="ALL"; $("fQuarter").value="ALL";
+    applyGran("daily"); buildPeriodOptions(); render();
   };
 }
 function setPage(p){
   F.page = p;
   document.querySelectorAll(".page").forEach(s => { s.hidden = (s.id !== "page"+p.charAt(0).toUpperCase()+p.slice(1)); });
   document.querySelectorAll(".topnav .navbtn").forEach(b => b.classList.toggle("on", b.dataset.page===p));
-  // Call Breakdown page: default to the full date range so all ticket data shows
-  // (the sheet only spans a few days, so a narrow preset like "Last Week" would hide most of it).
-  if (p === "break"){ F.preset = "All Data"; applyPreset(); if ($("fPreset")) $("fPreset").value = "All Data"; }
+  // Call Breakdown page: keep the full date range so all ticket data shows; View = None suits it.
+  if (p === "break"){ F.gran = "none"; [...$("granPills").children].forEach(x=>x.classList.toggle("on", x.dataset.v==="none")); applyGran("none"); }
   render();   // re-render so the now-visible page is populated
 }
 (function init(){
   fillSelects();
-  buildWeekNav();
+  buildTopNav();
   $("fFrom").min=MIN_D; $("fFrom").max=MAX_D; $("fTo").min=MIN_D; $("fTo").max=MAX_D;
-  applyPreset();
+  applyGran("daily");
   buildPeriodOptions();
   wire();
   renderDQ();

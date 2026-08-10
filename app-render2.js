@@ -45,9 +45,9 @@ function renderIvr(rows, M, gran){
   const byPI = groupBy(rows, r=>pf2(r)+SEP+r.ivr);
   const rowsP = [...byPI.entries()].map(([k,m])=>{ const p=k.split(SEP); return {p:p[0], ivr:p[1], m:m}; })
     .sort((a,b)=> a.p===b.p ? b.m.total-a.m.total : b.p.localeCompare(a.p));
-  $("ivrPeriodTitle").textContent = "IVR Branch by "+(gran==="daily"?"Day":gran==="weekly"?"Week":"Month");
+  $("ivrPeriodTitle").textContent = "IVR Branch by "+(gran==="daily"?"Day":gran==="weekly"?"Week":gran==="none"?"Full Range":"Month");
   tbl($("tIvrDaily"),
-    [{t:gran==="daily"?"Date":gran==="weekly"?"Week":"Month",k:"d"},{t:"IVR Branch",k:"b"},
+    [{t:gran==="daily"?"Date":gran==="weekly"?"Week":gran==="none"?"Range":"Month",k:"d"},{t:"IVR Branch",k:"b"},
      {t:"Answered",k:"a",n:1},{t:"Abandoned",k:"ab",n:1},{t:"Total",k:"t",n:1},{t:"Abandon Rate",k:"abr",n:1}],
     rowsP.slice(0,400).map(r=>({d:periodLabel(r.p,gran), b:esc(r.ivr), a:nf(r.m.answered),
       ab:nf(r.m.abandoned), t:nf(r.m.total), abr:pf(r.m.abandRate)})));

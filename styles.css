@@ -107,6 +107,9 @@ select:focus,input[type=date]:focus{outline:0;border-color:var(--rose);box-shado
 .btn:hover{transform:translateY(-1px);box-shadow:var(--sh2)}
 .btn.ghost{background:var(--blush2);color:var(--rose-d)}
 .hide{display:none!important}
+/* From/To disabled state (shown only when Daily View is active) */
+.fgroup.off{opacity:.45;pointer-events:none;filter:grayscale(.3)}
+.fgroup.off input[type=date]{background:#f4f4f7;color:#9aa}
 
 /* kpi */
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(178px,1fr));gap:14px}

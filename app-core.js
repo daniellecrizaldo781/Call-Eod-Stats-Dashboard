@@ -32,8 +32,8 @@ function fmtD(s){ const d=dt(s); return MON[d.getMonth()]+" "+d.getDate(); }
 function fmtDY(s){ return fmtD(s)+", "+s.slice(0,4); }
 function fmtWeek(s){ return fmtD(s)+"\u2013"+fmtD(addD(s,6)); }
 function fmtMonth(s){ return MON[+s.slice(5,7)-1]+" "+s.slice(0,4); }
-function periodKey(d,g){ return g==="weekly"?weekStart(d) : g==="monthly"?monthStart(d) : d; }
-function periodLabel(k,g){ return g==="weekly"?fmtWeek(k) : g==="monthly"?fmtMonth(k) : fmtD(k); }
+function periodKey(d,g){ return g==="none" ? "RANGE" : g==="weekly" ? weekStart(d) : g==="monthly" ? monthStart(d) : d; }
+function periodLabel(k,g){ return g==="none" ? "Full Range" : g==="weekly" ? fmtWeek(k) : g==="monthly" ? fmtMonth(k) : fmtD(k); }
 
 /* ---- top-most WEEK / QUARTER navigator ---- */
 // All distinct weeks (Mon-Sun) present in the data, oldest -> newest.
@@ -54,21 +54,7 @@ function listQuarters(){
   }
   return out;                  // ["2026-Q2", "2026-Q3", ...]
 }
-// Apply a week selection: set range to that Mon-Sun, force weekly granularity.
-function applyWeek(isoStart){
-  F.gran = "weekly";
-  F.preset = "Custom Range";
-  if (isoStart === "ALL"){
-    F.from = MIN_D; F.to = MAX_D;
-  } else {
-    F.from = isoStart;
-    F.to   = addD(isoStart, 6) > MAX_D ? MAX_D : addD(isoStart, 6);
-  }
-  syncDateInputs();
-}
 function applyQuarter(qKey){
-  F.gran = "weekly";
-  F.preset = "Custom Range";
   if (qKey === "ALL"){
     F.from = MIN_D; F.to = MAX_D;
   } else {
@@ -87,23 +73,9 @@ function applyQuarter(qKey){
 function syncDateInputs(){
   if (document.getElementById("fFrom")) document.getElementById("fFrom").value = F.from;
   if (document.getElementById("fTo"))   document.getElementById("fTo").value   = F.to;
-  if (document.getElementById("fGran"))  document.getElementById("fGran").value = F.gran;
-  if (document.getElementById("fPreset")) document.getElementById("fPreset").value = F.preset;
 }
-const F = {chan:"ALL", ivr:"ALL", preset:"Last Week", gran:"weekly", from:MIN_D, to:MAX_D, picks:new Set(),
+const F = {chan:"ALL", ivr:"ALL", gran:"daily", from:MIN_D, to:MAX_D, picks:new Set(),
   page:"main", agGran:"weekly", agPeriod:null};
-
-function presetRange(p){
-  const today = MAX_D;                       // "today" = latest date in data
-  if (p==="Today")      return [today,today];
-  if (p==="Yesterday")  { const y=addD(today,-1); return [y,y]; }
-  if (p==="This Week")  { const s=weekStart(today); return [s, today]; }
-  if (p==="Last Week")  { const s=addD(weekStart(today),-7); return [s, addD(s,6)]; }
-  if (p==="This Month") return [monthStart(today), today];
-  if (p==="Last Month") { const m=dt(monthStart(today)); m.setMonth(m.getMonth()-1);
-                          const s=iso(m); m.setMonth(m.getMonth()+1); return [s, addD(iso(m),-1)]; }
-  return [MIN_D, MAX_D];                     // All Data
-}
 
 /* ---- filtering ---- */
 function pass(r, opt){

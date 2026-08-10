@@ -8,8 +8,14 @@ function availablePeriods(gran){
 }
 function renderPeriodPicker(){
   const gran = F.gran;
-  const keys = availablePeriods(gran).reverse();   // newest first
   const box = $("periodPick");
+  if (gran === "none"){
+    // Full-Range view: the whole period is one block — no per-period chips to pick.
+    box.innerHTML = "";
+    $("periodTitle").textContent = "Full Range Performance";
+    return;
+  }
+  const keys = availablePeriods(gran).reverse();   // newest first
   box.innerHTML = keys.map(k=>'<button class="pchip'+(F.picks.has(k)?" on":"")+'" data-k="'+k+'">'
       + esc(periodLabel(k,gran)) + '</button>').join("");
   box.querySelectorAll(".pchip").forEach(b=>b.onclick=()=>{
