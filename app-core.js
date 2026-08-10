@@ -55,6 +55,30 @@ function applyWeek(isoStart){
   }
   syncDateInputs();
 }
+// All distinct months present in the data, oldest -> newest.
+function listMonths(){
+  const seen = new Set(), out = [];
+  for (const d of ALL_DATES){
+    const k = d.slice(0,7);                 // "yyyy-mm"
+    if (!seen.has(k)){ seen.add(k); out.push(k); }
+  }
+  return out;                              // ["2026-06","2026-07",...]
+}
+function applyMonth(ym){
+  if (ym === "ALL"){
+    F.from = MIN_D; F.to = MAX_D;
+  } else {
+    const start = ym + "-01";
+    // last day of the month = day before the 1st of next month
+    const y = +ym.slice(0,4), m = +ym.slice(5,7);
+    const ny = m === 12 ? y+1 : y, nm = m === 12 ? 1 : m+1;
+    const endNext = ny + "-" + String(nm).padStart(2,"0") + "-01";
+    const end = addD(endNext, -1);
+    F.from = start < MIN_D ? MIN_D : start;
+    F.to   = end   > MAX_D ? MAX_D : end;
+  }
+  syncDateInputs();
+}
 function syncDateInputs(){
   if (document.getElementById("fFrom")) document.getElementById("fFrom").value = F.from;
   if (document.getElementById("fTo"))   document.getElementById("fTo").value   = F.to;

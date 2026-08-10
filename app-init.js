@@ -1,16 +1,19 @@
 /* ---------- wiring + init ---------- */
-function fillSelects(){
-  $("fIvr").innerHTML = '<option value="ALL">All IVR Branches</option>'
-    + IVRS.map(v=>'<option value="'+esc(v)+'">'+esc(v)+'</option>').join("");
-}
-
-// Top-most WEEK navigator — quick weekly-data navigation.
-function buildWeekNav(){
+// Top-most period quick-navigators: WEEK + MONTH (mutually exclusive). Both set F.from/F.to.
+function buildPeriodNav(){
   const wk = listWeeks();
-  const opts = ['<option value="ALL">All weeks</option>']
+  $("fWeek").innerHTML = ['<option value="ALL">All weeks</option>']
     .concat(wk.map(s => '<option value="'+s+'">'+fmtWeek(s)+'</option>')).join("");
-  $("fWeek").innerHTML = opts;
   $("fWeek").value = "ALL";
+  const mo = listMonths();
+  $("fMonth").innerHTML = ['<option value="ALL">All months</option>']
+    .concat(mo.map(s => '<option value="'+s+'">'+fmtMonth(s)+'</option>')).join("");
+  $("fMonth").value = "ALL";
+}
+function deselectPeriod(id){
+  // when one period navigator is used, reset the other to "All" so they don't fight
+  const other = id === "fWeek" ? "fMonth" : "fWeek";
+  const el = $(other); if (el && el.value !== "ALL"){ el.value = "ALL"; }
 }
 function applyGran(gran){
   // gran = "none" -> chart shows the whole range as one block; "daily" -> one bar per day
@@ -22,14 +25,14 @@ function applyGran(gran){
 }
 function renderDQ(){
   const i = D.issues || {};
-  const map = {no_ivr_branch:"calls with no IVR branch (valid \u2014 tracked as \u201cNo IVR Branch / Unassigned\u201d)",
+  const map = {no_ivr_branch:"calls with no IVR branch (valid — tracked as “No IVR Branch / Unassigned”)",
     invalid_aht:"answered calls with missing/zero duration (excluded from AHT sum, counted in volume)",
     duplicate_skipped:"duplicate call IDs skipped on import",
-    missing_date:"rows dropped \u2014 no usable date", invalid_time:"rows with unparseable start time (hour = Unknown)",
+    missing_date:"rows dropped — no usable date", invalid_time:"rows with unparseable start time (hour = Unknown)",
     answered_without_agent:"answered calls with no agent name"};
   const parts = Object.keys(i).map(k=>"<b>"+nf(i[k])+"</b> "+(map[k]||k));
   $("dqNotice").innerHTML = "&#128203; <b>Data quality:</b> "+nf(ROWS.reduce((a,r)=>a+r.n,0))
-    + " calls loaded across "+ALL_DATES.length+" days ("+fmtDY(MIN_D)+" \u2013 "+fmtDY(MAX_D)+"). "
+    + " calls loaded across "+ALL_DATES.length+" days ("+fmtDY(MIN_D)+" – "+fmtDY(MAX_D)+"). "
     + (parts.length? parts.join(" &middot; ") : "No issues detected.");
 }
 function wire(){
@@ -46,7 +49,6 @@ function wire(){
     if (F.page === "break") bkFillSelects();   // rebuild brand dropdowns for the channel
     render();
   });
-  $("fIvr").onchange  = e => { F.ivr = e.target.value; render(); };
   $("granPills").addEventListener("click", e=>{
     const b = e.target.closest(".pill"); if(!b) return;
     [...$("granPills").children].forEach(x=>x.classList.remove("on"));
@@ -54,11 +56,17 @@ function wire(){
   });
   $("fFrom").onchange = e => { if (!$("fFrom").disabled){ F.from = e.target.value; F.picks.clear(); render(); } };
   $("fTo").onchange   = e => { if (!$("fTo").disabled){ F.to   = e.target.value; F.picks.clear(); render(); } };
-  // ---- Top-most WEEK navigator ----
+  // ---- period quick-navigators (WEEK + MONTH, mutually exclusive) ----
   $("fWeek").onchange = e => {
+    deselectPeriod("fWeek");
     const v = e.target.value;
-    if (v === "ALL"){ F.from=MIN_D; F.to=MAX_D; }
-    else applyWeek(v);
+    if (v === "ALL"){ F.from=MIN_D; F.to=MAX_D; } else applyWeek(v);
+    render();
+  };
+  $("fMonth").onchange = e => {
+    deselectPeriod("fMonth");
+    const v = e.target.value;
+    if (v === "ALL"){ F.from=MIN_D; F.to=MAX_D; } else applyMonth(v);
     render();
   };
   $("pickClear").onclick = () => { F.picks.clear(); render(); };
@@ -110,12 +118,12 @@ function wire(){
     setTimeout(() => location.reload(true), 150);
   };
   $("btnReset").onclick = () => {
-    F.chan="ALL"; F.ivr="ALL"; F.gran="daily"; F.picks.clear();
+    F.chan="ALL"; F.gran="daily"; F.picks.clear();
     F.agGran="weekly"; F.agPeriod=null;
     [...$("chanPills").children].forEach((x,i)=>x.classList.toggle("on", i===0));
     [...$("agGranPills").children].forEach((x,i)=>x.classList.toggle("on", i===1));
     [...$("granPills").children].forEach(x=>x.classList.toggle("on", x.dataset.v==="daily"));
-    $("fIvr").value="ALL"; $("fWeek").value="ALL";
+    $("fWeek").value="ALL"; $("fMonth").value="ALL";
     applyGran("daily"); buildPeriodOptions(); render();
   };
 }
@@ -128,8 +136,7 @@ function setPage(p){
   render();   // re-render so the now-visible page is populated
 }
 (function init(){
-  fillSelects();
-  buildWeekNav();
+  buildPeriodNav();
   $("fFrom").min=MIN_D; $("fFrom").max=MAX_D; $("fTo").min=MIN_D; $("fTo").max=MAX_D;
   applyGran("daily");
   buildPeriodOptions();
