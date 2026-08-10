@@ -45,28 +45,13 @@ function listWeeks(){
   }
   return out;                  // [weekStartISO, ...]
 }
-function listQuarters(){
-  const seen = new Set(), out = [];
-  for (const d of ALL_DATES){
-    const q = Math.floor((+d.slice(5,7)-1)/3)+1;
-    const key = d.slice(0,4)+"-Q"+q;
-    if (!seen.has(key)){ seen.add(key); out.push(key); }
-  }
-  return out;                  // ["2026-Q2", "2026-Q3", ...]
-}
-function applyQuarter(qKey){
-  if (qKey === "ALL"){
+function applyWeek(isoStart){
+  // set range to that Mon-Sun; View stays as-is (None/Daily) — user controls granularity
+  if (isoStart === "ALL"){
     F.from = MIN_D; F.to = MAX_D;
   } else {
-    const [yr, q] = qKey.split("-Q"); const qi = +q;
-    const start = yr+"-"+String((qi-1)*3+1).padStart(2,"0")+"-01";
-    const nm = qi*3 + 1;                         // first month AFTER the quarter
-    const ny = nm > 12 ? (+yr + 1) : yr;
-    const nm2 = nm > 12 ? 1 : nm;
-    const endNext = ny+"-"+String(nm2).padStart(2,"0")+"-01";   // 1st of month after quarter
-    const end = addD(endNext, -1);               // last day of the quarter
-    F.from = start < MIN_D ? MIN_D : start;
-    F.to   = end   > MAX_D ? MAX_D : end;
+    F.from = isoStart;
+    F.to   = addD(isoStart, 6) > MAX_D ? MAX_D : addD(isoStart, 6);
   }
   syncDateInputs();
 }

@@ -4,16 +4,13 @@ function fillSelects(){
     + IVRS.map(v=>'<option value="'+esc(v)+'">'+esc(v)+'</option>').join("");
 }
 
-// Top-most navigator: IVR BRANCH (quick filter, syncs with the main-row IVR Branch) + QUARTER.
-function buildTopNav(){
-  const opts = ['<option value="ALL">All IVR Branches</option>']
-    .concat(IVRS.map(v => '<option value="'+esc(v)+'">'+esc(v)+'</option>')).join("");
-  $("fIvrTop").innerHTML = opts;
-  // reflect current IVR filter (set later in init)
-  const q = listQuarters();
-  $("fQuarter").innerHTML = ['<option value="ALL">All quarters</option>']
-    .concat(q.map(s => '<option value="'+s+'">'+s+'</option>')).join("");
-  $("fQuarter").value = "ALL";
+// Top-most WEEK navigator — quick weekly-data navigation.
+function buildWeekNav(){
+  const wk = listWeeks();
+  const opts = ['<option value="ALL">All weeks</option>']
+    .concat(wk.map(s => '<option value="'+s+'">'+fmtWeek(s)+'</option>')).join("");
+  $("fWeek").innerHTML = opts;
+  $("fWeek").value = "ALL";
 }
 function applyGran(gran){
   // gran = "none" -> chart shows the whole range as one block; "daily" -> one bar per day
@@ -49,8 +46,7 @@ function wire(){
     if (F.page === "break") bkFillSelects();   // rebuild brand dropdowns for the channel
     render();
   });
-  $("fIvr").onchange  = e => { F.ivr = e.target.value; if ($("fIvrTop")) $("fIvrTop").value = F.ivr; render(); };
-  $("fIvrTop").onchange = e => { F.ivr = e.target.value; $("fIvr").value = F.ivr; render(); };
+  $("fIvr").onchange  = e => { F.ivr = e.target.value; render(); };
   $("granPills").addEventListener("click", e=>{
     const b = e.target.closest(".pill"); if(!b) return;
     [...$("granPills").children].forEach(x=>x.classList.remove("on"));
@@ -58,8 +54,13 @@ function wire(){
   });
   $("fFrom").onchange = e => { if (!$("fFrom").disabled){ F.from = e.target.value; F.picks.clear(); render(); } };
   $("fTo").onchange   = e => { if (!$("fTo").disabled){ F.to   = e.target.value; F.picks.clear(); render(); } };
-  // ---- Top-most IVR BRANCH + QUARTER navigator ----
-  $("fQuarter").onchange = e => { applyQuarter(e.target.value); render(); };
+  // ---- Top-most WEEK navigator ----
+  $("fWeek").onchange = e => {
+    const v = e.target.value;
+    if (v === "ALL"){ F.from=MIN_D; F.to=MAX_D; }
+    else applyWeek(v);
+    render();
+  };
   $("pickClear").onclick = () => { F.picks.clear(); render(); };
   $("pickLast2").onclick = () => pickRecent(2);
   $("pickLast4").onclick = () => pickRecent(4);
@@ -114,7 +115,7 @@ function wire(){
     [...$("chanPills").children].forEach((x,i)=>x.classList.toggle("on", i===0));
     [...$("agGranPills").children].forEach((x,i)=>x.classList.toggle("on", i===1));
     [...$("granPills").children].forEach(x=>x.classList.toggle("on", x.dataset.v==="daily"));
-    $("fIvr").value="ALL"; $("fIvrTop").value="ALL"; $("fQuarter").value="ALL";
+    $("fIvr").value="ALL"; $("fWeek").value="ALL";
     applyGran("daily"); buildPeriodOptions(); render();
   };
 }
@@ -128,7 +129,7 @@ function setPage(p){
 }
 (function init(){
   fillSelects();
-  buildTopNav();
+  buildWeekNav();
   $("fFrom").min=MIN_D; $("fFrom").max=MAX_D; $("fTo").min=MIN_D; $("fTo").max=MAX_D;
   applyGran("daily");
   buildPeriodOptions();
