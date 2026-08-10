@@ -76,14 +76,34 @@ function wire(){
   $("cmpB").onchange = () => render();
 
   // ---- Call Breakdown page wiring ----
-  $("bkBrand").onchange = e => { BK.brand = e.target.value; bkRender(); };
+  // Brand multi-selects are checkbox lists with a "Select All" button — handle via delegation.
+  function bkPickerHandler(e){
+    const t = e.target;
+    if (t.classList.contains("selall")){            // "Select All" toggle
+      const id = t.dataset.set;                     // bkBrand or bkDriversBrand
+      const set = (id === "bkBrand") ? BK.brand : BK.driversBrand;
+      const brands = bkBrandList();
+      if (set.size === 0) brands.forEach(b => set.add(b));   // currently ALL -> select every brand
+      else set.clear();                                   // otherwise -> clear to ALL
+      bkFillSelects(); bkRender(); return;
+    }
+    if (t.matches && t.matches('input[type=checkbox]')){
+      const id = t.dataset.set;
+      const set = (id === "bkBrand") ? BK.brand : BK.driversBrand;
+      if (t.checked) set.add(t.value); else set.delete(t.value);
+      // keep the "current selection" label fresh without rebuilding (rebuild would lose scroll)
+      const lbl = $(id + "Sel"); if (lbl) lbl.textContent = bkSelLabel(set, bkBrandList());
+      bkRender(); return;
+    }
+  }
+  $("bkBrand").addEventListener("click", bkPickerHandler);
+  $("bkDriversBrand").addEventListener("click", bkPickerHandler);
   $("bkConcern").onchange = e => { BK.concern = e.target.value; bkRender(); };
   $("bkBranchPick").onchange = () => bkRender();
-  $("bkDriversBrand").onchange = e => { BK.driversBrand = e.target.value; bkRender(); };
   $("bkReset").onclick = () => {
-    BK.brand="ALL"; BK.concern="ALL"; BK.driversBrand="ALL";
-    $("bkBrand").value="ALL"; $("bkConcern").value="ALL"; $("bkDriversBrand").value="ALL";
-    bkRender();
+    BK.brand.clear(); BK.concern="ALL"; BK.driversBrand.clear();
+    if ($("bkConcern")) $("bkConcern").value="ALL";
+    bkFillSelects(); bkRender();
   };
   // Refresh Data button: hard-reload to pull the latest synced data.js
   $("btnRefresh").onclick = () => {

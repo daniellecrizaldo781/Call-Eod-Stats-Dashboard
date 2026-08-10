@@ -4,7 +4,8 @@
    The Top Call Drivers chart has its OWN brand filter (BK.driversBrand) so you can
    look at one brand's drivers independently of the page-wide filter. */
 
-const BK = { brand: "ALL", concern: "ALL", driversBrand: "ALL" };
+const BK = { brand: new Set(), concern: "ALL", driversBrand: new Set() };
+const BK_ALL = "__ALL__";
 
 // pink palette for refund / branch charts
 const BK_COL = ["#E8578E","#D9455F","#B99BDD","#D9A0B8","#C76BA0","#9B6BB0","#F0A6C4","#E082A8",
@@ -19,38 +20,46 @@ function bkChannelMatch(r){
   if (F.chan === "NON-OHA") return !isOricle(r.brand);
   return true;
 }
-// Brands offered in the break-page brand dropdowns, narrowed by Main Channel.
+// Is a brand currently selected? Empty set = ALL.
+function bkBrandOn(set, b){ return set.size === 0 || set.has(b); }
+// The channel-narrowed universe of brands currently selectable.
 function bkBrandList(){
   const all = [...new Set(bkAll().map(r=>r.brand))].sort((a,b)=>a.localeCompare(b));
   if (F.chan === "ALL") return all;
   return all.filter(b => F.chan === "OHA" ? isOricle(b) : !isOricle(b));
 }
+// A short human label for the current selection (e.g. "3 brands", "Oricle Hearing Aid Pro", "All Brands").
+function bkSelLabel(set, universe){
+  if (set.size === 0) return "All Brands";
+  if (set.size === 1) return [...set][0];
+  return set.size + " brands";
+}
 function bkFiltered(){
   return bkAll().filter(r =>
     r.d >= F.from && r.d <= F.to &&
     bkChannelMatch(r) &&
-    (BK.brand === "ALL" || r.brand === BK.brand) &&
+    bkBrandOn(BK.brand, r.brand) &&
     (BK.concern === "ALL" || r.concern === BK.concern));
 }
-// rows used by the Top Call Drivers chart (respects its own brand dropdown)
+// rows used by the Top Call Drivers chart (respects its own brand multi-select)
 function bkDriversRows(){
   const base = bkFiltered();
-  return BK.driversBrand === "ALL" ? base : base.filter(r => r.brand === BK.driversBrand);
+  return bkBrandOn(BK.driversBrand, null) ? base
+    : base.filter(r => BK.driversBrand.has(r.brand));
 }
 function bkCount(rows){ return rows.length; }
 function bkRefundRows(rows){ return rows.filter(r => r.refund > 0); }
 function bkRefundSum(rows){ return bkRefundRows(rows).reduce((a,r)=>a+r.refund,0); }
 
 function bkFillSelects(){
-  // Brand dropdowns (page-wide + drivers) are narrowed by the Main Channel selection
+  // Brand multi-selects (page-wide + drivers) are narrowed by the Main Channel selection.
   const brands = bkBrandList();
-  const opts = '<option value="ALL">All Brands</option>' +
-    brands.map(b=>'<option value="'+esc(b)+'">'+esc(b)+'</option>').join("");
-  $("bkBrand").innerHTML = opts;
-  $("bkDriversBrand").innerHTML = opts;            // same list, independent filter
-  // If the current page-wide brand is no longer in the channel-narrowed list, reset it.
-  if (BK.brand !== "ALL" && !brands.includes(BK.brand)) BK.brand = "ALL";
-  if (BK.driversBrand !== "ALL" && !brands.includes(BK.driversBrand)) BK.driversBrand = "ALL";
+  // prune any selected brands that are no longer in the channel-narrowed universe
+  ["brand","driversBrand"].forEach(k => {
+    [...BK[k]].forEach(b => { if (!brands.includes(b)) BK[k].delete(b); });
+  });
+  buildBrandPicker("bkBrand", BK.brand, brands);
+  buildBrandPicker("bkDriversBrand", BK.driversBrand, brands);   // same list, independent selection
   const concerns = [...new Set(bkAll().map(r=>r.concern))].sort((a,b)=>a.localeCompare(b));
   $("bkConcern").innerHTML = '<option value="ALL">All Concerns</option>' +
     concerns.map(c=>'<option value="'+esc(c)+'">'+esc(c)+'</option>').join("");
@@ -59,14 +68,27 @@ function bkFillSelects(){
   $("bkBranchPick").innerHTML = '<option value="ALL">All Branches</option>' +
     cats.map(c=>'<option value="'+esc(c)+'">'+esc(c)+'</option>').join("");
 }
+// Build a checkbox-style brand picker (with a "Select All" control) inside the given container id.
+function buildBrandPicker(id, set, brands){
+  const el = $(id);
+  const cur = bkSelLabel(set, brands);
+  let html = '<button type="button" class="selall" data-set="'+id+'">✓ Select All</button>' +
+             '<div class="chklist">';
+  brands.forEach(b => {
+    const on = set.size === 0 || set.has(b);
+    html += '<label class="chk"><input type="checkbox" data-set="'+id+'" value="'+esc(b)+'"'+(on?" checked":"")+'> '+esc(b)+'</label>';
+  });
+  html += '</div><div class="chksel" id="'+id+'Sel">'+esc(cur)+'</div>';
+  el.innerHTML = html;
+}
 
 function bkRender(){
   if (F.page !== "break") return;
   const rows = bkFiltered();
-  const scope = (BK.brand==="ALL"?"All Brands":BK.brand) + (BK.concern==="ALL"?"":" · "+BK.concern)
+  const scope = bkSelLabel(BK.brand, bkBrandList()) + (BK.concern==="ALL"?"":" · "+BK.concern)
              + " · " + fmtDY(F.from) + " → " + fmtDY(F.to);
   const driversRows = bkDriversRows();
-  const driversScope = (BK.driversBrand==="ALL"?"All Brands":BK.driversBrand);
+  const driversScope = bkSelLabel(BK.driversBrand, bkBrandList());
 
   // ---- KPIs ----
   const refundRows = bkRefundRows(rows);
