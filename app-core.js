@@ -35,7 +35,60 @@ function fmtMonth(s){ return MON[+s.slice(5,7)-1]+" "+s.slice(0,4); }
 function periodKey(d,g){ return g==="weekly"?weekStart(d) : g==="monthly"?monthStart(d) : d; }
 function periodLabel(k,g){ return g==="weekly"?fmtWeek(k) : g==="monthly"?fmtMonth(k) : fmtD(k); }
 
-/* ---- filter state ---- */
+/* ---- top-most WEEK / QUARTER navigator ---- */
+// All distinct weeks (Mon-Sun) present in the data, oldest -> newest.
+function listWeeks(){
+  const seen = new Set(), out = [];
+  for (const d of ALL_DATES){
+    const k = weekStart(d);
+    if (!seen.has(k)){ seen.add(k); out.push(k); }
+  }
+  return out;                  // [weekStartISO, ...]
+}
+function listQuarters(){
+  const seen = new Set(), out = [];
+  for (const d of ALL_DATES){
+    const q = Math.floor((+d.slice(5,7)-1)/3)+1;
+    const key = d.slice(0,4)+"-Q"+q;
+    if (!seen.has(key)){ seen.add(key); out.push(key); }
+  }
+  return out;                  // ["2026-Q2", "2026-Q3", ...]
+}
+// Apply a week selection: set range to that Mon-Sun, force weekly granularity.
+function applyWeek(isoStart){
+  F.gran = "weekly";
+  F.preset = "Custom Range";
+  if (isoStart === "ALL"){
+    F.from = MIN_D; F.to = MAX_D;
+  } else {
+    F.from = isoStart;
+    F.to   = addD(isoStart, 6) > MAX_D ? MAX_D : addD(isoStart, 6);
+  }
+  syncDateInputs();
+}
+function applyQuarter(qKey){
+  F.gran = "weekly";
+  F.preset = "Custom Range";
+  if (qKey === "ALL"){
+    F.from = MIN_D; F.to = MAX_D;
+  } else {
+    const [yr, q] = qKey.split("-Q"); const qi = +q;
+    const start = yr+"-"+String((qi-1)*3+1).padStart(2,"0")+"-01";
+    const endM = qi*3; const end = yr+"-"+String(endM).padStart(2,"0")+"-01";
+    F.from = start < MIN_D ? MIN_D : start;
+    F.to   = addD(end,0) > MAX_D ? MAX_D : end;   // end month 01, clamp later
+    // include full last month of quarter
+    F.to   = addD(end,0);
+    if (F.to > MAX_D) F.to = MAX_D;
+  }
+  syncDateInputs();
+}
+function syncDateInputs(){
+  if (document.getElementById("fFrom")) document.getElementById("fFrom").value = F.from;
+  if (document.getElementById("fTo"))   document.getElementById("fTo").value   = F.to;
+  if (document.getElementById("fGran"))  document.getElementById("fGran").value = F.gran;
+  if (document.getElementById("fPreset")) document.getElementById("fPreset").value = F.preset;
+}
 const F = {chan:"ALL", ivr:"ALL", preset:"Last Week", gran:"weekly", from:MIN_D, to:MAX_D, picks:new Set(),
   page:"main", agGran:"weekly", agPeriod:null};
 

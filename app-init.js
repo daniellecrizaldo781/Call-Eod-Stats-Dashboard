@@ -4,6 +4,22 @@ function fillSelects(){
     + IVRS.map(v=>'<option value="'+esc(v)+'">'+esc(v)+'</option>').join("");
 }
 
+// Top-most WEEK / QUARTER navigator — quick weekly-data navigation.
+function buildWeekNav(){
+  const wk = listWeeks();
+  const opts = ['<option value="ALL">All weeks</option>']
+    .concat(wk.map(s => '<option value="'+s+'">'+fmtWeek(s)+(s===weekStart(MAX_D)?' (this week)':'')+'</option>'))
+    .concat(['<option value="__this">This Week</option>','<option value="__last">Last Week</option>']);
+  $("fWeek").innerHTML = opts.join("");
+  const q = listQuarters();
+  $("fQuarter").innerHTML = ['<option value="ALL">All quarters</option>']
+    .concat(q.map(s => '<option value="'+s+'">'+s+'</option>')).join("");
+  // default selection reflects current range: pick the week containing F.from if any
+  const cur = weekStart(F.from);
+  $("fWeek").value = wk.includes(cur) ? cur : "ALL";
+  $("fQuarter").value = "ALL";
+}
+
 function applyPreset(){
   if (F.preset === "Custom Range"){ $("wrapFrom").classList.remove("hide"); $("wrapTo").classList.remove("hide"); return; }
   const [a,b] = presetRange(F.preset);
@@ -40,6 +56,15 @@ function wire(){
   $("fGran").onchange = e => { F.gran = e.target.value; F.picks.clear(); buildPeriodOptions(); render(); };
   $("fFrom").onchange = e => { F.from = e.target.value; F.preset="Custom Range"; $("fPreset").value="Custom Range"; render(); };
   $("fTo").onchange   = e => { F.to   = e.target.value; F.preset="Custom Range"; $("fPreset").value="Custom Range"; render(); };
+  // ---- Top-most WEEK / QUARTER navigator ----
+  $("fWeek").onchange = e => {
+    const v = e.target.value;
+    if (v === "__this"){ const s = weekStart(MAX_D); applyWeek(s); }
+    else if (v === "__last"){ const s = addD(weekStart(MAX_D), -7); applyWeek(s); }
+    else { applyWeek(v); }
+    buildPeriodOptions(); render();
+  };
+  $("fQuarter").onchange = e => { applyQuarter(e.target.value); buildPeriodOptions(); render(); };
   $("pickClear").onclick = () => { F.picks.clear(); render(); };
   $("pickLast2").onclick = () => pickRecent(2);
   $("pickLast4").onclick = () => pickRecent(4);
@@ -83,6 +108,7 @@ function setPage(p){
 }
 (function init(){
   fillSelects();
+  buildWeekNav();
   $("fFrom").min=MIN_D; $("fFrom").max=MAX_D; $("fTo").min=MIN_D; $("fTo").max=MAX_D;
   applyPreset();
   buildPeriodOptions();
