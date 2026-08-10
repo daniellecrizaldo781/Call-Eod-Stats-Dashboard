@@ -67,7 +67,20 @@ function wire(){
   $("ivrScopePills").addEventListener("click", e=>{
     const b = e.target.closest(".pill"); if(!b) return;
     [...$("ivrScopePills").children].forEach(x=>x.classList.remove("on"));
-    b.classList.add("on"); F.ivrGran = b.dataset.v;
+    [...$("ivrScopePills2").children].forEach(x=>x.classList.remove("on"));
+    b.classList.add("on");
+    [...$("ivrScopePills2").children].forEach(x=>{ if(x.dataset.v===b.dataset.v) x.classList.add("on"); });
+    F.ivrGran = b.dataset.v;
+    const rows = slice();                 // respects channel + date-range filters
+    renderIvr(rows, agg(rows), F.ivrGran);
+  });
+  $("ivrScopePills2").addEventListener("click", e=>{
+    const b = e.target.closest(".pill"); if(!b) return;
+    [...$("ivrScopePills2").children].forEach(x=>x.classList.remove("on"));
+    [...$("ivrScopePills").children].forEach(x=>x.classList.remove("on"));
+    b.classList.add("on");
+    [...$("ivrScopePills").children].forEach(x=>{ if(x.dataset.v===b.dataset.v) x.classList.add("on"); });
+    F.ivrGran = b.dataset.v;
     const rows = slice();                 // respects channel + date-range filters
     renderIvr(rows, agg(rows), F.ivrGran);
   });

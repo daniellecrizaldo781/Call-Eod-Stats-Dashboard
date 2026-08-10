@@ -44,6 +44,8 @@ function renderIvr(rows, M, gran){
   Object.values(byPB).forEach(m=>m.forEach(v=>finish(v)));
 
   const totAll = agg(rows);
+  const scopeTxt = F.chan==="ALL" ? "OHA + Non-OHA" : F.chan;
+
   const pLabel = pk => gran==="weekly" ? fmtWeek(pk, true) : periodLabel(pk, gran);
   const WD = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
   const dayLabel = iso => WD[new Date(iso+"T00:00:00").getDay()] + " " + fmtD(iso);   // "Mon Aug 10"
@@ -111,6 +113,29 @@ function renderIvr(rows, M, gran){
     + tCells
     + '</tr>';
 
+  // ---- IVR Branch Outcome: separate table, per period (day/week/month) ----
+  const ocHead = '<thead><tr>'
+    + '<th class="vhead">'+(gran==="daily"?"Date":gran==="weekly"?"Week":gran==="monthly"?"Month":"Range")
+        +' <span class="vsub">'+scopeTxt+'</span></th>'
+    + outcomes.map(o=>'<th class="oc">'+o[0]+'</th>').join("")
+    + '</tr></thead>';
+  const ocBody = rowsSorted.map(pk=>{ const v=outVals[pk];
+    const cells = outcomes.map((o,i)=>'<td class="num '+outCls(o[1])+'">'+((i>=7)?pf(v[i]):nf(v[i]))+'</td>').join("");
+    return '<tr><td class="day">'+(gran==="none"?"Full Range":gran==="daily"?dayLabel(pk):pLabel(pk))+'</td>'+cells+'</tr>';
+  }).join("");
+  const ocTotal = [totAll.ivrAband, totAll.noIvrAband, totAll.ooh, totAll.unanswered, totAll.agentReceived, totAll.answered, totAll.unanswered, totAll.answerRate, totAll.missRate];
+  const ocFoot = '<tr class="tot"><td class="day">TOTAL ('+scopeTxt+')</td>'
+    + outcomes.map((o,i)=>'<td class="num '+outCls(o[1])+' tot">'+((i>=7)?pf(ocTotal[i]):nf(ocTotal[i]))+'</td>').join("")
+    + '</tr>';
+  const ocCols = outcomes.length;
+  const ocDatePct = 16, ocMetricPct = (100 - ocDatePct) / ocCols;
+  const ocColgroup = '<colgroup><col style="width:'+ocDatePct+'%">'
+    + outcomes.map(()=>'<col style="width:'+ocMetricPct.toFixed(3)+'%">').join("")
+    + '</colgroup>';
+  $("tIvrOut").innerHTML = ocColgroup + ocHead + '<tbody>' + ocBody + ocFoot + '</tbody>';
+  $("ivrOutTitle").textContent = "IVR Branch Outcome";
+  $("ivrOutSub").textContent = scopeTxt + " · " + (gran==="none"?"full range":pkeys.length+(gran==="daily"?" days":gran==="weekly"?" weeks":" months"));
+
   // column widths: first col = date/header (~7%), remaining 24 branch sub-cols share the rest
   const branchCols = BRANCHES.length * 2;
   const datePct = 7, subPct = (100 - datePct) / branchCols;
@@ -118,9 +143,8 @@ function renderIvr(rows, M, gran){
     + BRANCHES.map(()=>'<col style="width:'+subPct.toFixed(3)+'%"><col style="width:'+subPct.toFixed(3)+'%">').join("")
     + '</colgroup>';
 
-  $("tIvrDay").innerHTML = colgroup + head + branchSub + '<tbody>' + body + outRows + foot + '</tbody>';
+  $("tIvrDay").innerHTML = colgroup + head + branchSub + '<tbody>' + body + foot + '</tbody>';
   $("ivrDayTitle").textContent = "IVR Branch by " + (gran==="daily"?"Day":gran==="weekly"?"Week":gran==="monthly"?"Month":"Range");
-  const scopeTxt = F.chan==="ALL" ? "OHA + Non-OHA" : F.chan;
   $("ivrDaySub").textContent = scopeTxt + " · " + (gran==="none"?"full range":pkeys.length+(gran==="daily"?" days":gran==="weekly"?" weeks":" months"));
 }
 

@@ -358,3 +358,50 @@ footer{margin-top:36px;text-align:center;font-size:11.5px;color:var(--mauve)}
   #ivrBranchDay .scroll{overflow-x:auto}
   #ivrBranchDay .ivrday{min-width:880px;width:880px}
 }
+#ivrBranchDay .ivrday{width:100%;min-width:0;table-layout:fixed;font-size:10.5px}
+#ivrBranchDay .ivrday td, #ivrBranchDay .ivrday th{padding:5px 3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#ivrBranchDay .ivrday th.bc{white-space:normal;overflow:visible;font-size:9px;line-height:1.05;padding:5px 3px}
+#ivrBranchDay .ivrday td.day{white-space:normal}
+@media (max-width:860px){
+  #ivrBranchDay .scroll{overflow-x:auto}
+  #ivrBranchDay .ivrday{min-width:880px;width:880px}
+}
+
+/* ---- IVR Branch Outcome: separate table per period (day/week/month) ---- */
+.ivrout{font-size:11px;border-collapse:separate;border-spacing:0;min-width:0}
+.ivrout thead th{position:sticky;top:0;z-index:3;background:#FBE9F1;border-bottom:2px solid var(--line);
+  text-align:center;vertical-align:middle;padding:9px 8px;white-space:nowrap;font-size:9.5px;letter-spacing:.03em}
+.ivrout .vhead{background:#C9B8E8;color:#3B2A52;text-align:left;vertical-align:middle;font-size:11px;
+  writing-mode:vertical-rl;transform:rotate(180deg);min-width:64px;max-width:64px;white-space:normal;line-height:1.05}
+.ivrout .vhead .vsub{display:block;font-size:8.5px;font-weight:600;opacity:.8;margin-top:4px}
+.ivrout th.oc{background:#F3E6DC;color:#7A3B1E;font-weight:700}
+.ivrout td{padding:6px 8px;border-bottom:1px solid #FAEDF3;text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.ivrout td.day{text-align:left;font-weight:700;background:var(--white);position:sticky;left:0;z-index:2;color:var(--ink)}
+.ivrout td.num{background:#FFFBFD}
+.ivrout td.num.ans{background:#EAF7EE}
+.ivrout td.num.aba{background:#FCE7EC}
+.ivrout td.num.ivr{background:#FDEEF1}
+.ivrout td.num.noivr{background:#FFF4E0}
+.ivrout td.num.ooh{background:#EAF0FB}
+.ivrout td.num.una{background:#F1ECFA}
+.ivrout td.num.recv{background:#E9F6F2}
+.ivrout td.rate{background:#F2F8E9;color:#2E6B1E;font-weight:700}
+.ivrout td.rate.bad{color:#9B2336;background:#FDEEF1}
+.ivrout tr:hover td{background:#FCEFF5}
+.ivrout tr:hover td.num.ans{background:#DDF2E3}
+.ivrout tr:hover td.num.aba{background:#FBDDE4}
+.ivrout tr.tot{font-weight:800}
+.ivrout tr.tot td, .ivrout tr.tot td.num, .ivrout tr.tot td.rate{
+  background:#FBE3EC;border-top:2px solid var(--rose)}
+.ivrout tr.tot td.day{background:#FBE3EC}
+.ivrout thead .vhead{z-index:4}
+
+/* IVR Branch Outcome card: full table, no inner scroll box */
+#ivrBranchOut .scroll{overflow:visible;max-height:none}
+#ivrBranchOut .ivrout{width:100%;min-width:0;table-layout:fixed}
+#ivrBranchOut .ivrout th, #ivrBranchOut .ivrout td{padding:6px 6px;overflow:hidden;text-overflow:ellipsis}
+#ivrBranchOut .ivrout td.day{white-space:normal;overflow:visible}
+@media (max-width:680px){
+  #ivrBranchOut .scroll{overflow-x:auto}
+  #ivrBranchOut .ivrout{min-width:760px;width:760px}
+}
