@@ -64,6 +64,13 @@ function wire(){
     [...$("granPills").children].forEach(x=>x.classList.remove("on"));
     b.classList.add("on"); applyGran(b.dataset.v);
   });
+  $("ivrScopePills").addEventListener("click", e=>{
+    const b = e.target.closest(".pill"); if(!b) return;
+    [...$("ivrScopePills").children].forEach(x=>x.classList.remove("on"));
+    b.classList.add("on"); F.ivrGran = b.dataset.v;
+    const rows = slice();                 // respects channel + date-range filters
+    renderIvr(rows, agg(rows), F.ivrGran);
+  });
   $("fFrom").onchange = e => { if (!$("fFrom").disabled){ F.from = e.target.value; F.picks.clear(); render(); } };
   $("fTo").onchange   = e => { if (!$("fTo").disabled){ F.to   = e.target.value; F.picks.clear(); render(); } };
   // ---- period quick-navigators (WEEK + MONTH, mutually exclusive) ----

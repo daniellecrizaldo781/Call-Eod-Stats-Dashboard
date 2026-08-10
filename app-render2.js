@@ -28,24 +28,34 @@ function renderIvr(rows, M, gran){
 
   const ab = list.filter(x=>x[1].abandoned>0).sort((a,b)=>b[1].abandoned-a[1].abandoned).slice(0,12);
   hBars("chIvrAband", ab.map(([k,m])=>({label:k, value:m.abandoned,
-    color: k===NO_IVR? "#D9455F":"#B99BDD", note:pf(m.abandRate)+" abandon rate \u00b7 "+nf(m.total)+" total"})), {unit:"abandoned"});
+    color: k===NO_IVR? "#D9455F":"#B99BDD", note:pf(m.abandRate)+" abandon rate · "+nf(m.total)+" total"})), {unit:"abandoned"});
 
   /* IVR Branch by Day/Week/Month — spreadsheet-style pivot, respects channel filter */
+  const EXCLUDE_BRANCHES = new Set(["Repeat Option","Repeat Message","Tier 1","Tier 2"]);
   const pkey = r => periodKey(r.d, gran);
   const pkeys = [...new Set(rows.map(pkey))].sort();
-  const BRANCHES = IVRS.filter(b=>b!==NO_IVR);   // named branches only, in data order
+  const BRANCHES = IVRS.filter(b=>b!==NO_IVR && !EXCLUDE_BRANCHES.has(b));   // named branches, data order, exclusions removed
   const byPK = groupBy(rows, r=>pkey(r));         // period -> metrics (finish'd)
   const byPB = {};                                // period -> branch -> metrics
   BRANCHES.forEach(b=>byPB[b]=new Map());
-  rows.forEach(r=>{ if (r.ivr===NO_IVR) return;
+  rows.forEach(r=>{ if (r.ivr===NO_IVR || EXCLUDE_BRANCHES.has(r.ivr)) return;
     const pk=pkey(r); if(!byPB[r.ivr].has(pk)) byPB[r.ivr].set(pk, blank());
     acc(byPB[r.ivr].get(pk), r); });
   Object.values(byPB).forEach(m=>m.forEach(v=>finish(v)));
 
   const totAll = agg(rows);
-  const pLabel = pk => periodLabel(pk, gran);
-  const pSort  = pk => pk;                        // ISO sorts correctly for day/week; month too
-  const rowsSorted = pkeys.slice().sort((a,b)=>pSort(a)<pSort(b)?1:-1);   // newest first
+  const pLabel = pk => gran==="weekly" ? fmtWeek(pk, true) : periodLabel(pk, gran);
+  const WD = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+  const dayLabel = iso => WD[new Date(iso+"T00:00:00").getDay()] + " " + fmtD(iso);   // "Mon Aug 10"
+  // rows: newest period first; within a week, Monday at the top through Sunday at the bottom
+  const wk = pk => gran==="daily" ? weekStart(pk) : (gran==="weekly" ? pk : monthStart(pk));
+  const rowsSorted = pkeys.slice().sort((a,b)=>{
+    const wa=wk(a), wb=wk(b);
+    if (wa !== wb) return wb < wa ? -1 : 1;          // newest week/month first
+    if (gran!=="daily") return 0;
+    const da=new Date(a+"T00:00:00"), db=new Date(b+"T00:00:00");
+    return ((da.getDay()+6)%7) - ((db.getDay()+6)%7);   // Mon..Sun inside the week
+  });
 
   // header groups
   const gh = (txt,col,cls) => '<th class="ghead '+cls+'" colspan="'+col+'">'+txt+'</th>';
@@ -53,64 +63,60 @@ function renderIvr(rows, M, gran){
     + '<th class="vhead">'+ (gran==="daily"?"Date":gran==="weekly"?"Week":gran==="monthly"?"Month":"Range")
         + ' <span class="vsub">Total Inbound Calls</span></th>'
     + gh("Abandoned in IVR", BRANCHES.length*2, "gh-aband")
-    + gh("Call Outcome", 9, "gh-out")
     + '</tr><tr>'
     + '<th class="vhead2">&nbsp;</th>'
     + BRANCHES.map(b=>'<th class="bc" colspan="2">'+esc(b)+'</th>').join("")
-    + '<th class="sc">Total Abandoned in IVR</th>'
-    + '<th class="sc">Abandoned &lt;10s<br>NO IVR</th>'
-    + '<th class="sc">Outside Business Hrs</th>'
-    + '<th class="sc">Agents Unavailable</th>'
-    + '<th class="sc">Total Calls Received by CSR\'s</th>'
-    + '<th class="sc">Total Answered Calls</th>'
-    + '<th class="sc">Total Unanswered Call</th>'
-    + '<th class="sc">Answer Rate</th>'
-    + '<th class="sc">Missed Call Rate</th>'
     + '</tr></thead>';
 
   // sub-header row under each branch: Answered / Abandoned
   const branchSub = '<tr class="sub2"><th></th>'
     + BRANCHES.map(()=>'<th class="sc2 ans">Answered</th><th class="sc2 aba">Abandoned</th>').join("")
-    + '<th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th></tr>';
+    + '</tr>';
 
   const body = rowsSorted.map(pk=>{ const m = byPK.get(pk);
     const cells = BRANCHES.map(b=>{ const bm = byPB[b].get(pk) || blank();
       return '<td class="num ans">'+nf(bm.answered)+'</td><td class="num aba">'+nf(bm.abandoned)+'</td>'; }).join("");
     return '<tr>'
-      + '<td class="day">'+(gran==="none"?"Full Range":pLabel(pk))+'</td>'
+      + '<td class="day">'+(gran==="none"?"Full Range":gran==="daily"?dayLabel(pk):pLabel(pk))+'</td>'
       + cells
-      + '<td class="num">'+nf(m.ivrAband)+'</td>'
-      + '<td class="num">'+nf(m.noIvrAband)+'</td>'
-      + '<td class="num">'+nf(m.ooh)+'</td>'
-      + '<td class="num">'+nf(m.unanswered)+'</td>'
-      + '<td class="num">'+nf(m.agentReceived)+'</td>'
-      + '<td class="num ans">'+nf(m.answered)+'</td>'
-      + '<td class="num aba">'+nf(m.unanswered)+'</td>'
-      + '<td class="rate">'+pf(m.answerRate)+'</td>'
-      + '<td class="rate">'+pf(m.missRate)+'</td>'
       + '</tr>'; }).join("");
 
+  // Call Outcome rows (stacked below the branch grid, one row per metric)
+  const outcomes = [
+    ["Total Abandoned in IVR", "ivr"],
+    ["Abandoned <10s / NO IVR", "noivr"],
+    ["Outside Business Hrs", "ooh"],
+    ["Agents Unavailable", "una"],
+    ["Total Calls Received by CSR's", "recv"],
+    ["Total Answered Calls", "ans"],
+    ["Total Unanswered Call", "aba"],
+    ["Answer Rate", "rate good"],
+    ["Missed Call Rate", "rate bad"]
+  ];
+  const outVals = {};
+  rowsSorted.forEach(pk=>{ const m = byPK.get(pk);
+    outVals[pk] = [m.ivrAband, m.noIvrAband, m.ooh, m.unanswered, m.agentReceived, m.answered, m.unanswered, m.answerRate, m.missRate]; });
+  const outCls = o => o.includes("rate") ? "rate" : o.includes("ans") ? "ans" : o.includes("aba") ? "aba" : "ivr";
+  const outRows = outcomes.map((o,i)=>{
+    const vals = rowsSorted.map(pk=>{ const v = outVals[pk][i];
+      return '<td class="num '+outCls(o[1])+'">'+((i>=7)?pf(v):nf(v))+'</td>'; }).join("");
+    return '<tr class="outrow"><td class="day out-lbl">'+o[0]+'</td>'+vals+'</tr>';
+  }).join("");
+
+  // TOTAL of branch answered/abandoned (the branches shown)
   const tCells = BRANCHES.map(b=>{ const m = agg(rows.filter(r=>r.ivr===b));
     return '<td class="num ans tot">'+nf(m.answered)+'</td><td class="num aba tot">'+nf(m.abandoned)+'</td>'; }).join("");
   const foot = '<tr class="tot">'
-    + '<td class="day">TOTAL</td>'
+    + '<td class="day">TOTAL Branch Calls</td>'
     + tCells
-    + '<td class="num tot">'+nf(totAll.ivrAband)+'</td>'
-    + '<td class="num tot">'+nf(totAll.noIvrAband)+'</td>'
-    + '<td class="num tot">'+nf(totAll.ooh)+'</td>'
-    + '<td class="num tot">'+nf(totAll.unanswered)+'</td>'
-    + '<td class="num tot">'+nf(totAll.agentReceived)+'</td>'
-    + '<td class="num ans tot">'+nf(totAll.answered)+'</td>'
-    + '<td class="num aba tot">'+nf(totAll.unanswered)+'</td>'
-    + '<td class="rate tot">'+pf(totAll.answerRate)+'</td>'
-    + '<td class="rate tot">'+pf(totAll.missRate)+'</td>'
     + '</tr>';
 
-  $("tIvrDay").innerHTML = head + branchSub + '<tbody>' + body + foot + '</tbody>';
+  $("tIvrDay").innerHTML = head + branchSub + '<tbody>' + body + outRows + foot + '</tbody>';
   $("ivrDayTitle").textContent = "IVR Branch by " + (gran==="daily"?"Day":gran==="weekly"?"Week":gran==="monthly"?"Month":"Range");
   const scopeTxt = F.chan==="ALL" ? "OHA + Non-OHA" : F.chan;
   $("ivrDaySub").textContent = scopeTxt + " · " + (gran==="none"?"full range":pkeys.length+(gran==="daily"?" days":gran==="weekly"?" weeks":" months"));
 }
+
 
 /* ---------- Agents (shared) ---------- */
 function agentRowsInScope(){
