@@ -32,7 +32,8 @@ SHEETS = [
 URL = "https://docs.google.com/spreadsheets/d/{}/export?format=csv&gid={}"
 
 # Optional 3rd sheet: the "Call Breakdown" ticket export (brands, branches, refund reasons).
-# Stored as repo secret BREAKDOWN_SHEET = "SHEET_ID|GID". If unset, breakdown is skipped.
+# Stored as repo secret BREAKDOWN_SHEET = "SHEET_ID|GID1|GID2|..." (one GID per tab, e.g. Aug + Jul).
+# If unset, breakdown is skipped. A single GID still works (backward compatible).
 BREAKDOWN_SECRET = os.environ.get("BREAKDOWN_SHEET")
 
 
@@ -52,33 +53,40 @@ def build_breakdown():
     if not BREAKDOWN_SECRET or "|" not in BREAKDOWN_SECRET:
         print("BREAKDOWN_SHEET not set — skipping Call Breakdown data", flush=True)
         return []
-    sid, gid = BREAKDOWN_SECRET.split("|", 1)
-    print("fetching Call Breakdown ...", flush=True)
-    text = fetch(sid.strip(), gid.strip())
-    rows = list(rows_from_csv(text))
-    if not rows:
-        print("  (empty breakdown sheet)", flush=True)
+    parts = [p.strip() for p in BREAKDOWN_SECRET.split("|")]
+    sid = parts[0]
+    gids = parts[1:]                       # one GID per tab (Aug, Jul, ...)
+    if not gids:
+        print("BREAKDOWN_SHEET missing tab GID(s) — skipping Call Breakdown data", flush=True)
         return []
+    print("fetching Call Breakdown (" + str(len(gids)) + " tab(s)) ...", flush=True)
     out = []
     n = 0
-    for idx, r in rows:
-        g = lambda k: r[idx[k]] if k in idx and idx[k] < len(r) else None
-        d = parse_date_cell(g("date"))
-        if not d:
+    for gi, gid in enumerate(gids):
+        text = fetch(sid, gid)
+        rows = list(rows_from_csv(text))
+        if not rows:
+            print("  (tab " + str(gi + 1) + " empty)", flush=True)
             continue
-        brand = (str(g("brand") or "Unknown")).strip() or "Unknown"
-        out.append({
-            "d": d,                                   # ISO date
-            "brand": brand,
-            "channel": (str(g("channel") or "ALL")).strip() or "ALL",
-            "concern": (str(g("concern type") or "Unknown")).strip() or "Unknown",
-            "cat": (str(g("category") or "Unknown")).strip() or "Unknown",     # = branch
-            "sub": (str(g("subcategory") or "Unknown")).strip() or "Unknown",  # = call driver
-            "res": (str(g("resolution") or "Unknown")).strip() or "Unknown",
-            "refund": _money(g("total amount refunded")),
-        })
-        n += 1
-    print("  Call Breakdown", n, "tickets", flush=True)
+        for idx, r in rows:
+            g = lambda k: r[idx[k]] if k in idx and idx[k] < len(r) else None
+            d = parse_date_cell(g("date"))
+            if not d:
+                continue
+            brand = (str(g("brand") or "Unknown")).strip() or "Unknown"
+            out.append({
+                "d": d,                                   # ISO date
+                "brand": brand,
+                "channel": (str(g("channel") or "ALL")).strip() or "ALL",
+                "concern": (str(g("concern type") or "Unknown")).strip() or "Unknown",
+                "cat": (str(g("category") or "Unknown")).strip() or "Unknown",     # = branch
+                "sub": (str(g("subcategory") or "Unknown")).strip() or "Unknown",  # = call driver
+                "res": (str(g("resolution") or "Unknown")).strip() or "Unknown",
+                "refund": _money(g("total amount refunded")),
+            })
+            n += 1
+        print("  tab " + str(gi + 1) + ": " + str(len(rows)) + " rows", flush=True)
+    print("  Call Breakdown total", n, "tickets", flush=True)
     return out
 
 
