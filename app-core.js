@@ -129,7 +129,7 @@ function finish(m){
   // Unanswered = calls that reached an agent but were NOT answered.
   m.unanswered = m.agentReceived - m.answered;
   m.answerRate = m.agentReceived ? m.answered  /m.agentReceived*100 : 0;   // answered / calls received by agents
-  m.missRate   = m.agentReceived ? m.unanswered /m.agentReceived*100 : 0;   // unanswered / calls received by agents
+  m.missRate   = m.agentReceived ? m.missed   /m.agentReceived*100 : 0;   // missed / calls received by agents
   m.abandRate  = m.total ? m.abandoned/m.total*100 : 0;
   m.aht        = m.answered ? m.sec/m.answered : 0;
   m.noIvrPct   = m.abandoned ? m.noIvrAband/m.abandoned*100 : 0;
