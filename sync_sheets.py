@@ -47,23 +47,83 @@ def _money(v):
         return 0.0
 
 
+def discover_gids(sid):
+    """List every tab (worksheet) GID in the sheet via the public gviz metadata endpoint.
+    Works for sheets shared 'Anyone with the link can view'. Returns [] if it can't list."""
+    url = "https://docs.google.com/spreadsheets/d/{}/gviz/tq?tqx=out:json".format(sid)
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+        with urllib.request.urlopen(req, timeout=120) as r:
+            raw = r.read().decode("utf-8", errors="replace")
+    except Exception as e:
+        print("  !! tab discovery failed: " + str(e), flush=True)
+        return []
+    # The gviz workbook response embeds a JSON object; extract sheetIds from it.
+    import re
+    # gviz wraps the JSON in a JS callback; strip it.
+    txt = raw
+    if txt.lstrip().startswith("/*"):
+        txt = txt.lstrip()[2:]
+        if txt.startswith("O_o*/"):
+            txt = txt[5:]
+    txt = txt.strip()
+    if txt.startswith("google.visualization.Query.setResponse("):
+        txt = txt[len("google.visualization.Query.setResponse("):]
+        if txt.rstrip().endswith(");"):
+            txt = txt.rstrip()[:-2]
+    try:
+        obj = json.loads(txt)
+    except Exception as e:
+        print("  !! tab discovery JSON parse failed: " + str(e), flush=True)
+        return []
+    gids = []
+    # gviz workbook response has a "tables" map keyed by gid when multiple sheets exist
+    tables = obj.get("tables") or {}
+    for key in tables:
+        try:
+            gids.append(str(int(key)))
+        except ValueError:
+            gids.append(str(key))
+    if gids:
+        print("  discovered " + str(len(gids)) + " tab(s): " + ", ".join(gids), flush=True)
+        return gids
+    # Fallback: single-sheet workbook — pull the default (gid 0)
+    print("  (single-sheet workbook — using default tab)", flush=True)
+    return ["0"]
+
+
 def build_breakdown():
     """Pull the Call Breakdown ticket sheet into a compact array of row dicts.
-    Returns [] if the secret is missing (so the rest of the dashboard is unaffected)."""
+    Returns [] if the secret is missing (so the rest of the dashboard is unaffected).
+
+    Secret format (repo secret BREAKDOWN_SHEET):
+      - "SHEET_ID"                      -> discover & pull EVERY tab in the sheet
+      - "SHEET_ID|GID1|GID2|..."        -> pull only the listed tabs (backward compatible)
+    """
     if not BREAKDOWN_SECRET or "|" not in BREAKDOWN_SECRET:
         print("BREAKDOWN_SHEET not set — skipping Call Breakdown data", flush=True)
         return []
     parts = [p.strip() for p in BREAKDOWN_SECRET.split("|")]
     sid = parts[0]
-    gids = parts[1:]                       # one GID per tab (Aug, Jul, ...)
-    if not gids:
-        print("BREAKDOWN_SHEET missing tab GID(s) — skipping Call Breakdown data", flush=True)
+    if not sid:
+        print("BREAKDOWN_SHEET missing sheet id — skipping Call Breakdown data", flush=True)
         return []
+    gids = parts[1:]
+    if not gids:
+        # bare SHEET_ID -> auto-discover all tabs
+        gids = discover_gids(sid)
+        if not gids:
+            print("  (no tabs discovered — skipping)", flush=True)
+            return []
     print("fetching Call Breakdown (" + str(len(gids)) + " tab(s)) ...", flush=True)
     out = []
     n = 0
     for gi, gid in enumerate(gids):
-        text = fetch(sid, gid)
+        try:
+            text = fetch(sid, gid)
+        except Exception as e:
+            print("  !! tab " + str(gi + 1) + " (gid " + gid + ") fetch failed: " + str(e) + " — skipping", flush=True)
+            continue
         rows = list(rows_from_csv(text))
         if not rows:
             print("  (tab " + str(gi + 1) + " empty)", flush=True)
@@ -145,6 +205,15 @@ def hour_from_cell(idx, r):
     return None
 
 
+def _safe_breakdown():
+    """Run build_breakdown() but never let it abort the whole sync."""
+    try:
+        return build_breakdown()
+    except Exception as e:
+        print("!! Call Breakdown failed (skipped): " + str(e), flush=True)
+        return []
+
+
 def build():
     calls, dur = collections.Counter(), collections.Counter()
     agent, adur = collections.Counter(), collections.Counter()
@@ -214,7 +283,7 @@ def build():
         "issues": dict(issues),
         "noIvrLabel": B.NO_IVR,
         "rowsPerSheet": per_sheet,
-        "breakdown": build_breakdown(),
+        "breakdown": (_safe_breakdown()),
     }
     out = os.path.join(BASE, "data.js")
     tmp = out + ".tmp"
