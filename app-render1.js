@@ -45,15 +45,15 @@ function render(){
   /* ---- KPIs (exact set requested) ---- */
   $("kpiRow").innerHTML =
       kpi("Total Calls", nf(M.total), fmtD(F.from)+" \u2013 "+fmtD(F.to))
-    + kpi("Total Calls Received by Agents", nf(M.agentReceived), "total \u2212 IVR-abandoned \u2212 OOH", "agent")
+    + kpi("Total Calls Received by Agents", nf(M.csrBase), "answered + missed (agent-attempted)", "agent")
     + kpi("Answered", nf(M.answered), pf(M.answerRate)+" answer rate", "good")
-    + kpi("Missed", nf(M.missed), pf(M.missed/M.agentReceived*100)+" of agent calls", "bad");
+    + kpi("Missed", nf(M.missed), pf(M.missRate)+" of agent calls", "bad");
   $("kpiRow2").innerHTML =
       kpi("Abandoned \u2014 No IVR Branch", nf(M.noIvrAband), pf(M.noIvrPct)+" of all abandoned", "bad")
     + kpi("Total Abandoned in IVR", nf(M.ivrAband), M.abandoned? pf(M.ivrAband/M.abandoned*100)+" of all abandoned":"", "alt")
     + kpi("Out of Business Hours", nf(M.ooh), M.total? pf(M.ooh/M.total*100)+" of volume":"", "warn")
-    + kpi("Answer Rate", pf(M.answerRate), nf(M.answered)+" / "+nf(M.agentReceived)+" agent calls", M.answerRate>=70?"good":M.answerRate>=50?"warn":"bad")
-    + kpi("Missed Call Rate", pf(M.missRate), nf(M.missed)+" / "+nf(M.agentReceived)+" agent calls", "bad")
+    + kpi("Answer Rate", pf(M.answerRate), nf(M.answered)+" / "+nf(M.csrBase)+" agent calls", M.answerRate>=70?"good":M.answerRate>=50?"warn":"bad")
+    + kpi("Missed Call Rate", pf(M.missRate), nf(M.missed)+" / "+nf(M.csrBase)+" agent calls", "bad")
     + kpi("AHT", mmss(M.aht), "avg over "+nf(M.answered)+" answered calls");
 
   /* ---- trend / volume ---- */

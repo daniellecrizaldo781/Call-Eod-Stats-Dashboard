@@ -97,7 +97,7 @@ function renderIvr(rows, M, gran){
   ];
   const outVals = {};
   rowsSorted.forEach(pk=>{ const m = byPK.get(pk);
-    outVals[pk] = [m.ivrAband, m.noIvrAband, m.ooh, m.unanswered, m.agentReceived, m.answered, m.unanswered, m.answerRate, m.missRate]; });
+    outVals[pk] = [m.ivrAband, m.noIvrAband, m.ooh, m.unanswered, m.csrBase, m.answered, m.unanswered, m.answerRate, m.missRate]; });
   const outCls = o => o.includes("rate") ? "rate" : o.includes("ans") ? "ans" : o.includes("aba") ? "aba" : "ivr";
   const outRows = outcomes.map((o,i)=>{
     const vals = rowsSorted.map(pk=>{ const v = outVals[pk][i];
@@ -123,7 +123,7 @@ function renderIvr(rows, M, gran){
     const cells = outcomes.map((o,i)=>'<td class="num '+outCls(o[1])+'">'+((i>=7)?pf(v[i]):nf(v[i]))+'</td>').join("");
     return '<tr><td class="day">'+(gran==="none"?"Full Range":gran==="daily"?dayLabel(pk):pLabel(pk))+'</td>'+cells+'</tr>';
   }).join("");
-  const ocTotal = [totAll.ivrAband, totAll.noIvrAband, totAll.ooh, totAll.unanswered, totAll.agentReceived, totAll.answered, totAll.unanswered, totAll.answerRate, totAll.missRate];
+  const ocTotal = [totAll.ivrAband, totAll.noIvrAband, totAll.ooh, totAll.unanswered, totAll.csrBase, totAll.answered, totAll.unanswered, totAll.answerRate, totAll.missRate];
   const ocFoot = '<tr class="tot"><td class="day">TOTAL ('+scopeTxt+')</td>'
     + outcomes.map((o,i)=>'<td class="num '+outCls(o[1])+' tot">'+((i>=7)?pf(ocTotal[i]):nf(ocTotal[i]))+'</td>').join("")
     + '</tr>';
