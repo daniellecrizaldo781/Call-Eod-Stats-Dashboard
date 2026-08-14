@@ -1,6 +1,6 @@
 <!DOCTYPE html><html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Call EOD Stats Dashboard</title><link rel="stylesheet" href="styles.css?v=20260811b"></head>
+<title>Call EOD Stats Dashboard</title><link rel="stylesheet" href="styles.css?v=20260811c"></head>
 <body><div class="wrap">
 
 <header class="hero">
@@ -17,6 +17,7 @@
   <button class="navbtn" id="navBreak" data-page="break">&#128202; Call Breakdown</button>
   <button class="navbtn" id="navAgent" data-page="agent">&#128100; Agent Performance</button>
   <button class="navbtn" id="navForecast" data-page="forecast">&#128202; Call Forecast &amp; Staffing</button>
+  <button class="navbtn" id="navSched" data-page="sched">&#128197; Call Schedule</button>
 </nav>
 
 <div class="filters">
@@ -216,17 +217,23 @@
   <div id="forecastRoot"></div>
 </section>
 
+<!-- ============================ PAGE: CALL SCHEDULE ============================ -->
+<section class="page" id="pageSched" hidden>
+  <div id="schedRoot"></div>
+</section>
+
 <footer>Created by Danielle Ann Mari Crizaldo &mdash; Call Team Lead</footer>
 </div>
 <div class="tip" id="tip"></div>
-<script src="data.js?v=20260811b"></script>
-<script src="app-core.js?v=20260811b"></script>
-<script src="app-charts.js?v=20260811b"></script>
-<script src="app-period.js?v=20260811b"></script>
-<script src="app-render1.js?v=20260811b"></script>
-<script src="app-render2.js?v=20260811b"></script>
-<script src="app-render3.js?v=20260811b"></script>
-<script src="app-breakdown.js?v=20260811b"></script>
-<script src="app-forecast.js?v=20260811b"></script>
-<script src="app-init.js?v=20260811b"></script>
+<script src="data.js?v=20260811c"></script>
+<script src="app-core.js?v=20260811c"></script>
+<script src="app-charts.js?v=20260811c"></script>
+<script src="app-period.js?v=20260811c"></script>
+<script src="app-render1.js?v=20260811c"></script>
+<script src="app-render2.js?v=20260811c"></script>
+<script src="app-render3.js?v=20260811c"></script>
+<script src="app-breakdown.js?v=20260811c"></script>
+<script src="app-forecast.js?v=20260811c"></script>
+<script src="app-schedule.js?v=20260811c"></script>
+<script src="app-init.js?v=20260811c"></script>
 </body></html>

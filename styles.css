@@ -423,3 +423,20 @@ footer{margin-top:36px;text-align:center;font-size:11.5px;color:var(--mauve)}
 .heatmap td.hm.empty{background:#F3EEF4}
 .heatmap td.hm.none{background:#F3EEF4;cursor:default}
 .pagehint{color:var(--ink2);font-size:12.5px;line-height:1.5;margin:8px 2px 0}
+
+/* ===== Call Schedule page ===== */
+.sched-controls{display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;margin:14px 0 4px}
+.sched-controls .fgroup{margin:0}
+.pillinp{appearance:none;border:1px solid var(--line);border-radius:10px;padding:7px 11px;font-size:13px;background:var(--white);color:var(--ink);min-width:180px}
+.pillinp:focus{outline:none;border-color:var(--rose);box-shadow:0 0 0 3px rgba(232,87,142,.15)}
+.schedtbl{font-size:11.5px;border-collapse:separate;border-spacing:0;min-width:0;width:max-content;max-width:none}
+.schedtbl th{position:sticky;top:0;z-index:3;background:#FBE9F1;border-bottom:2px solid var(--line);text-align:center;padding:8px 6px;white-space:nowrap;font-size:10.5px;letter-spacing:.02em}
+.schedtbl th .wd{display:block;font-weight:600;color:var(--mauve);font-size:9px;opacity:.8}
+.schedtbl th.sticky-col,.schedtbl td.sticky-col{position:sticky;left:0;z-index:2;background:var(--white);text-align:left;font-weight:700;padding:7px 10px;white-space:nowrap;color:var(--ink);border-right:1px solid var(--line)}
+.schedtbl th.sticky-col{background:#FBE9F1;z-index:4}
+.schedtbl td{padding:6px 7px;border-bottom:1px solid #FAEDF3;text-align:center;white-space:nowrap;font-variant-numeric:tabular-nums}
+.schedtbl td.shift{background:#F3FBF5;color:#1F7A46;font-weight:600}
+.schedtbl td.off{background:#FCF7FA}
+.schedtbl tr:hover td{background:#FCEFF5}
+.schedtbl tr:hover td.shift{background:#E7F6EC}
+.schedtbl tr:hover td.sticky-col{background:#FDBEE0}

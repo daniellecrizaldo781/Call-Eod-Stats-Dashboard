@@ -133,4 +133,5 @@ function render(){
   renderSummary(M, pv, gran);
   bkRender();   // Call Breakdown page (no-op unless that page is active)
   renderForecast();  // Call Forecast & Staffing page (no-op unless active)
+  renderSchedule();  // Call Schedule page (no-op unless active)
 }
