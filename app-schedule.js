@@ -7,11 +7,11 @@
 
 const SC = { view: "grid", q: "", week: null };
 
-// team banner colors (match the source sheet's section banners)
+// team header colors (user spec): Danielle=pink, Brai=green, Cess=blue
 const TEAM_COLORS = {
-  cess:    { bg: "#1e3a8a", fg: "#ffffff" },
-  brai:    { bg: "#556b2f", fg: "#ffffff" },
-  danielle:{ bg: "#4b0082", fg: "#ffffff" },
+  danielle:{ bg: "#E8578E", fg: "#ffffff" },
+  brai:    { bg: "#2E7D4F", fg: "#ffffff" },
+  cess:    { bg: "#2F6FB3", fg: "#ffffff" },
   other:   { bg: "#9B2C6B", fg: "#ffffff" }
 };
 function teamColor(key){ return TEAM_COLORS[key] || TEAM_COLORS.other; }
@@ -66,31 +66,21 @@ function renderSchedule(){
       + '<div class="kpis" id="schedKpis"></div>'
       + '<div class="sched-controls">'
       + '  <div class="fgroup"><span class="flabel">Week</span><select id="schedWeek" class="pillsel"></select></div>'
-      + '  <div class="fgroup"><span class="flabel">View</span><div class="pills" id="schedViewPills">'
-      + '    <button class="pill on" data-v="grid">Schedule Grid</button>'
-      + '    <button class="pill" data-v="agent">By Agent</button>'
-      + '    <button class="pill" data-v="date">By Date</button></div></div>'
       + '  <div class="fgroup"><span class="flabel">Agent</span>'
       + '    <input id="schedSearch" class="pillinp" placeholder="search agent&hellip;"></div>'
       + '  <div class="fgroup"><span class="flabel">&nbsp;</span>'
       + '    <button class="btn ghost" id="schedReset">Reset</button></div>'
       + '</div>'
-      + '<div class="card"><div class="scroll" id="schedBody"></div></div>'
-      + '<p class="pagehint">Source: team schedule sheet (SCHED_SHEET). Each team is shown as its own table; '
-      + 'pick a week above to view one week at a time. Shift text is shown exactly as entered '
-      + '(OFF / LWOP / rest appear as-is). Follows the Main Channel filter above.</p>';
+      + '<div id="schedBody"></div>'
+      + '<p class="pagehint">Source: team schedule sheet (SCHED_SHEET). Each team has its own white box with a colored header '
+      + '(Danielle = pink, Brai = green, Cess = blue). Pick a week above to view one week at a time. '
+      + 'Shift text is shown exactly as entered (OFF / LWOP / rest appear as-is). Follows the Main Channel filter above.</p>';
     root.dataset.built = "1";
 
-    $("schedViewPills").addEventListener("click", e => {
-      const b = e.target.closest(".pill"); if (!b) return;
-      [...$("schedViewPills").children].forEach(x => x.classList.remove("on"));
-      b.classList.add("on"); SC.view = b.dataset.v; renderSchedule();
-    });
     $("schedSearch").addEventListener("input", e => { SC.q = e.target.value.trim(); renderSchedule(); });
     $("schedWeek").addEventListener("change", e => { SC.week = e.target.value; renderSchedule(); });
     $("schedReset").onclick = () => {
-      SC.view = "grid"; SC.q = ""; SC.week = SC._defaultWeek || SC.week;
-      [...$("schedViewPills").children].forEach((x,i)=>x.classList.toggle("on", i===0));
+      SC.q = ""; SC.week = SC._defaultWeek || SC.week;
       $("schedSearch").value = ""; renderSchedule();
     };
   }
@@ -138,9 +128,7 @@ function renderSchedule(){
     + " &middot; " + (F.chan === "ALL" ? "All Channels" : F.chan);
 
   const body = $("schedBody");
-  if (SC.view === "grid") body.innerHTML = scGrid(schedObj, win, chanOk, q);
-  else if (SC.view === "agent") body.innerHTML = scCompact(schedObj, win, chanOk, q, "agent");
-  else body.innerHTML = scCompact(schedObj, win, chanOk, q, "date");
+  body.innerHTML = scGrid(schedObj, win, chanOk, q);
 }
 
 /* ---------- Schedule Grid: one separate table per team, single week ---------- */
@@ -159,8 +147,8 @@ function scGrid(schedObj, win, chanOk, q){
     if (!ags.length) continue;
     const col = teamColor(sec.team_key);
     h += '<div class="sched-team">';
-    h += '<div class="sched-banner" style="background:#ffffff;color:#7A1745;border-left:5px solid '+col.bg+';border-radius:10px 10px 0 0">'+esc(sec.team)+'</div>';
-    h += '<table class="schedgrid"><thead><tr>'
+    h += '<div class="sched-banner" style="background:'+col.bg+';color:'+col.fg+'">'+esc(sec.team)+'</div>';
+    h += '<div class="sched-box"><table class="schedgrid"><thead><tr>'
        + '<th class="sticky-col">Name</th><th>Designation</th>';
     for (const d of win) h += '<th>'+fmtLong(d)+'<br><span class="wd">'+DOW3[dowOf(d)]+'</span></th>';
     h += '</tr></thead><tbody>';
@@ -175,7 +163,7 @@ function scGrid(schedObj, win, chanOk, q){
       }
       h += '</tr>';
     }
-    h += '</tbody></table></div>';
+    h += '</tbody></table></div></div>';
   }
   if (!h) h = '<p class="pagehint">No agents match the current channel / search filter for this week.</p>';
   return h;
