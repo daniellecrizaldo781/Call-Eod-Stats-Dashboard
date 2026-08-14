@@ -301,6 +301,9 @@ def build_schedule():
                 except ValueError:
                     continue
             if d:
+                y = int(d[:4])
+                if y < 2000:      # skip Google Sheets serial-date artifacts (e.g. 1899-12-31)
+                    continue
                 out.append((ci, d))
         return out
 
@@ -310,13 +313,13 @@ def build_schedule():
             return False
         if re.search(r"team\s+\w+", a, re.I):
             return True
-        if a.lower().startswith("overtime"):
+        if a.lower().startswith("overtime") or a.lower().startswith("ovetime"):
             return True
         return False
 
     def team_key(name):
         u = name.lower()
-        if u.startswith("overtime"):
+        if u.startswith("overtime") or u.startswith("ovetime"):
             return "overtime"
         if "cess" in u: return "cess"
         if "brai" in u: return "brai"
@@ -334,6 +337,7 @@ def build_schedule():
     rows_out = []           # flattened agent-date rows (feeds Forecast page)
     roster = {"brai": set(), "danielle": set(), "cess": set(), "other": set()}
     cur = None
+    last_valid_dates = []   # most recent section that had real dates (fallback for header-less blocks)
     for i, r in enumerate(raw_rows):
         a0 = (r[0].strip() if r else "")
         if is_title(a0):
@@ -341,7 +345,11 @@ def build_schedule():
             dc = parse_dates(r)
             if not dc and i > 0:
                 dc = parse_dates(raw_rows[i - 1])   # date labels sometimes sit on the prior row
+            if not dc:
+                dc = list(last_valid_dates)        # fallback: borrow last valid date set (e.g. OT block w/ no headers)
             cur = {"team": a0, "team_key": key, "dates": dc, "agents": []}
+            if dc:
+                last_valid_dates = list(dc)
             sections.append(cur)
             roster.setdefault(key, set())
             continue
