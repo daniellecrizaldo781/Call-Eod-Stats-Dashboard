@@ -330,6 +330,7 @@ def build_schedule():
     rows_out = []
     cur_team = None
     cur_key = None
+    team_index = {}   # team_key -> index in raw_out (so duplicate banners merge into one section)
     for r in raw:
         a0 = (r[0].strip() if r else "")
         a1 = (r[1].strip() if len(r) > 1 else "")
@@ -337,6 +338,10 @@ def build_schedule():
         if a0 and re.search(r"team\s+\w+", a0, re.I) and not looks_date(a1) and not a1:
             cur_team = a0
             cur_key = team_key(a0)
+            if cur_key in team_index:
+                # merge into the existing section for this team (keep first banner name)
+                continue
+            team_index[cur_key] = len(raw_out)
             raw_out.append({"team": a0, "team_key": cur_key, "dates": [d for _, d in date_cols], "agents": []})
             continue
         if not a0:
@@ -352,7 +357,8 @@ def build_schedule():
                 rows_out.append({"d": d, "agent": a0, "team": team_label,
                                  "desig": team_label, "text": txt, "hours": sorted(hrs)})
         if raw_out:
-            raw_out[-1]["agents"].append({"name": a0, "desig": team_label, "cells": cells})
+            raw_out[team_index.get(cur_key if cur_key else "other", len(raw_out)-1)]["agents"].append(
+                {"name": a0, "desig": team_label, "cells": cells})
         else:
             # agents before any team banner: stash under a default group
             raw_out.append({"team": "Team", "team_key": "other", "dates": [d for _, d in date_cols], "agents": []})

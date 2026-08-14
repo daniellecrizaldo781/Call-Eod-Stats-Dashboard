@@ -34,8 +34,10 @@ function isoAdd(d, n){
 }
 function mondayOf(d){ return isoAdd(d, -((new Date(+d.slice(0,4), +d.slice(5,7)-1, +d.slice(8,10)).getDay()+6)%7)); }
 function weekDays(mon){ const o=[]; for(let i=0;i<7;i++) o.push(isoAdd(mon, i)); return o; }
+const MON3 = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 function fmtMD(d){ return d.slice(5).replace("-","/"); }
-function weekLabel(mon){ return fmtMD(mon) + " – " + fmtMD(isoAdd(mon,6)); }
+function fmtLong(d){ return MON3[+d.slice(5,7)-1] + " " + (+d.slice(8,10)) + ", " + d.slice(0,4); }
+function weekLabel(mon){ return fmtLong(mon) + " – " + fmtLong(isoAdd(mon,6)); }
 
 // classify a raw shift cell for styling
 function cellClass(txt){
@@ -157,10 +159,10 @@ function scGrid(schedObj, win, chanOk, q){
     if (!ags.length) continue;
     const col = teamColor(sec.team_key);
     h += '<div class="sched-team">';
-    h += '<div class="sched-banner" style="background:'+col.bg+';color:'+col.fg+'">'+esc(sec.team)+'</div>';
+    h += '<div class="sched-banner" style="background:#ffffff;color:#7A1745;border-left:5px solid '+col.bg+';border-radius:10px 10px 0 0">'+esc(sec.team)+'</div>';
     h += '<table class="schedgrid"><thead><tr>'
        + '<th class="sticky-col">Name</th><th>Designation</th>';
-    for (const d of win) h += '<th>'+fmtMD(d)+'<br><span class="wd">'+DOW3[dowOf(d)]+'</span></th>';
+    for (const d of win) h += '<th>'+fmtLong(d)+'<br><span class="wd">'+DOW3[dowOf(d)]+'</span></th>';
     h += '</tr></thead><tbody>';
     for (const a of ags){
       h += '<tr><td class="sticky-col">'+esc(a.name)+'</td><td class="desig">'+esc(desigLabel(a.desig))+'</td>';
@@ -190,7 +192,7 @@ function scCompact(schedObj, win, chanOk, q, mode){
   for (const r of all) cell[r.agent + "|" + r.d] = r.text;
   let h = '<table class="schedgrid"><thead><tr>';
   if (mode === "agent"){
-    h += '<th class="sticky-col">Agent</th>' + dates.map(d => '<th>'+fmtMD(d)+'<br><span class="wd">'+DOW3[dowOf(d)]+'</span></th>').join("");
+    h += '<th class="sticky-col">Agent</th>' + dates.map(d => '<th>'+fmtLong(d)+'<br><span class="wd">'+DOW3[dowOf(d)]+'</span></th>').join("");
   } else {
     h += '<th class="sticky-col">Date</th>' + agents.map(a => '<th>'+esc(a)+'</th>').join("");
   }
