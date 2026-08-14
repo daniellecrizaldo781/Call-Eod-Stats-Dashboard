@@ -6,7 +6,7 @@ Usage:
 
 The sheets must be shared as "Anyone with the link can view".
 """
-import csv, io, json, os, sys, time, datetime, collections, urllib.request
+import csv, io, json, os, sys, time, datetime, collections, urllib.request, re
 
 import build_data as B   # reuse the exact same parsing/classification logic
 
@@ -31,10 +31,61 @@ SHEETS = [
 ]
 URL = "https://docs.google.com/spreadsheets/d/{}/export?format=csv&gid={}"
 
-# Optional 3rd sheet: the "Call Breakdown" ticket export (brands, branches, refund reasons).
-# Stored as repo secret BREAKDOWN_SHEET = "SHEET_ID|GID1|GID2|..." (one GID per tab, e.g. Aug + Jul).
-# If unset, breakdown is skipped. A single GID still works (backward compatible).
-BREAKDOWN_SECRET = os.environ.get("BREAKDOWN_SHEET")
+# Optional 4th sheet: the team's call schedule (agents x dates grid of shift strings).
+# Stored as repo secret SCHED_SHEET = "SHEET_ID|GID" (single tab). If unset, schedule is skipped.
+SCHED_SECRET = os.environ.get("SCHED_SHEET")
+
+
+# ---- shift parsing: turn a cell like "6AM-3PM" / "7AM - 8AM\n5PM - 6PM" into a set of hours ----
+_HOURS = {str(h): h for h in range(24)}
+for h in range(24):
+    _HOURS[("%02d" % h) + ":00"] = h
+    _HOURS[("%02d" % h)] = h
+_MERIDIAN = {"am": 0, "a": 0, "pm": 12, "p": 12}
+def _parse_clock(tok):
+    """Parse a clock token like '6AM', '3:00 PM', '14' -> hour int or None."""
+    tok = tok.strip().lower().replace(".", "")
+    if not tok:
+        return None
+    m = re.match(r"^(\d{1,2})(?::(\d{2}))?\s*(am|pm|a|p)?$", tok)
+    if not m:
+        return None
+    h = int(m.group(1)); ap = m.group(3)
+    if ap:
+        h = h % 12 + _MERIDIAN[ap]
+    elif h >= 24:
+        return None
+    return h
+
+
+def _shift_hours(cell):
+    """Return a set of hours an agent is scheduled, given a raw schedule cell.
+    Handles single or multiple ranges separated by newlines/commas/semicolons.
+    Unparseable cells contribute no hours (never fabricated)."""
+    if cell is None:
+        return set()
+    txt = str(cell)
+    hours = set()
+    # split into separate ranges
+    for part in re.split(r"[\n;,]+", txt):
+        part = part.strip()
+        if not part or part.upper() == "OFF":
+            continue
+        # a range looks like CLOCK - CLOCK ; a lone clock is a 1-hour slot
+        m = re.split(r"\s*(?:to|-|–|—)\s*", part, maxsplit=1)
+        if len(m) == 2:
+            a = _parse_clock(m[0]); b = _parse_clock(m[1])
+            if a is None or b is None:
+                continue
+            if b < a:
+                b += 24          # e.g. 5PM-6PM already fine; 10PM-2AM wraps
+            for h in range(a, b):
+                hours.add(h % 24)
+        else:
+            a = _parse_clock(m[0])
+            if a is not None:
+                hours.add(a % 24)
+    return hours
 
 
 def _money(v):
@@ -205,6 +256,88 @@ def hour_from_cell(idx, r):
     return None
 
 
+def build_schedule():
+    """Pull the team schedule sheet (agents x dates grid of shift strings).
+
+    Layout (observed): row 0 = dates header (col B+), row 1 = ['', 'Designation', <dow>, ...],
+    each following row = [agentName, designation, shiftForDate1, shiftForDate2, ...].
+    Returns [] if SCHED_SECRET is missing. Produces compact records:
+        {d: ISO date, agent, team, hours:[int,...]}   # one record per agent per scheduled date
+    """
+    if not SCHED_SECRET or "|" not in SCHED_SECRET:
+        print("SCHED_SHEET not set — skipping schedule data", flush=True)
+        return []
+    sid, gid = SCHED_SECRET.split("|", 1)
+    sid = sid.strip(); gid = gid.strip()
+    print("fetching schedule ...", flush=True)
+    text = fetch(sid, gid)
+    rows = list(rows_from_csv(text))
+    if not rows:
+        print("  (schedule empty)", flush=True)
+        return []
+    hdr = [h.strip().lower() for h in next(iter(rows_from_csv(text)))] if False else None
+    # reuse the parsed rows; recompute header from the first non-empty row
+    rdr = csv.reader(io.StringIO(text))
+    raw = [r for r in rdr if r and any(str(x).strip() for x in r)]
+    # header row = first row whose col-A is blank and col-B looks like a date (the dates banner)
+    def looks_date(s):
+        return bool(re.search(r"[A-Z][a-z]{2}\s+\d{1,2},?\s*\d{4}", str(s)))
+    date_cols = []   # list of (col_index, iso_date)
+    header_row = None
+    for ri, r in enumerate(raw):
+        if ri == 0 and (not r[0].strip()) and looks_date(r[1] if len(r) > 1 else ""):
+            header_row = r
+            break
+    if header_row is None:
+        # fallback: assume first row is the date banner
+        header_row = raw[0]
+    for ci, cell in enumerate(header_row):
+        if ci < 2:
+            continue
+        s = str(cell).strip()
+        if not looks_date(s):
+            continue
+        s2 = s.replace(",", "")
+        d = None
+        for fmt in ("%b %d %Y", "%B %d %Y"):
+            try:
+                d = datetime.datetime.strptime(s2, fmt).date().isoformat()
+                break
+            except ValueError:
+                continue
+        if d:
+            date_cols.append((ci, d))
+    if not date_cols:
+        print("  (no date columns found in schedule — skipping)", flush=True)
+        return []
+    out = []
+    n_dates = 0
+    for r in raw[1:]:
+        name = (r[0].strip() if r and len(r) > 0 else "")
+        if not name:
+            continue
+        team = (r[1].strip() if len(r) > 1 else "")
+        team = "OHA" if team.upper().startswith("OHA") else ("NON-OHA" if team.upper().startswith("NON") else "ALL")
+        for ci, d in date_cols:
+            if ci >= len(r):
+                continue
+            hrs = _shift_hours(r[ci])
+            if hrs:
+                out.append({"d": d, "agent": name, "team": team, "hours": sorted(hrs)})
+                n_dates += 1
+    print("  schedule: %d agent-date shifts" % n_dates, flush=True)
+    return out
+
+
+def _safe_schedule():
+    """Run build_schedule() but never let it abort the whole sync."""
+    try:
+        return build_schedule()
+    except Exception as e:
+        print("!! schedule failed (skipped): " + str(e), flush=True)
+        return []
+
+
 def _safe_breakdown():
     """Run build_breakdown() but never let it abort the whole sync."""
     try:
@@ -284,6 +417,7 @@ def build():
         "noIvrLabel": B.NO_IVR,
         "rowsPerSheet": per_sheet,
         "breakdown": (_safe_breakdown()),
+        "schedule": (_safe_schedule()),
     }
     out = os.path.join(BASE, "data.js")
     tmp = out + ".tmp"

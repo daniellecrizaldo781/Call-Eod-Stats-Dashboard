@@ -405,3 +405,21 @@ footer{margin-top:36px;text-align:center;font-size:11.5px;color:var(--mauve)}
   #ivrBranchOut .scroll{overflow-x:auto}
   #ivrBranchOut .ivrout{min-width:760px;width:760px}
 }
+
+/* ===== Call Forecast & Staffing ===== */
+.forecast-controls{display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;margin:14px 0 4px}
+.forecast-controls .fgroup{margin:0}
+#fcKpis{margin-top:14px}
+.agchips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.agchip{background:#FCE7F1;border:1px solid #F2B8D2;color:#9B2C6B;padding:3px 10px;border-radius:999px;font-size:12.5px;font-weight:600}
+.heatmap{overflow-x:auto;margin-top:6px}
+.heatmap table{border-collapse:separate;border-spacing:3px;min-width:640px}
+.heatmap th{font-size:11.5px;color:var(--ink2);padding:4px 6px;text-align:center;white-space:nowrap}
+.heatmap td.hm{width:30px;height:30px;text-align:center;border-radius:8px;cursor:pointer;font-size:13px;transition:transform .08s}
+.heatmap td.hm:hover{transform:scale(1.12);box-shadow:0 2px 8px rgba(0,0,0,.18)}
+.heatmap td.hm.under{background:#F7C9D5}
+.heatmap td.hm.over{background:#FBE6CF}
+.heatmap td.hm.ok{background:#CDEBD7}
+.heatmap td.hm.empty{background:#F3EEF4}
+.heatmap td.hm.none{background:#F3EEF4;cursor:default}
+.pagehint{color:var(--ink2);font-size:12.5px;line-height:1.5;margin:8px 2px 0}

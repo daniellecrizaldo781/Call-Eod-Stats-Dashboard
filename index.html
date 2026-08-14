@@ -1,6 +1,6 @@
 <!DOCTYPE html><html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Call EOD Stats Dashboard</title><link rel="stylesheet" href="styles.css?v=20260811a"></head>
+<title>Call EOD Stats Dashboard</title><link rel="stylesheet" href="styles.css?v=20260811b"></head>
 <body><div class="wrap">
 
 <header class="hero">
@@ -16,6 +16,7 @@
   <button class="navbtn" id="navIvr" data-page="ivr">&#128241; IVR Branch Performance</button>
   <button class="navbtn" id="navBreak" data-page="break">&#128202; Call Breakdown</button>
   <button class="navbtn" id="navAgent" data-page="agent">&#128100; Agent Performance</button>
+  <button class="navbtn" id="navForecast" data-page="forecast">&#128202; Call Forecast &amp; Staffing</button>
 </nav>
 
 <div class="filters">
@@ -210,16 +211,22 @@
   <div class="scroll"><table id="tAgent"></table></div></div>
 </section>
 
+<!-- ============================ PAGE: CALL FORECAST & STAFFING ============================ -->
+<section class="page" id="pageForecast" hidden>
+  <div id="forecastRoot"></div>
+</section>
+
 <footer>Created by Danielle Ann Mari Crizaldo &mdash; Call Team Lead</footer>
 </div>
 <div class="tip" id="tip"></div>
-<script src="data.js?v=20260811a"></script>
-<script src="app-core.js?v=20260811a"></script>
-<script src="app-charts.js?v=20260811a"></script>
-<script src="app-period.js?v=20260811a"></script>
-<script src="app-render1.js?v=20260811a"></script>
-<script src="app-render2.js?v=20260811a"></script>
-<script src="app-render3.js?v=20260811a"></script>
-<script src="app-breakdown.js?v=20260811a"></script>
-<script src="app-init.js?v=20260811a"></script>
+<script src="data.js?v=20260811b"></script>
+<script src="app-core.js?v=20260811b"></script>
+<script src="app-charts.js?v=20260811b"></script>
+<script src="app-period.js?v=20260811b"></script>
+<script src="app-render1.js?v=20260811b"></script>
+<script src="app-render2.js?v=20260811b"></script>
+<script src="app-render3.js?v=20260811b"></script>
+<script src="app-breakdown.js?v=20260811b"></script>
+<script src="app-forecast.js?v=20260811b"></script>
+<script src="app-init.js?v=20260811b"></script>
 </body></html>
