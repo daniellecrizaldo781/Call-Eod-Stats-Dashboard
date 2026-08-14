@@ -35,6 +35,9 @@ URL = "https://docs.google.com/spreadsheets/d/{}/export?format=csv&gid={}"
 # Stored as repo secret SCHED_SHEET = "SHEET_ID|GID" (single tab). If unset, schedule is skipped.
 SCHED_SECRET = os.environ.get("SCHED_SHEET")
 
+# Optional: Call Breakdown ticket sheet (multi-tab). Repo secret BREAKDOWN_SHEET.
+BREAKDOWN_SECRET = os.environ.get("BREAKDOWN_SHEET")
+
 # Optional 5th sheet: the team's break / lunch / back-office tracker
 # (per-agent, per-day totals of break minutes). Stored as repo secret
 # BREAK_SHEET = "SHEET_ID|GID" (single tab). If unset, breaks are skipped.
