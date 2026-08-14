@@ -39,10 +39,11 @@ jobs:
 
       - name: Bump cache-buster in index.html
         # Force browsers to re-fetch after an auto-sync (no hard refresh needed).
+        # Use a unique per-run stamp so the URL is never served from a stale CDN cache.
         run: |
-          TODAY=$(date +%Y%m%d)
-          sed -i -E "s/\?v=[0-9a-z]+\"/?v=${TODAY}\"/g" index.html
-          echo "cache-buster set to v=${TODAY}"
+          STAMP=$(date +%Y%m%d)-${GITHUB_RUN_ID:-manual}
+          sed -i -E "s/\?v=[0-9a-z-]+/?v=${STAMP}/g" index.html
+          echo "cache-buster set to v=${STAMP}"
 
       - name: Commit and push if changed
         run: |
