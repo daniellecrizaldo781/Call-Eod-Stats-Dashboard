@@ -51,7 +51,7 @@ function cellClass(txt){
 // build the list of available weeks from the schedule data (Mondays present)
 function scWeeks(schedObj){
   const set = new Set();
-  for (const sec of schedObj.raw) for (const d of sec.dates) set.add(mondayOf(d));
+  for (const sec of schedObj.raw) for (const d of sec.dates){ const iso = Array.isArray(d) ? d[1] : d; set.add(mondayOf(iso)); }
   return [...set].sort();
 }
 
@@ -131,39 +131,55 @@ function renderSchedule(){
   body.innerHTML = scGrid(schedObj, win, chanOk, q);
 }
 
-/* ---------- Schedule Grid: one separate table per team, single week ---------- */
+/* ---------- Schedule Grid: one separate white box per team (+ overtime) ---------- */
+// render one team's schedule as a white box with a colored header
+function scTeamBox(teamName, teamKey, agents, dates, win, q){
+  if (!dates || !dates.length) return "";
+  const ags = agents.filter(a => {
+    if (q && !a.name.toLowerCase().includes(q)) return false;
+    if (F.chan !== "ALL" && a.desig !== F.chan && a.desig !== "ALL") return false;
+    return a.cells.some((txt,i) => {
+      const d = dates[i];
+      return d && win.includes(d) && (txt||"").trim() && cellClass(txt) === "shift";
+    });
+  });
+  if (!ags.length) return "";
+  const col = teamColor(teamKey);
+  let h = '<div class="sched-team">';
+  h += '<div class="sched-banner" style="background:'+col.bg+';color:'+col.fg+'">'+esc(teamName)+'</div>';
+  h += '<div class="sched-box"><table class="schedgrid"><thead><tr>'
+     + '<th class="sticky-col">Name</th><th>Designation</th>';
+  for (const d of win) h += '<th>'+fmtLong(d)+'<br><span class="wd">'+DOW3[dowOf(d)]+'</span></th>';
+  h += '</tr></thead><tbody>';
+  for (const a of ags){
+    h += '<tr><td class="sticky-col">'+esc(a.name)+'</td><td class="desig">'+esc(desigLabel(a.desig))+'</td>';
+    for (const d of win){
+      const i = dates.indexOf(d);
+      const txt = (i >= 0 && i < a.cells.length) ? a.cells[i] : "";
+      const cls = cellClass(txt);
+      const disp = cls === "blank" ? "" : esc(txt);
+      h += '<td class="'+cls+'">'+disp+'</td>';
+    }
+    h += '</tr>';
+  }
+  h += '</tbody></table></div></div>';
+  return h;
+}
+
 function scGrid(schedObj, win, chanOk, q){
   let h = "";
+  // regular teams (cess / brai / danielle)
   for (const sec of schedObj.raw){
-    const ags = sec.agents.filter(a => {
-      if (q && !a.name.toLowerCase().includes(q)) return false;
-      if (F.chan !== "ALL" && a.desig !== F.chan && a.desig !== "ALL") return false;
-      // keep agent only if they have a shift in the selected week
-      return a.cells.some((txt,i) => {
-        const d = sec.dates[i];
-        return d && win.includes(d) && (txt||"").trim() && cellClass(txt) === "shift";
-      });
-    });
-    if (!ags.length) continue;
-    const col = teamColor(sec.team_key);
-    h += '<div class="sched-team">';
-    h += '<div class="sched-banner" style="background:'+col.bg+';color:'+col.fg+'">'+esc(sec.team)+'</div>';
-    h += '<div class="sched-box"><table class="schedgrid"><thead><tr>'
-       + '<th class="sticky-col">Name</th><th>Designation</th>';
-    for (const d of win) h += '<th>'+fmtLong(d)+'<br><span class="wd">'+DOW3[dowOf(d)]+'</span></th>';
-    h += '</tr></thead><tbody>';
-    for (const a of ags){
-      h += '<tr><td class="sticky-col">'+esc(a.name)+'</td><td class="desig">'+esc(desigLabel(a.desig))+'</td>';
-      for (const d of win){
-        const i = sec.dates.indexOf(d);
-        const txt = (i >= 0 && i < a.cells.length) ? a.cells[i] : "";
-        const cls = cellClass(txt);
-        const disp = cls === "blank" ? "" : esc(txt);
-        h += '<td class="'+cls+'">'+disp+'</td>';
-      }
-      h += '</tr>';
+    if (sec.team_key === "overtime") continue;
+    h += scTeamBox(sec.team, sec.team_key, sec.agents, sec.dates.map(x=>x[1]), win, q);
+  }
+  // overtime: split into Team Brai / Team Danielle boxes
+  const ot = schedObj.raw.find(s => s.team_key === "overtime");
+  if (ot){
+    for (const tkey of ["brai","danielle"]){
+      const ags = ot.agents.filter(a => (a.ot_team||"danielle") === tkey);
+      h += scTeamBox("Overtime — Team " + (tkey==="brai"?"Brai":"Danielle"), tkey, ags, ot.dates.map(x=>x[1]), win, q);
     }
-    h += '</tbody></table></div></div>';
   }
   if (!h) h = '<p class="pagehint">No agents match the current channel / search filter for this week.</p>';
   return h;

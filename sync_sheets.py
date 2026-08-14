@@ -259,15 +259,17 @@ def hour_from_cell(idx, r):
 def build_schedule():
     """Pull the team schedule sheet (agents x dates grid of shift strings).
 
-    Layout (observed): one or more TEAM sections, each a colored banner row
-    ('Team Cess' / 'Team Brai' / 'Team Danielle'), a dates banner row
-    (col A blank, col B.. = 'Jun 29, 2026' etc.), then agent rows
-    [agentName, designation, shiftTextForDate1, shiftTextForDate2, ...].
+    Layout (observed): each section is a banner row ('Team Cess' / 'Team Brai' /
+    'Team Danielle' / 'Overtime Shift Schedule'). The banner row itself usually
+    carries the date labels in cols 2+ (sometimes the date labels sit on the row
+    immediately BEFORE the banner, e.g. the overtime block). After the banner a
+    'Designation' / day-of-week row follows, then agent rows
+    [agentName, designation, shiftTextForDate1, ...].
 
     Returns [] if SCHED_SECRET is missing. Produces:
-      raw:  [{team, team_key, dates:[ISO...], agents:[{name, desig, cells:[rawText...]}]}]
+      raw:  [{team, team_key, dates:[(col,ISO)...], agents:[{name, desig, cells:[rawText...], ot_team?}]}]
       rows: [{d, agent, team, desig, text, hours:[int...]}]   # one per agent per scheduled date
-            (the 'rows' form also feeds the Forecast page; hours derived from text)
+            (also feeds the Forecast page; hours derived from text)
     """
     if not SCHED_SECRET or "|" not in SCHED_SECRET:
         print("SCHED_SHEET not set — skipping schedule data", flush=True)
@@ -277,46 +279,48 @@ def build_schedule():
     print("fetching schedule ...", flush=True)
     text = fetch(sid, gid)
     rdr = csv.reader(io.StringIO(text))
-    raw = [r for r in rdr if r and any(str(x).strip() for x in r)]
+    raw_rows = [r for r in rdr if r and any(str(x).strip() for x in r)]
 
     def looks_date(s):
         return bool(re.search(r"[A-Z][a-z]{2}\s+\d{1,2},?\s*\d{4}", str(s)))
 
-    # ---- locate date banner & extract columns ----
-    date_cols = []   # list of (col_index, iso_date)
-    header_row = None
-    for ri, r in enumerate(raw):
-        if ri == 0 and (not r[0].strip()) and looks_date(r[1] if len(r) > 1 else ""):
-            header_row = r
-            break
-    if header_row is None:
-        header_row = raw[0]
-    for ci, cell in enumerate(header_row):
-        if ci < 2:
-            continue
-        s = str(cell).strip()
-        if not looks_date(s):
-            continue
-        s2 = s.replace(",", "")
-        d = None
-        for fmt in ("%b %d %Y", "%B %d %Y"):
-            try:
-                d = datetime.datetime.strptime(s2, fmt).date().isoformat()
-                break
-            except ValueError:
+    def parse_dates(r):
+        out = []
+        for ci, cell in enumerate(r):
+            if ci < 2:
                 continue
-        if d:
-            date_cols.append((ci, d))
-    if not date_cols:
-        print("  (no date columns found in schedule — skipping)", flush=True)
-        return []
+            s = str(cell).strip()
+            if not looks_date(s):
+                continue
+            s2 = s.replace(",", " ")
+            d = None
+            for fmt in ("%b %d %Y", "%B %d %Y"):
+                try:
+                    d = datetime.datetime.strptime(s2, fmt).date().isoformat()
+                    break
+                except ValueError:
+                    continue
+            if d:
+                out.append((ci, d))
+        return out
+
+    def is_title(a0):
+        a = (a0 or "").strip()
+        if not a:
+            return False
+        if re.search(r"team\s+\w+", a, re.I):
+            return True
+        if a.lower().startswith("overtime"):
+            return True
+        return False
 
     def team_key(name):
         u = name.lower()
+        if u.startswith("overtime"):
+            return "overtime"
         if "cess" in u: return "cess"
         if "brai" in u: return "brai"
-        if "danielle" in u: return "danielle"
-        if "dani" in u: return "danielle"
+        if "danielle" in u or "dani" in u: return "danielle"
         return "other"
 
     def norm_team(t):
@@ -326,43 +330,67 @@ def build_schedule():
         if u.startswith("ALL"): return "ALL"
         return t.strip().upper() or "ALL"
 
-    raw_out = []
-    rows_out = []
-    cur_team = None
-    cur_key = None
-    team_index = {}   # team_key -> index in raw_out (so duplicate banners merge into one section)
-    for r in raw:
+    sections = []          # list of {team, team_key, dates, agents}
+    rows_out = []           # flattened agent-date rows (feeds Forecast page)
+    roster = {"brai": set(), "danielle": set(), "cess": set(), "other": set()}
+    cur = None
+    for i, r in enumerate(raw_rows):
         a0 = (r[0].strip() if r else "")
-        a1 = (r[1].strip() if len(r) > 1 else "")
-        # team banner row?
-        if a0 and re.search(r"team\s+\w+", a0, re.I) and not looks_date(a1) and not a1:
-            cur_team = a0
-            cur_key = team_key(a0)
-            if cur_key in team_index:
-                # merge into the existing section for this team (keep first banner name)
-                continue
-            team_index[cur_key] = len(raw_out)
-            raw_out.append({"team": a0, "team_key": cur_key, "dates": [d for _, d in date_cols], "agents": []})
+        if is_title(a0):
+            key = team_key(a0)
+            dc = parse_dates(r)
+            if not dc and i > 0:
+                dc = parse_dates(raw_rows[i - 1])   # date labels sometimes sit on the prior row
+            cur = {"team": a0, "team_key": key, "dates": dc, "agents": []}
+            sections.append(cur)
+            roster.setdefault(key, set())
             continue
         if not a0:
             continue
-        # agent row
-        team_label = norm_team(a1)
+        if cur is None:
+            cur = {"team": "Team", "team_key": "other", "dates": parse_dates(r), "agents": []}
+            sections.append(cur)
+        team_label = norm_team(r[1] if len(r) > 1 else "")
         cells = []
-        for ci, d in date_cols:
+        for ci, d in cur["dates"]:
             txt = (r[ci].strip() if ci < len(r) else "")
             cells.append(txt)
             hrs = _shift_hours(txt)
             if hrs:
                 rows_out.append({"d": d, "agent": a0, "team": team_label,
                                  "desig": team_label, "text": txt, "hours": sorted(hrs)})
-        if raw_out:
-            raw_out[team_index.get(cur_key if cur_key else "other", len(raw_out)-1)]["agents"].append(
-                {"name": a0, "desig": team_label, "cells": cells})
+        ot_team = None
+        if cur["team_key"] == "overtime":
+            if a0 in roster.get("brai", set()):
+                ot_team = "brai"
+            elif a0 in roster.get("danielle", set()):
+                ot_team = "danielle"
+            else:
+                ot_team = "danielle"
+        cur["agents"].append({"name": a0, "desig": team_label,
+                              "cells": cells, "ot_team": ot_team})
+        if cur["team_key"] in roster:
+            roster[cur["team_key"]].add(a0)
+
+    # merge duplicate team sections (keep first banner name + combined agents)
+    merged = {}
+    merged_order = []
+    for s in sections:
+        k = s["team_key"]
+        if k == "overtime":
+            merged.setdefault("overtime", {"team": "Overtime Shift Schedule", "team_key": "overtime", "dates": s["dates"], "agents": []})
+            merged["overtime"]["agents"].extend(s["agents"])
+            if "overtime" not in merged_order:
+                merged_order.append("overtime")
+            continue
+        if k in merged:
+            merged[k]["agents"].extend(s["agents"])
+            if merged[k]["dates"] and s["dates"]:
+                pass  # keep first section's dates
         else:
-            # agents before any team banner: stash under a default group
-            raw_out.append({"team": "Team", "team_key": "other", "dates": [d for _, d in date_cols], "agents": []})
-            raw_out[-1]["agents"].append({"name": a0, "desig": team_label, "cells": cells})
+            merged[k] = {"team": s["team"], "team_key": k, "dates": s["dates"], "agents": s["agents"]}
+            merged_order.append(k)
+    raw_out = [merged[k] for k in merged_order if merged[k]["agents"]]
 
     print("  schedule: %d agent-date shifts across %d team section(s)" % (len(rows_out), len(raw_out)), flush=True)
     return {"raw": raw_out, "rows": rows_out}
