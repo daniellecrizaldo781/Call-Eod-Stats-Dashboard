@@ -259,10 +259,15 @@ def hour_from_cell(idx, r):
 def build_schedule():
     """Pull the team schedule sheet (agents x dates grid of shift strings).
 
-    Layout (observed): row 0 = dates header (col B+), row 1 = ['', 'Designation', <dow>, ...],
-    each following row = [agentName, designation, shiftForDate1, shiftForDate2, ...].
-    Returns [] if SCHED_SECRET is missing. Produces compact records:
-        {d: ISO date, agent, team, hours:[int,...]}   # one record per agent per scheduled date
+    Layout (observed): one or more TEAM sections, each a colored banner row
+    ('Team Cess' / 'Team Brai' / 'Team Danielle'), a dates banner row
+    (col A blank, col B.. = 'Jun 29, 2026' etc.), then agent rows
+    [agentName, designation, shiftTextForDate1, shiftTextForDate2, ...].
+
+    Returns [] if SCHED_SECRET is missing. Produces:
+      raw:  [{team, team_key, dates:[ISO...], agents:[{name, desig, cells:[rawText...]}]}]
+      rows: [{d, agent, team, desig, text, hours:[int...]}]   # one per agent per scheduled date
+            (the 'rows' form also feeds the Forecast page; hours derived from text)
     """
     if not SCHED_SECRET or "|" not in SCHED_SECRET:
         print("SCHED_SHEET not set — skipping schedule data", flush=True)
@@ -271,17 +276,13 @@ def build_schedule():
     sid = sid.strip(); gid = gid.strip()
     print("fetching schedule ...", flush=True)
     text = fetch(sid, gid)
-    rows = list(rows_from_csv(text))
-    if not rows:
-        print("  (schedule empty)", flush=True)
-        return []
-    hdr = [h.strip().lower() for h in next(iter(rows_from_csv(text)))] if False else None
-    # reuse the parsed rows; recompute header from the first non-empty row
     rdr = csv.reader(io.StringIO(text))
     raw = [r for r in rdr if r and any(str(x).strip() for x in r)]
-    # header row = first row whose col-A is blank and col-B looks like a date (the dates banner)
+
     def looks_date(s):
         return bool(re.search(r"[A-Z][a-z]{2}\s+\d{1,2},?\s*\d{4}", str(s)))
+
+    # ---- locate date banner & extract columns ----
     date_cols = []   # list of (col_index, iso_date)
     header_row = None
     for ri, r in enumerate(raw):
@@ -289,7 +290,6 @@ def build_schedule():
             header_row = r
             break
     if header_row is None:
-        # fallback: assume first row is the date banner
         header_row = raw[0]
     for ci, cell in enumerate(header_row):
         if ci < 2:
@@ -310,23 +310,56 @@ def build_schedule():
     if not date_cols:
         print("  (no date columns found in schedule — skipping)", flush=True)
         return []
-    out = []
-    n_dates = 0
-    for r in raw[1:]:
-        name = (r[0].strip() if r and len(r) > 0 else "")
-        if not name:
+
+    def team_key(name):
+        u = name.lower()
+        if "cess" in u: return "cess"
+        if "brai" in u: return "brai"
+        if "danielle" in u: return "danielle"
+        if "dani" in u: return "danielle"
+        return "other"
+
+    def norm_team(t):
+        u = t.strip().upper()
+        if u.startswith("OHA"): return "OHA"
+        if u.startswith("NON"): return "NON-OHA"
+        if u.startswith("ALL"): return "ALL"
+        return t.strip().upper() or "ALL"
+
+    raw_out = []
+    rows_out = []
+    cur_team = None
+    cur_key = None
+    for r in raw:
+        a0 = (r[0].strip() if r else "")
+        a1 = (r[1].strip() if len(r) > 1 else "")
+        # team banner row?
+        if a0 and re.search(r"team\s+\w+", a0, re.I) and not looks_date(a1) and not a1:
+            cur_team = a0
+            cur_key = team_key(a0)
+            raw_out.append({"team": a0, "team_key": cur_key, "dates": [d for _, d in date_cols], "agents": []})
             continue
-        team = (r[1].strip() if len(r) > 1 else "")
-        team = "OHA" if team.upper().startswith("OHA") else ("NON-OHA" if team.upper().startswith("NON") else "ALL")
+        if not a0:
+            continue
+        # agent row
+        team_label = norm_team(a1)
+        cells = []
         for ci, d in date_cols:
-            if ci >= len(r):
-                continue
-            hrs = _shift_hours(r[ci])
+            txt = (r[ci].strip() if ci < len(r) else "")
+            cells.append(txt)
+            hrs = _shift_hours(txt)
             if hrs:
-                out.append({"d": d, "agent": name, "team": team, "hours": sorted(hrs)})
-                n_dates += 1
-    print("  schedule: %d agent-date shifts" % n_dates, flush=True)
-    return out
+                rows_out.append({"d": d, "agent": a0, "team": team_label,
+                                 "desig": team_label, "text": txt, "hours": sorted(hrs)})
+        if raw_out:
+            raw_out[-1]["agents"].append({"name": a0, "desig": team_label, "cells": cells})
+        else:
+            # agents before any team banner: stash under a default group
+            raw_out.append({"team": "Team", "team_key": "other", "dates": [d for _, d in date_cols], "agents": []})
+            raw_out[-1]["agents"].append({"name": a0, "desig": team_label, "cells": cells})
+
+    print("  schedule: %d agent-date shifts across %d team section(s)" % (len(rows_out), len(raw_out)), flush=True)
+    return {"raw": raw_out, "rows": rows_out}
 
 
 def _safe_schedule():

@@ -26,8 +26,9 @@ function fcFilteredRows(){
 }
 // schedule records in range + team-filtered (OHA/NON-OHA/ALL). channel ALL -> every team.
 function fcSchedRows(){
-  if (!D.schedule || !D.schedule.length) return [];
-  return D.schedule.filter(s =>
+  const sched = (D.schedule && D.schedule.rows) ? D.schedule.rows : (Array.isArray(D.schedule) ? D.schedule : []);
+  if (!sched.length) return [];
+  return sched.filter(s =>
     s.d >= F.from && s.d <= F.to &&
     (F.chan === "ALL" ? true : (s.team === F.chan || s.team === "ALL")) &&
     (FC.fteam === "ALL" || s.team === FC.fteam || (FC.fteam === F.chan && s.team === "ALL")));
