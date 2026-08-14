@@ -1,12 +1,11 @@
 /* ---------- Call Schedule page ----------
    Reads D.schedule (raw team-grouped grid pulled from the SCHED_SHEET sheet).
-   Default view = "Schedule Grid": faithful team sections (Team Cess / Brai / Danielle)
-   with date columns and raw shift text, matching the source sheet.
-   Alternate views: By Agent / By Date compact grids.
-   Follows the global Main Channel filter + From/To range. No fabricated data.
+   Default view = "Schedule Grid": each TEAM is its own separate table (like the source
+   sheet), showing ONE week at a time. A week dropdown inside the page lets agents pick
+   which week to view. Follows the global Main Channel filter. No fabricated data.
 */
 
-const SC = { view: "grid", q: "" };
+const SC = { view: "grid", q: "", week: null };
 
 // team banner colors (match the source sheet's section banners)
 const TEAM_COLORS = {
@@ -26,6 +25,18 @@ function desigLabel(d){
 function dowOf(d){ return (new Date(+d.slice(0,4), +d.slice(5,7)-1, +d.slice(8,10)).getDay() + 6) % 7; }
 const DOW3 = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
 
+// ---- week helpers (Monday-based) ----
+function isoAdd(d, n){
+  const dt = new Date(+d.slice(0,4), +d.slice(5,7)-1, +d.slice(8,10));
+  dt.setDate(dt.getDate() + n);
+  const y = dt.getFullYear(), m = String(dt.getMonth()+1).padStart(2,"0"), day = String(dt.getDate()).padStart(2,"0");
+  return y + "-" + m + "-" + day;
+}
+function mondayOf(d){ return isoAdd(d, -((new Date(+d.slice(0,4), +d.slice(5,7)-1, +d.slice(8,10)).getDay()+6)%7)); }
+function weekDays(mon){ const o=[]; for(let i=0;i<7;i++) o.push(isoAdd(mon, i)); return o; }
+function fmtMD(d){ return d.slice(5).replace("-","/"); }
+function weekLabel(mon){ return fmtMD(mon) + " – " + fmtMD(isoAdd(mon,6)); }
+
 // classify a raw shift cell for styling
 function cellClass(txt){
   const t = (txt || "").trim().toUpperCase();
@@ -33,6 +44,13 @@ function cellClass(txt){
   if (t === "OFF" || t === "RD" || t === "REST") return "off";
   if (t.includes("LWOP") || t.includes("VL") || t.includes("SL")) return "leave";
   return "shift";
+}
+
+// build the list of available weeks from the schedule data (Mondays present)
+function scWeeks(schedObj){
+  const set = new Set();
+  for (const sec of schedObj.raw) for (const d of sec.dates) set.add(mondayOf(d));
+  return [...set].sort();
 }
 
 function renderSchedule(){
@@ -45,6 +63,7 @@ function renderSchedule(){
       + '<span class="chip" id="schedScope"></span><div class="line"></div></div>'
       + '<div class="kpis" id="schedKpis"></div>'
       + '<div class="sched-controls">'
+      + '  <div class="fgroup"><span class="flabel">Week</span><select id="schedWeek" class="pillsel"></select></div>'
       + '  <div class="fgroup"><span class="flabel">View</span><div class="pills" id="schedViewPills">'
       + '    <button class="pill on" data-v="grid">Schedule Grid</button>'
       + '    <button class="pill" data-v="agent">By Agent</button>'
@@ -55,8 +74,9 @@ function renderSchedule(){
       + '    <button class="btn ghost" id="schedReset">Reset</button></div>'
       + '</div>'
       + '<div class="card"><div class="scroll" id="schedBody"></div></div>'
-      + '<p class="pagehint">Source: team schedule sheet (SCHED_SHEET). Shift text is shown exactly as entered '
-      + '(OFF / LWOP / rest appear as-is). Follows the Main Channel filter and the From&ndash;To date range above.</p>';
+      + '<p class="pagehint">Source: team schedule sheet (SCHED_SHEET). Each team is shown as its own table; '
+      + 'pick a week above to view one week at a time. Shift text is shown exactly as entered '
+      + '(OFF / LWOP / rest appear as-is). Follows the Main Channel filter above.</p>';
     root.dataset.built = "1";
 
     $("schedViewPills").addEventListener("click", e => {
@@ -65,8 +85,9 @@ function renderSchedule(){
       b.classList.add("on"); SC.view = b.dataset.v; renderSchedule();
     });
     $("schedSearch").addEventListener("input", e => { SC.q = e.target.value.trim(); renderSchedule(); });
+    $("schedWeek").addEventListener("change", e => { SC.week = e.target.value; renderSchedule(); });
     $("schedReset").onclick = () => {
-      SC.view = "grid"; SC.q = "";
+      SC.view = "grid"; SC.q = ""; SC.week = SC._defaultWeek || SC.week;
       [...$("schedViewPills").children].forEach((x,i)=>x.classList.toggle("on", i===0));
       $("schedSearch").value = ""; renderSchedule();
     };
@@ -74,69 +95,76 @@ function renderSchedule(){
 
   const schedObj = (D.schedule && D.schedule.raw) ? D.schedule : (Array.isArray(D.schedule) ? { raw: [], rows: D.schedule } : null);
   const has = !!(schedObj && (schedObj.raw.length || schedObj.rows.length));
-  $("schedScope").innerHTML = (F.chan === "ALL" ? "All Channels" : F.chan)
-    + " &middot; " + fmtDY(F.from) + " &rarr; " + fmtDY(F.to)
-    + (has ? "" : ' &middot; <span style="color:#D9455F">schedule not loaded &mdash; set SCHED_SHEET secret</span>');
-
   if (!has){
+    $("schedScope").innerHTML = 'schedule not loaded &mdash; set SCHED_SHEET secret';
     $("schedKpis").innerHTML = "";
     $("schedBody").innerHTML = '<p class="pagehint">No schedule data. Add the <b>SCHED_SHEET</b> repository '
       + 'secret (schedule sheet ID|GID) and run the sync so the team schedule appears here.</p>';
     return;
   }
 
-  const rows = schedObj.rows;
+  // ---- week selection (drives the whole page; independent of global date range) ----
+  const weeks = scWeeks(schedObj);
+  // default = week of Aug 3 (user request); fall back to most recent week present
+  const defWeek = weeks.includes("2026-08-03") ? "2026-08-03" : (weeks.length ? weeks[weeks.length-1] : null);
+  SC._defaultWeek = defWeek;
+  if (!SC.week || !weeks.includes(SC.week)) SC.week = defWeek;
+  const win = weekDays(SC.week);
+
+  // (re)build week dropdown only if the option set changed
+  const opts = weeks.map(w => '<option value="'+w+'"'+(w===SC.week?' selected':'')+'>'+weekLabel(w)+'</option>').join("");
+  if ($("schedWeek").innerHTML !== opts) $("schedWeek").innerHTML = opts;
+  else if ($("schedWeek").value !== SC.week) $("schedWeek").value = SC.week;
+
   const q = SC.q.toLowerCase();
-  const inRange = r => r.d >= F.from && r.d <= F.to;
+  const inWin = r => win.includes(r.d);
   const chanOk = r => (F.chan === "ALL") ? true : (r.team === F.chan || r.team === "ALL");
 
   // ---- KPIs (minimal) ----
-  const visRows = rows.filter(r => inRange(r) && chanOk(r));
+  const visRows = schedObj.rows.filter(r => inWin(r) && chanOk(r));
   const shifts = visRows.length;
   const agents = new Set(visRows.map(r => r.agent));
   const oha = visRows.filter(r => r.team === "OHA").length;
   const noha = visRows.filter(r => r.team === "NON-OHA").length;
   $("schedKpis").innerHTML =
-      kpi("Scheduled Shifts", nf(shifts), "agent-days in range", "agent")
-    + kpi("Agents", nf(agents.size), "appearing in range", "alt")
+      kpi("Scheduled Shifts", nf(shifts), "agent-days this week", "agent")
+    + kpi("Agents", nf(agents.size), "appearing this week", "alt")
     + kpi("OHA Shifts", nf(oha), F.chan === "NON-OHA" ? "filtered out" : "team OHA", "good")
     + kpi("Non-OHA Shifts", nf(noha), F.chan === "OHA" ? "filtered out" : "team Non-OHA", "warn");
 
+  $("schedScope").innerHTML = "Week of " + weekLabel(SC.week)
+    + " &middot; " + (F.chan === "ALL" ? "All Channels" : F.chan);
+
   const body = $("schedBody");
-  if (SC.view === "grid") body.innerHTML = scGrid(schedObj, inRange, chanOk, q);
-  else if (SC.view === "agent") body.innerHTML = scCompact(schedObj, inRange, chanOk, q, "agent");
-  else body.innerHTML = scCompact(schedObj, inRange, chanOk, q, "date");
+  if (SC.view === "grid") body.innerHTML = scGrid(schedObj, win, chanOk, q);
+  else if (SC.view === "agent") body.innerHTML = scCompact(schedObj, win, chanOk, q, "agent");
+  else body.innerHTML = scCompact(schedObj, win, chanOk, q, "date");
 }
 
-/* ---------- Schedule Grid (faithful team-grouped, like the source sheet) ---------- */
-function scGrid(schedObj, inRange, chanOk, q){
-  // gather all dates present in range across sections
-  const dates = [...new Set(schedObj.rows.filter(r => inRange(r)).map(r => r.d))].sort();
-  if (!dates.length) return '<p class="pagehint">No scheduled dates in the selected range.</p>';
+/* ---------- Schedule Grid: one separate table per team, single week ---------- */
+function scGrid(schedObj, win, chanOk, q){
   let h = "";
   for (const sec of schedObj.raw){
-    // filter agents in this section by channel + search
     const ags = sec.agents.filter(a => {
       if (q && !a.name.toLowerCase().includes(q)) return false;
-      // channel filter on designation
       if (F.chan !== "ALL" && a.desig !== F.chan && a.desig !== "ALL") return false;
-      return true;
-    }).filter(a => a.cells.some((txt,i) => {
-      // keep agent if any of their in-range date cells has a shift
-      const d = sec.dates[i];
-      return d && inRange({d}) && (txt||"").trim() && cellClass(txt) === "shift";
-    }));
+      // keep agent only if they have a shift in the selected week
+      return a.cells.some((txt,i) => {
+        const d = sec.dates[i];
+        return d && win.includes(d) && (txt||"").trim() && cellClass(txt) === "shift";
+      });
+    });
     if (!ags.length) continue;
     const col = teamColor(sec.team_key);
     h += '<div class="sched-team">';
     h += '<div class="sched-banner" style="background:'+col.bg+';color:'+col.fg+'">'+esc(sec.team)+'</div>';
     h += '<table class="schedgrid"><thead><tr>'
        + '<th class="sticky-col">Name</th><th>Designation</th>';
-    for (const d of dates) h += '<th>'+fmtMD(d)+'<br><span class="wd">'+DOW3[dowOf(d)]+'</span></th>';
+    for (const d of win) h += '<th>'+fmtMD(d)+'<br><span class="wd">'+DOW3[dowOf(d)]+'</span></th>';
     h += '</tr></thead><tbody>';
     for (const a of ags){
       h += '<tr><td class="sticky-col">'+esc(a.name)+'</td><td class="desig">'+esc(desigLabel(a.desig))+'</td>';
-      for (const d of dates){
+      for (const d of win){
         const i = sec.dates.indexOf(d);
         const txt = (i >= 0 && i < a.cells.length) ? a.cells[i] : "";
         const cls = cellClass(txt);
@@ -147,24 +175,22 @@ function scGrid(schedObj, inRange, chanOk, q){
     }
     h += '</tbody></table></div>';
   }
-  if (!h) h = '<p class="pagehint">No agents match the current channel / search filter in this range.</p>';
+  if (!h) h = '<p class="pagehint">No agents match the current channel / search filter for this week.</p>';
   return h;
 }
 
-/* ---------- Compact By Agent / By Date (derived from rows) ---------- */
-function scCompact(schedObj, inRange, chanOk, q, mode){
-  const all = schedObj.rows.filter(r => inRange(r) && chanOk(r));
-  if (!all.length) return '<p class="pagehint">No scheduled agents in the selected range/filter.</p>';
+/* ---------- Compact By Agent / By Date (derived from rows), single week ---------- */
+function scCompact(schedObj, win, chanOk, q, mode){
+  const all = schedObj.rows.filter(r => win.includes(r.d) && chanOk(r));
+  if (!all.length) return '<p class="pagehint">No scheduled agents in the selected week/filter.</p>';
   const dates = [...new Set(all.map(r => r.d))].sort();
   const agents = [...new Set(all.map(r => r.agent))].sort();
-  if (q){ const ql = q; for (let i=agents.length-1;i>=0;i--) if (!agents[i].toLowerCase().includes(ql)) agents.splice(i,1); }
-  // per (agent,date) -> shift text from raw records
+  if (q){ for (let i=agents.length-1;i>=0;i--) if (!agents[i].toLowerCase().includes(q)) agents.splice(i,1); }
   const cell = {};
   for (const r of all) cell[r.agent + "|" + r.d] = r.text;
-  const colOf = d => '<th>'+fmtMD(d)+'<br><span class="wd">'+DOW3[dowOf(d)]+'</span></th>';
   let h = '<table class="schedgrid"><thead><tr>';
   if (mode === "agent"){
-    h += '<th class="sticky-col">Agent</th>' + dates.map(colOf).join("");
+    h += '<th class="sticky-col">Agent</th>' + dates.map(d => '<th>'+fmtMD(d)+'<br><span class="wd">'+DOW3[dowOf(d)]+'</span></th>').join("");
   } else {
     h += '<th class="sticky-col">Date</th>' + agents.map(a => '<th>'+esc(a)+'</th>').join("");
   }
@@ -182,5 +208,3 @@ function scCompact(schedObj, inRange, chanOk, q, mode){
   h += '</tbody></table>';
   return h;
 }
-
-function fmtMD(d){ return d.slice(5).replace("-","/"); }
