@@ -423,6 +423,16 @@ footer{margin-top:36px;text-align:center;font-size:11.5px;color:var(--mauve)}
 .heatmap td.hm.empty{background:#F3EEF4}
 .heatmap td.hm.none{background:#F3EEF4;cursor:default}
 .pagehint{color:var(--ink2);font-size:12.5px;line-height:1.5;margin:8px 2px 0}
+/* interval table row status (from tbl() _cls) */
+#fcIntTbl tr.row-under td{background:rgba(217,69,95,.12)}
+#fcIntTbl tr.row-over  td{background:rgba(217,160,184,.18)}
+/* staffing heatmap (date x hour) reuses .schedgrid; add a status legend */
+.fc-legend{display:flex;flex-wrap:wrap;gap:14px;margin:8px 2px 0;font-size:11.5px;color:var(--ink2)}
+.fc-legend span{display:inline-flex;align-items:center;gap:6px}
+.fc-legend i{width:13px;height:13px;border-radius:3px;display:inline-block}
+.fc-legend .u{background:#f8d2da;border:1px solid #e7aeb9}
+.fc-legend .o{background:#fff3c4;border:1px solid #e9d28a}
+.fc-legend .k{background:#dcf3e3;border:1px solid #a9dcc0}
 
 /* ===== Call Schedule page ===== */
 .sched-controls{display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;margin:14px 0 4px}

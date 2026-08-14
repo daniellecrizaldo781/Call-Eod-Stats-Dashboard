@@ -35,6 +35,11 @@ URL = "https://docs.google.com/spreadsheets/d/{}/export?format=csv&gid={}"
 # Stored as repo secret SCHED_SHEET = "SHEET_ID|GID" (single tab). If unset, schedule is skipped.
 SCHED_SECRET = os.environ.get("SCHED_SHEET")
 
+# Optional 5th sheet: the team's break / lunch / back-office tracker
+# (per-agent, per-day totals of break minutes). Stored as repo secret
+# BREAK_SHEET = "SHEET_ID|GID" (single tab). If unset, breaks are skipped.
+BREAK_SECRET = os.environ.get("BREAK_SHEET")
+
 
 # ---- shift parsing: turn a cell like "6AM-3PM" / "7AM - 8AM\n5PM - 6PM" into a set of hours ----
 _HOURS = {str(h): h for h in range(24)}
@@ -413,6 +418,142 @@ def _safe_schedule():
         return []
 
 
+def build_breaks():
+    """Pull the break/lunch/back-office tracker sheet.
+
+    Layout: one row per (Member, Date, activity). Column 3 (Client) holds the
+    activity label (e.g. '1st break (15 minutes)', 'Restroom Break',
+    'Call Support - ORICLE', 'CSR - Call Team, Team Brai - CALL TEAM').
+    Column 1 = Member, column 2 = Date, column 8 (Break time) and column 7
+    (Regular hours) hold H:MM:SS durations.
+
+    NOTE: the sheet records per-DAY totals, NOT per-interval timestamps, so we
+    can only compute total break minutes per agent per day (used to derive an
+    unavailable fraction), never "who was on break at 2 PM".
+
+    Returns {} if BREAK_SECRET is missing. Produces:
+      byMember: { "Member|ISOdate": {regular, break, restroom, backoffice, total} }  (seconds)
+      dates:    [ISO...]   present in the sheet
+      members:  [name...]
+    """
+    if not BREAK_SECRET or "|" not in BREAK_SECRET:
+        print("BREAK_SHEET not set — skipping break data", flush=True)
+        return {}
+    sid, gid = BREAK_SECRET.split("|", 1)
+    sid = sid.strip(); gid = gid.strip()
+    print("fetching breaks ...", flush=True)
+    text = fetch(sid, gid)
+    rdr = csv.reader(io.StringIO(text))
+    rows = [r for r in rdr if r and any(str(x).strip() for x in r)]
+    if not rows:
+        return {}
+    hdr = [str(h).strip().lower() for h in rows[0]]
+    idx = {h: i for i, h in enumerate(hdr) if h}
+
+    def col(name):
+        # activity label is in 'client' (col 3); fall back to first matching header
+        if name in idx:
+            return idx[name]
+        # the break sheet stores the task label in the 'client' column
+        return idx.get("client", idx.get("task", -1))
+
+    i_member = idx.get("member", 0)
+    i_date = idx.get("date", 1)
+    i_break = idx.get("break time", idx.get("break", 8))
+    i_reg = idx.get("regular hours", idx.get("regular", 7))
+
+    # The sheet's header is shifted one column from its data (the activity label
+    # such as 'Restroom Break' / '1st break (15 minutes)' / 'Call Support ...'
+    # lives in the data column that the header labels 'project', not 'client').
+    # Detect the activity column by scanning data rows for a known label.
+    KNOWN = ("restroom", "break", "lunch", "back", "admin", "call support", "csr")
+    i_activity = -1
+    for ci in range(len(hdr)):
+        for r in rows[1:200]:
+            if ci < len(r) and (r[ci].strip().lower()) and any(k in r[ci].strip().lower() for k in KNOWN):
+                i_activity = ci
+                break
+        if i_activity >= 0:
+            break
+    if i_activity < 0:
+        i_activity = idx.get("client", idx.get("to-do", idx.get("project", 3)))
+
+    def to_secs(v):
+        s = (str(v or "")).strip()
+        if not s or s == "-":
+            return 0.0
+        parts = s.split(":")
+        try:
+            parts = [float(x) for x in parts]
+        except ValueError:
+            return 0.0
+        while len(parts) < 3:
+            parts.insert(0, 0.0)
+        return parts[0] * 3600 + parts[1] * 60 + parts[2]
+
+    def categorize(label):
+        l = (label or "").lower()
+        if "restroom" in l:
+            return "restroom"
+        if "1st break" in l or "2nd break" in l or "break" in l:
+            return "break"
+        if "lunch" in l:
+            return "lunch"
+        if "back" in l or "admin" in l:
+            return "backoffice"
+        if "call" in l or "csr" in l or "support" in l:
+            return "regular"
+        return None
+
+    byMember = {}
+    dates = set()
+    members = set()
+    for r in rows[1:]:
+        member = (r[i_member].strip() if i_member < len(r) else "")
+        if not member:
+            continue
+        date = (r[i_date].strip() if i_date < len(r) else "")
+        if not date:
+            continue
+        activity = (r[i_activity].strip() if i_activity < len(r) else "")
+        cat = categorize(activity)
+        if cat is None:
+            continue
+        dates.add(date)
+        members.add(member)
+        sec = to_secs(r[i_break].strip() if i_break < len(r) else "")
+        if cat == "regular":
+            reg = to_secs(r[i_reg].strip() if i_reg < len(r) else "") or sec
+            sec = reg  # regular call-work minutes
+        key = member + "|" + date
+        d = byMember.setdefault(key, {"regular": 0.0, "break": 0.0, "restroom": 0.0,
+                                       "lunch": 0.0, "backoffice": 0.0, "total": 0.0})
+        if cat == "regular":
+            d["regular"] += sec
+        elif cat == "break":
+            d["break"] += sec
+        elif cat == "restroom":
+            d["restroom"] += sec
+        elif cat == "lunch":
+            d["lunch"] += sec
+        elif cat == "backoffice":
+            d["backoffice"] += sec
+        # unavailable = break + restroom + lunch + backoffice
+        d["total"] = d["break"] + d["restroom"] + d["lunch"] + d["backoffice"]
+
+    print("  breaks: %d member-days across %d dates" % (len(byMember), len(dates)), flush=True)
+    return {"byMember": byMember, "dates": sorted(dates), "members": sorted(members)}
+
+
+def _safe_breaks():
+    """Run build_breaks() but never let it abort the whole sync."""
+    try:
+        return build_breaks()
+    except Exception as e:
+        print("!! breaks failed (skipped): " + str(e), flush=True)
+        return {}
+
+
 def _safe_breakdown():
     """Run build_breakdown() but never let it abort the whole sync."""
     try:
@@ -493,6 +634,7 @@ def build():
         "rowsPerSheet": per_sheet,
         "breakdown": (_safe_breakdown()),
         "schedule": (_safe_schedule()),
+        "breaks": (_safe_breaks()),
     }
     out = os.path.join(BASE, "data.js")
     tmp = out + ".tmp"
