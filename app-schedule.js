@@ -24,6 +24,7 @@ function desigLabel(d){
 }
 function dowOf(d){ return (new Date(+d.slice(0,4), +d.slice(5,7)-1, +d.slice(8,10)).getDay() + 6) % 7; }
 const DOW3 = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+// NOTE: MON3 is declared globally in app-forecast.js — reused here (same values).
 
 // ---- week helpers (Monday-based) ----
 function isoAdd(d, n){
@@ -34,7 +35,6 @@ function isoAdd(d, n){
 }
 function mondayOf(d){ return isoAdd(d, -((new Date(+d.slice(0,4), +d.slice(5,7)-1, +d.slice(8,10)).getDay()+6)%7)); }
 function weekDays(mon){ const o=[]; for(let i=0;i<7;i++) o.push(isoAdd(mon, i)); return o; }
-const MON3 = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 function fmtMD(d){ return d.slice(5).replace("-","/"); }
 function fmtLong(d){ return MON3[+d.slice(5,7)-1] + " " + (+d.slice(8,10)) + ", " + d.slice(0,4); }
 function weekLabel(mon){ return fmtLong(mon) + " – " + fmtLong(isoAdd(mon,6)); }
