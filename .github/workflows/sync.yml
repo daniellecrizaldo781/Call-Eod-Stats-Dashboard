@@ -41,7 +41,7 @@ jobs:
         # Force browsers to re-fetch after an auto-sync (no hard refresh needed).
         run: |
           TODAY=$(date +%Y%m%d)
-          sed -i -E "s/\?v=[0-9]+\"/?v=${TODAY}\"/g" index.html
+          sed -i -E "s/\?v=[0-9a-z]+\"/?v=${TODAY}\"/g" index.html
           echo "cache-buster set to v=${TODAY}"
 
       - name: Commit and push if changed
