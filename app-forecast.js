@@ -28,7 +28,13 @@ function hourLbl(h){ const am = h < 12; const hr = h % 12 === 0 ? 12 : h % 12; r
 function fmtMD(d){ return MON3[+d.slice(5,7)-1] + " " + (+d.slice(8,10)) + ", " + d.slice(0,4); }  // "Aug 3, 2026"
 function dowOf(d){ return (new Date(+d.slice(0,4), +d.slice(5,7)-1, +d.slice(8,10)).getDay() + 6) % 7; }
 
-function fcRange(){ return { from: FC.from || F.from, to: FC.to || F.to }; }
+function fcRange(){
+  // Honor the global Week/Month selector. When "All weeks" is selected
+  // (F spans the whole data range) fall back to the Aug 3-9 default window
+  // (break-sheet coverage). Otherwise follow the user's week/month pick.
+  const whole = (F.from === MIN_D && F.to === MAX_D);
+  return whole ? { from: FC.from, to: FC.to } : { from: F.from, to: F.to };
+}
 
 // distinct dates present in the current filtered rows (for the date toggle)
 function fcDates(){
@@ -157,8 +163,9 @@ function renderForecast(){
   if (!hasSched) miss.push("schedule sheet not loaded — set SCHED_SHEET");
   if (!hasBreak) miss.push("break sheet not loaded — set BREAK_SHEET");
   const missHtml = miss.length ? ' · <span style="color:#D9455F">'+miss.join(" · ")+'</span>' : "";
+  const R = fcRange();
   $("fcScope").innerHTML = (F.chan === "ALL" ? "All Channels" : F.chan)
-    + " · " + fmtDY(F.from) + " → " + fmtDY(F.to) + missHtml;
+    + " · " + fmtDY(R.from) + " → " + fmtDY(R.to) + missHtml;
 
   // hour selector
   const hourOpts = ['<option value="ALL">All hours</option>']
@@ -173,12 +180,13 @@ function renderForecast(){
   if ($("fcHeatGran").value !== FC.heatGran) $("fcHeatGran").value = FC.heatGran;
 
   // ---- KPIs ----
-  let totCalls=0, totSeated=0, totUnav=0, underH=0, overH=0, okH=0, worst=null;
+  let totCalls=0, totSeated=0, totUnav=0, underH=0, overH=0, okH=0, worst=null, numCells=0;
   for (const d of M.dates){
     for (let h=0; h<24; h++){
       if (FC.fhour !== "ALL" && +FC.fhour !== h) continue;
       const c = M.cells[d+"|"+h];
       if (!c || c.calls <= 0) continue;
+      numCells++;
       totCalls += c.calls;
       const avail = Math.max(0, c.seatedN - c.unavN);
       totSeated += c.seatedN; totUnav += c.unavN;
@@ -189,12 +197,12 @@ function renderForecast(){
       if (st==="under" && (!worst || load>worst.load)) worst={d,h,calls:c.calls,avail,load};
     }
   }
-  const avgAvail = M.dates.length ? (totSeated - totUnav)/M.dates.length : 0;
+  const avgAvail = numCells ? (totSeated - totUnav)/numCells : 0;
   $("fcKpis").innerHTML =
       kpi("📞 Total Calls", nf(totCalls), fmtDY(F.from)+" → "+fmtDY(F.to), "alt")
-    + kpi("👥 Avg Seated", hasSched ? nf(Math.round(totSeated/Math.max(1,M.dates.length))) : "—", "scheduled agents", "agent")
-    + kpi("☕ Avg On Break/BO", hasBreak ? nf(Math.round(totUnav/Math.max(1,M.dates.length))) : "—", "unavailable agents", "warn")
-    + kpi("✅ Net Available", hasSched ? nf(Math.round(avgAvail)) : "—", "seated − break", "good")
+    + kpi("👥 Avg Seated", hasSched ? nf(Math.round(totSeated/Math.max(1,numCells))) : "—", "scheduled agents (avg/hour)", "agent")
+    + kpi("☕ Avg On Break/BO", hasBreak ? nf(Math.round(totUnav/Math.max(1,numCells))) : "—", "unavailable agents (avg/hour)", "warn")
+    + kpi("✅ Net Available", hasSched ? nf(Math.round(avgAvail)) : "—", "seated − break (avg/hour)", "good")
     + kpi("🔴 Understaffed Hrs", hasSched ? nf(underH) : "—", "calls > capacity", "bad")
     + kpi("🟡 Overstaffed Hrs", hasSched ? nf(overH) : "—", "excess seated", "warn")
     + kpi("⚠️ Highest Risk", worst ? hourLbl(worst.h) : "—",
@@ -210,16 +218,11 @@ function renderForecast(){
       const avail = Math.max(0, c.seatedN - c.unavN);
       const load = avail > 0 ? c.calls / avail : (c.calls > 0 ? Infinity : 0);
       const st = hasSched ? fcStatus(load) : "ok";
-      // seated agent names (deduped, each agent counted once)
-      const seatedNames = hasSched ? [...new Set(c.seated)].sort() : [];
-      const seatedHtml = hasSched
-        ? '<div class="chipbox">' + seatedNames.map(a=>'<span class="chip">'+esc(a)+'</span>').join("") + '</div>'
-        : "—";
       intRows.push({
         when: fmtMD(d) + " · " + DOW[dowOf(d)].slice(0,3) + " " + hourLbl(h),
         _date: d, _hour: h,                       // real sort keys (chronological)
         calls: nf(c.calls),
-        seated: seatedHtml,
+        seated: hasSched ? nf(c.seatedN) : "—",
         seatedN: c.seatedN,
         unav: (hasSched && hasBreak) ? nf(Math.round(c.unavN*10)/10) : (hasSched ? "0" : "—"),
         avail: hasSched ? nf(Math.round(avail*10)/10) : "—",
