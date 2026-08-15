@@ -210,10 +210,17 @@ function renderForecast(){
       const avail = Math.max(0, c.seatedN - c.unavN);
       const load = avail > 0 ? c.calls / avail : (c.calls > 0 ? Infinity : 0);
       const st = hasSched ? fcStatus(load) : "ok";
+      // seated agent names (deduped, each agent counted once)
+      const seatedNames = hasSched ? [...new Set(c.seated)].sort() : [];
+      const seatedHtml = hasSched
+        ? '<div class="chipbox">' + seatedNames.map(a=>'<span class="chip">'+esc(a)+'</span>').join("") + '</div>'
+        : "—";
       intRows.push({
         when: fmtMD(d) + " · " + DOW[dowOf(d)].slice(0,3) + " " + hourLbl(h),
+        _date: d, _hour: h,                       // real sort keys (chronological)
         calls: nf(c.calls),
-        seated: hasSched ? nf(c.seatedN) : "—",
+        seated: seatedHtml,
+        seatedN: c.seatedN,
         unav: (hasSched && hasBreak) ? nf(Math.round(c.unavN*10)/10) : (hasSched ? "0" : "—"),
         avail: hasSched ? nf(Math.round(avail*10)/10) : "—",
         load: hasSched ? (isFinite(load) ? nf(Math.round(load*10)/10) : "∞") : "—",
@@ -223,7 +230,8 @@ function renderForecast(){
       });
     }
   }
-  intRows.sort((a,b)=> (a.when<b.when?-1:1));
+  // chronological: date ascending, then hour ascending (12 AM -> 11 PM)
+  intRows.sort((a,b)=> a._date<b._date ? -1 : a._date>b._date ? 1 : a._hour-b._hour);
   $("fcIntScope").textContent = hasSched ? "Net Available = Seated − break/lunch/back-office" : "schedule not loaded";
   const it = $("fcIntTbl");
   tbl(it,
