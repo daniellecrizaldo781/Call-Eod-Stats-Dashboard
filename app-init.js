@@ -189,7 +189,6 @@ function setPage(p){
   F.page = p;
   document.querySelectorAll(".page").forEach(s => { s.hidden = (s.id !== "page"+p.charAt(0).toUpperCase()+p.slice(1)); });
   document.querySelectorAll(".topnav .navbtn").forEach(b => b.classList.toggle("on", b.dataset.page===p));
-  document.body.classList.toggle("res-page", p === "res");   // Resources page hides global filters
   // Call Breakdown page: keep the full date range so all ticket data shows; View = None suits it.
   if (p === "break"){ F.gran = "none"; [...$("granPills").children].forEach(x=>x.classList.toggle("on", x.dataset.v==="none")); applyGran("none"); }
   render();   // re-render so the now-visible page is populated
