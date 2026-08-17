@@ -457,3 +457,10 @@ footer{margin-top:36px;text-align:center;font-size:11.5px;color:var(--mauve)}
 .schedgrid tr:hover td{background:#fceff5}
 .schedgrid tr:hover td.shift{background:#e0ecff}
 .schedgrid tr:hover td.sticky-col{background:#fdbee0}
+
+/* Call Breakdown week-by-week comparison toggle */
+.cmp-toggle{display:flex;align-items:center;gap:10px;margin-left:auto;flex-wrap:wrap}
+.cmp-vs{color:var(--mauve);font-weight:700;font-size:12px}
+#tBkWeekCmp .delta.up{color:var(--ok);font-weight:700}
+#tBkWeekCmp .delta.down{color:var(--bad);font-weight:700}
+#tBkWeekCmp .delta.flat{color:var(--ink2)}
