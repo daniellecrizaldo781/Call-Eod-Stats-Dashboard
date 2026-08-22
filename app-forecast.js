@@ -11,7 +11,7 @@
 */
 
 const FC = { gran: "daily", fhour: "ALL", fteam: "ALL", from: "2026-08-03", to: "2026-08-09",
-             date: "ALL", heatGran: "daily" };
+             date: "ALL", block: null };
 // Break sheet covers Aug 3-9 -> forecast defaults there (global date range untouched).
 // date:    "ALL" or a single date -> filters the Agents-Available-per-Interval table (and heatmap).
 // heatGran: "daily" (one row per date) or "weekly" (one row per week) for the heatmap.
@@ -40,6 +40,29 @@ function fcRange(){
 function fcDates(){
   return [...new Set(fcFilteredRows().map(r => r.d))].sort();
 }
+// 4-week blocks for the heatmap: each option starts on a Monday and spans 28 days
+// (4 weeks, Mon–Sun ×4). Blocks slide by one week so every Monday is selectable.
+function fcBlockOpts(){
+  const all = [...new Set(ROWS.map(r => r.d))].sort();
+  if (!all.length) return [];
+  let s = all[0]; const w = dowOf(s); if (w > 0) s = addD(s, -w);   // back to Monday
+  const last = all[all.length - 1];
+  const out = [];
+  let cur = s;
+  while (cur <= last){
+    const end = addD(cur, 27);
+    out.push({ start: cur, end: end > last ? last : end });
+    cur = addD(cur, 7);   // slide one week -> every Monday becomes a block start
+  }
+  return out;
+}
+function fcDefaultBlock(){
+  const opts = fcBlockOpts();
+  if (!opts.length) return (F.from === MIN_D ? FC.from : F.from);
+  const full = opts.filter(o => o.end === addD(o.start, 27));   // prefer a fully-covered block
+  const pick = full.length ? full : opts;
+  return pick[pick.length - 1].start;
+}
 // weekly group key for the heatmap (Monday-based week start)
 function fcWeekKey(d){
   const dt = new Date(+d.slice(0,4), +d.slice(5,7)-1, +d.slice(8,10));
@@ -56,8 +79,8 @@ function fcFilteredRows(){
     (F.chan === "ALL" || r.ch === F.chan) &&
     r.h >= 0);
 }
-function fcSchedRows(){
-  const R = fcRange();
+function fcSchedRows(R){
+  R = R || fcRange();
   const sched = (D.schedule && D.schedule.rows) ? D.schedule.rows : (Array.isArray(D.schedule) ? D.schedule : []);
   if (!sched.length) return [];
   return sched.filter(s =>
@@ -94,11 +117,17 @@ const FC_TXT  = { under: "Understaffed", over: "Overstaffed", ok: "Adequately St
 // Build the per (date, hour) staffing model for the selected range.
 function fcModel(){
   const rows = fcFilteredRows();
-  const sched = fcSchedRows();
+  const R = fcRange();
+  const sched = fcSchedRows(R);
   const hasSched = sched.length > 0;
   const hasBreak = !!(D.breaks && D.breaks.byMember);
-  // honor the single-date toggle for the interval table + heatmap
-  const activeDates = (FC.date && FC.date !== "ALL") ? [FC.date] : [...new Set(rows.map(r => r.d))].sort();
+  // 4-week block start (honor the dropdown; default to the latest fully-covered block)
+  if (FC.block == null) FC.block = fcDefaultBlock();
+  // model the whole block (every date in range), regardless of the single-date toggle
+  const allDates = [...new Set(rows.map(r => r.d))].sort()
+    .filter(d => d >= FC.block && d <= addD(FC.block, 27));
+  const activeDates = allDates.length ? allDates
+    : [...new Set(rows.map(r => r.d))].sort().filter(d => d >= R.from && d <= R.to);
   const cells = {};   // date|hour -> {calls, seated[], unav[]}
   for (const d of activeDates){
     for (let h = 0; h < 24; h++){
@@ -109,16 +138,11 @@ function fcModel(){
         unavN: seated.length ? seated.reduce((a,_,i)=>a+unav[i],0) : 0 };
     }
   }
-  // heatmap rows: daily (one per date) or weekly (one per Monday-of-week)
-  let heatRows;
-  if (FC.heatGran === "weekly"){
-    const wkMap = {};
-    for (const d of activeDates){ const wk = fcWeekKey(d); (wkMap[wk] = wkMap[wk] || []).push(d); }
-    heatRows = Object.keys(wkMap).sort().map(wk => ({ label: wk, dates: wkMap[wk], key: wk }));
-  } else {
-    heatRows = activeDates.map(d => ({ label: d, dates: [d], key: d }));
-  }
-  return { rows, sched, hasSched, hasBreak, dates: activeDates, heatRows, cells };
+  // heatmap rows: one per Monday-of-week (each row = that week's 7 days), within the block
+  const wkMap = {};
+  for (const d of activeDates){ const wk = fcWeekKey(d); (wkMap[wk] = wkMap[wk] || []).push(d); }
+  const heatRows = Object.keys(wkMap).sort().map(wk => ({ label: wk, dates: wkMap[wk].slice().sort(), key: wk }));
+  return { rows, sched, hasSched, hasBreak, dates: activeDates, heatRows, cells, block: FC.block };
 }
 
 function renderForecast(){
@@ -131,30 +155,30 @@ function renderForecast(){
       + '<span class="chip" id="fcScope"></span><div class="line"></div></div>'
       + '<div class="kpis" id="fcKpis"></div>'
       + '<div class="forecast-controls">'
-      + '  <div class="fgroup"><span class="flabel">Date</span><select id="fcDate" class="pillsel"></select></div>'
+      + '  <div class="fgroup"><span class="flabel">4-Week Block</span><select id="fcBlock" class="pillsel"></select></div>'
+      + '  <div class="fgroup"><span class="flabel">Interval Date</span><select id="fcDate" class="pillsel"></select></div>'
       + '  <div class="fgroup"><span class="flabel">Hour</span><select id="fcHour" class="pillsel"></select></div>'
-      + '  <div class="fgroup"><span class="flabel">Heatmap</span><select id="fcHeatGran" class="pillsel"><option value="daily">Daily</option><option value="weekly">Weekly</option></select></div>'
       + '  <div class="fgroup"><span class="flabel">&nbsp;</span><button class="btn ghost" id="fcReset">Reset</button></div>'
       + '</div>'
-      + '<div class="sect" style="margin-top:18px"><h2>Agents Available per Interval</h2>'
-      + '<span class="chip" id="fcIntScope"></span><div class="line"></div></div>'
-      + '<div class="card"><div class="scroll"><table id="fcIntTbl"></table></div></div>'
-      + '<div class="sect" style="margin-top:18px"><h2>Staffing Heatmap ('+(FC.heatGran==="weekly"?"Week × Hour":"Date × Hour")+')</h2>'
-      + '<span class="chip">green = adequately staffed · red = understaffed · yellow = overstaffed</span><div class="line"></div></div>'
+      + '<div class="sect" style="margin-top:18px"><h2>Staffing Heatmap (Week × Hour)</h2>'
+      + '<span class="chip">each row = one week (Mon–Sun) · green = adequately staffed · red = understaffed · yellow = overstaffed</span><div class="line"></div></div>'
       + '<div class="card" id="fcHeatWrap"></div>'
       + '<div class="fc-legend"><span><i class="k"></i> Adequately staffed</span>'
       + '<span><i class="u"></i> Understaffed (≥ '+FC_UNDER+' calls/agent)</span>'
       + '<span><i class="o"></i> Overstaffed (≤ '+FC_OVER+' calls/agent)</span></div>'
+      + '<div class="sect" style="margin-top:18px"><h2>Agents Available per Interval</h2>'
+      + '<span class="chip" id="fcIntScope"></span><div class="line"></div></div>'
+      + '<div class="card"><div class="scroll"><table id="fcIntTbl"></table></div></div>'
       + '<p class="pagehint">Calls come from your inbound calls sheet; seated agents from the Call Schedule sheet; '
       + 'break / lunch / back-office minutes from the Break sheet (Aug 3–9). Net Available = Seated − (real break minutes that day). '
       + 'Understaffed ≥ '+FC_UNDER+' calls/available agent · Overstaffed ≤ '+FC_OVER+'. '
       + 'The break sheet is per-day (no hourly timestamps), so "on break" is the day\'s real break time spread across seated agents.</p>';
     root.dataset.built = "1";
+    $("fcBlock").onchange = e => { FC.block = e.target.value; renderForecast(); };
     $("fcDate").onchange = e => { FC.date = e.target.value; renderForecast(); };
     $("fcHour").onchange = e => { FC.fhour = e.target.value; renderForecast(); };
-    $("fcHeatGran").onchange = e => { FC.heatGran = e.target.value; renderForecast(); };
-    $("fcReset").onclick = () => { FC.date = "ALL"; FC.fhour = "ALL"; FC.heatGran = "daily";
-      $("fcDate").value = "ALL"; $("fcHour").value = "ALL"; $("fcHeatGran").value = "daily"; renderForecast(); };
+    $("fcReset").onclick = () => { FC.date = "ALL"; FC.fhour = "ALL";
+      $("fcDate").value = "ALL"; $("fcHour").value = "ALL"; renderForecast(); };
   }
 
   const M = fcModel();
@@ -164,8 +188,14 @@ function renderForecast(){
   if (!hasBreak) miss.push("break sheet not loaded — set BREAK_SHEET");
   const missHtml = miss.length ? ' · <span style="color:#D9455F">'+miss.join(" · ")+'</span>' : "";
   const R = fcRange();
+  const blkEnd = addD(FC.block, 27);
   $("fcScope").innerHTML = (F.chan === "ALL" ? "All Channels" : F.chan)
-    + " · " + fmtDY(R.from) + " → " + fmtDY(R.to) + missHtml;
+    + " · " + fmtDY(FC.block) + " → " + fmtDY(blkEnd > R.to ? R.to : blkEnd) + missHtml;
+
+  // 4-week block selector (every Monday becomes a block start)
+  const blockOpts = fcBlockOpts().map(o => '<option value="'+o.start+'"'+(o.start===FC.block?' selected':'')+'>'
+    + fmtMD(o.start) + ' → ' + fmtMD(o.end > R.to ? R.to : o.end) + '</option>').join("");
+  if ($("fcBlock").innerHTML !== blockOpts) $("fcBlock").innerHTML = blockOpts;
 
   // hour selector
   const hourOpts = ['<option value="ALL">All hours</option>']
@@ -173,11 +203,10 @@ function renderForecast(){
       .map(h => '<option value="'+h+'"'+(+FC.fhour===h?' selected':'')+'>'+hourLbl(h)+'</option>')).join("");
   if ($("fcHour").innerHTML !== hourOpts) $("fcHour").innerHTML = hourOpts;
 
-  // date selector (filters the interval table + heatmap to one date)
+  // date selector (filters the interval table to one date; heatmap stays on the whole block)
   const dateOpts = ['<option value="ALL">All dates</option>']
     .concat(fcDates().map(d => '<option value="'+d+'"'+(FC.date===d?' selected':'')+'>'+fmtMD(d)+' · '+DOW[dowOf(d)].slice(0,3)+'</option>')).join("");
   if ($("fcDate").innerHTML !== dateOpts) $("fcDate").innerHTML = dateOpts;
-  if ($("fcHeatGran").value !== FC.heatGran) $("fcHeatGran").value = FC.heatGran;
 
   // ---- KPIs ----
   let totCalls=0, totSeated=0, totUnav=0, underH=0, overH=0, okH=0, worst=null, numCells=0;
@@ -199,9 +228,8 @@ function renderForecast(){
   }
   const avgAvail = numCells ? (totSeated - totUnav)/numCells : 0;
   $("fcKpis").innerHTML =
-      kpi("📞 Total Calls", nf(totCalls), fmtDY(F.from)+" → "+fmtDY(F.to), "alt")
+      kpi("📞 Total Calls", nf(totCalls), fmtDY(FC.block) + " → " + fmtDY(blkEnd > R.to ? R.to : blkEnd), "alt")
     + kpi("👥 Avg Seated", hasSched ? nf(Math.round(totSeated/Math.max(1,numCells))) : "—", "scheduled agents (avg/hour)", "agent")
-    + kpi("☕ Avg On Break/BO", hasBreak ? nf(Math.round(totUnav/Math.max(1,numCells))) : "—", "unavailable agents (avg/hour)", "warn")
     + kpi("✅ Net Available", hasSched ? nf(Math.round(avgAvail)) : "—", "seated − break (avg/hour)", "good")
     + kpi("🔴 Understaffed Hrs", hasSched ? nf(underH) : "—", "calls > capacity", "bad")
     + kpi("🟡 Overstaffed Hrs", hasSched ? nf(overH) : "—", "excess seated", "warn")
@@ -224,7 +252,6 @@ function renderForecast(){
         calls: nf(c.calls),
         seated: hasSched ? nf(c.seatedN) : "—",
         seatedN: c.seatedN,
-        unav: (hasSched && hasBreak) ? nf(Math.round(c.unavN*10)/10) : (hasSched ? "0" : "—"),
         avail: hasSched ? nf(Math.round(avail*10)/10) : "—",
         load: hasSched ? (isFinite(load) ? nf(Math.round(load*10)/10) : "∞") : "—",
         status: hasSched ? (FC_ICON[st] + " " + FC_TXT[st]) : "—",
@@ -239,30 +266,26 @@ function renderForecast(){
   const it = $("fcIntTbl");
   tbl(it,
     [{t:"Interval",k:"when"},{t:"Calls",k:"calls",n:1},{t:"Seated",k:"seated",n:1},
-     {t:"On Break/BO",k:"unav",n:1},{t:"Net Available",k:"avail",n:1},
-     {t:"Calls/Avail",k:"load",n:1},{t:"Staffing",k:"status"}],
+     {t:"Net Available",k:"avail",n:1},{t:"Calls/Avail",k:"load",n:1},{t:"Staffing",k:"status"}],
     intRows);
 
   // ---- Heatmap: date rows × hour cols, colored by status ----
   buildHeatmap(M);
 }
 
-// Heatmap colored by under/over using net available agents.
-// Daily mode: one row per date. Weekly mode: one row per Monday-week (aggregated).
 function buildHeatmap(M){
   const wrap = $("fcHeatWrap");
   if (!wrap) return;
   const hasSched = M.hasSched;
-  let h = '<table class="schedgrid" style="min-width:680px"><thead><tr><th class="sticky-col">'+(FC.heatGran==="weekly"?"Week":"Date")+'</th>';
+  let h = '<table class="schedgrid" style="min-width:680px"><thead><tr><th class="sticky-col">Week (Mon–Sun)</th>';
   for (let hh=0; hh<24; hh++) h += '<th>'+hourLbl(hh).replace(" ","")+'</th>';
   h += '</tr></thead><tbody>';
   for (const row of M.heatRows){
-    const labelTxt = FC.heatGran==="weekly"
-      ? fmtMD(row.key) + " wk"   // Monday of the week
-      : fmtMD(row.label) + ' <span class="wd">'+DOW[dowOf(row.label)].slice(0,3)+'</span>';
+    const sunday = addD(row.key, 6);
+    const labelTxt = fmtMD(row.key) + ' → ' + fmtMD(sunday)   // Monday → Sunday of that week
+      + ' <span class="wd">wk'+(row.dates.length)+'</span>';
     h += '<tr><td class="sticky-col">'+labelTxt+'</td>';
     for (let hh=0; hh<24; hh++){
-      // aggregate the cells across all dates in this heatmap row
       let calls=0, seatedN=0, unavN=0, any=false;
       for (const d of row.dates){
         const c = M.cells[d+"|"+hh];
