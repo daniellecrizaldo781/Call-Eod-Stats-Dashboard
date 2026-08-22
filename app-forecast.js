@@ -10,8 +10,11 @@
    we cannot say who was on break at a specific hour.
 */
 
+// Day-of-week selector options. Value = dowOf() index (0=Mon .. 6=Sun).
+const FC_WD = [["ALL","All days"],["0","Mon"],["1","Tue"],["2","Wed"],["3","Thu"],["4","Fri"],["5","Sat"],["6","Sun"]];
+
 const FC = { gran: "daily", fhour: "ALL", fteam: "ALL", from: "2026-08-03", to: "2026-08-09",
-             date: "ALL", block: null };
+             date: "ALL", block: null, wday: "ALL" };
 // Break sheet covers Aug 3-9 -> forecast defaults there (global date range untouched).
 // date:    "ALL" or a single date -> filters the Agents-Available-per-Interval table (and heatmap).
 // heatGran: "daily" (one row per date) or "weekly" (one row per week) for the heatmap.
@@ -127,8 +130,13 @@ function fcModel(){
   // model the whole block (every date in range), regardless of the single-date toggle
   const allDates = [...new Set(rows.map(r => r.d))].sort()
     .filter(d => d >= FC.block && d <= addD(FC.block, 27));
-  const activeDates = allDates.length ? allDates
+  let activeDates = allDates.length ? allDates
     : [...new Set(rows.map(r => r.d))].sort().filter(d => d >= R.from && d <= R.to);
+  // Day-of-week toggle: keep only the selected weekday across the 4-week block
+  // (e.g. Monday -> all 4 Mondays, one row each).
+  if (FC.wday !== "ALL"){
+    activeDates = activeDates.filter(d => dowOf(d) === (+FC.wday));
+  }
   const cells = {};   // date|hour -> {calls, seated[], unav[]}
   for (const d of activeDates){
     for (let h = 0; h < 24; h++){
@@ -139,10 +147,16 @@ function fcModel(){
         unavN: seated.length ? seated.reduce((a,_,i)=>a+unav[i],0) : 0 };
     }
   }
-  // heatmap rows: one per Monday-of-week (each row = that week's 7 days), within the block
-  const wkMap = {};
-  for (const d of activeDates){ const wk = fcWeekKey(d); (wkMap[wk] = wkMap[wk] || []).push(d); }
-  const heatRows = Object.keys(wkMap).sort().map(wk => ({ label: wk, dates: wkMap[wk].slice().sort(), key: wk }));
+  let heatRows;
+  if (FC.wday !== "ALL"){
+    // one row per matching weekday (all Mondays, etc.), labeled by date
+    heatRows = activeDates.slice().sort().map(d => ({ label: d, dates: [d], key: d }));
+  } else {
+    // heatmap rows: one per Monday-of-week (each row = that week's 7 days), within the block
+    const wkMap = {};
+    for (const d of activeDates){ const wk = fcWeekKey(d); (wkMap[wk] = wkMap[wk] || []).push(d); }
+    heatRows = Object.keys(wkMap).sort().map(wk => ({ label: wk, dates: wkMap[wk].slice().sort(), key: wk }));
+  }
   return { rows, sched, hasSched, hasBreak, dates: activeDates, heatRows, cells, block: FC.block };
 }
 
@@ -157,12 +171,14 @@ function renderForecast(){
       + '<div class="kpis" id="fcKpis"></div>'
       + '<div class="forecast-controls">'
       + '  <div class="fgroup"><span class="flabel">4-Week Block</span><select id="fcBlock" class="pillsel"></select></div>'
+      + '  <div class="fgroup"><span class="flabel">Day of Week</span><select id="fcWday" class="pillsel"></select></div>'
       + '  <div class="fgroup"><span class="flabel">Interval Date</span><select id="fcDate" class="pillsel"></select></div>'
       + '  <div class="fgroup"><span class="flabel">Hour</span><select id="fcHour" class="pillsel"></select></div>'
       + '  <div class="fgroup"><span class="flabel">&nbsp;</span><button class="btn ghost" id="fcReset">Reset</button></div>'
       + '</div>'
       + '<div class="sect" style="margin-top:18px"><h2>Staffing Heatmap (Week × Hour)</h2>'
-      + '<span class="chip">each row = one week (Mon–Sun) · green = adequately staffed · red = understaffed · yellow = overstaffed</span><div class="line"></div></div>'
+      + '<span class="chip">each row = one week (Mon–Sun) · green = adequately staffed · red = understaffed · yellow = overstaffed'
+      + (FC.wday !== "ALL" ? ' · showing only ' + FC_WD.find(w=>w[0]===FC.wday)[1] + 's across the 4-week block' : '') + '</span><div class="line"></div></div>'
       + '<div class="card" id="fcHeatWrap"></div>'
       + '<div class="fc-legend"><span><i class="k"></i> Adequately staffed</span>'
       + '<span><i class="u"></i> Understaffed (≥ '+FC_UNDER+' calls/agent)</span>'
@@ -176,10 +192,11 @@ function renderForecast(){
       + 'The break sheet is per-day (no hourly timestamps), so "on break" is the day\'s real break time spread across seated agents.</p>';
     root.dataset.built = "1";
     $("fcBlock").onchange = e => { FC.block = e.target.value; renderForecast(); };
+    $("fcWday").onchange = e => { FC.wday = e.target.value; renderForecast(); };
     $("fcDate").onchange = e => { FC.date = e.target.value; renderForecast(); };
     $("fcHour").onchange = e => { FC.fhour = e.target.value; renderForecast(); };
-    $("fcReset").onclick = () => { FC.date = "ALL"; FC.fhour = "ALL";
-      $("fcDate").value = "ALL"; $("fcHour").value = "ALL"; renderForecast(); };
+    $("fcReset").onclick = () => { FC.date = "ALL"; FC.fhour = "ALL"; FC.wday = "ALL";
+      $("fcDate").value = "ALL"; $("fcHour").value = "ALL"; $("fcWday").value = "ALL"; renderForecast(); };
   }
 
   const M = fcModel();
@@ -197,6 +214,10 @@ function renderForecast(){
   const blockOpts = fcBlockOpts().map(o => '<option value="'+o.start+'"'+(o.start===FC.block?' selected':'')+'>'
     + fmtMD(o.start) + ' → ' + fmtMD(o.end > R.to ? R.to : o.end) + '</option>').join("");
   if ($("fcBlock").innerHTML !== blockOpts) $("fcBlock").innerHTML = blockOpts;
+
+  // day-of-week selector (ALL + Mon..Sun, where 0=Mon..6=Sun via dowOf)
+  const wdayOpts = FC_WD.map(w => '<option value="'+w[0]+'"'+(w[0]===FC.wday?' selected':'')+'>'+w[1]+'</option>').join("");
+  if ($("fcWday").innerHTML !== wdayOpts) $("fcWday").innerHTML = wdayOpts;
 
   // hour selector
   const hourOpts = ['<option value="ALL">All hours</option>']
@@ -283,9 +304,15 @@ function buildHeatmap(M){
   h += '</tr></thead><tbody>';
   for (let ri = 0; ri < M.heatRows.length; ri++){
     const row = M.heatRows[ri];
-    const sunday = addD(row.key, 6);
-    const labelTxt = fmtMD(row.key) + ' → ' + fmtMD(sunday)   // Monday → Sunday of that week
-      + ' <span class="wd">wk'+(ri+1)+'</span>';
+    let labelTxt;
+    if (FC.wday !== "ALL" && row.dates.length === 1){
+      const d = row.dates[0];
+      labelTxt = (DOW[dowOf(d)].slice(0,3)) + " " + fmtMD(d);   // e.g. "Mon Jun 29"
+    } else {
+      const sunday = addD(row.key, 6);
+      labelTxt = fmtMD(row.key) + ' → ' + fmtMD(sunday)   // Monday → Sunday of that week
+        + ' <span class="wd">wk'+(ri+1)+'</span>';
+    }
     h += '<tr><td class="sticky-col">'+labelTxt+'</td>';
     for (let hh=0; hh<24; hh++){
       let calls=0, seatedN=0, unavN=0, any=false;
