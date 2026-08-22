@@ -29,11 +29,11 @@ function fmtMD(d){ return MON3[+d.slice(5,7)-1] + " " + (+d.slice(8,10)) + ", " 
 function dowOf(d){ return (new Date(+d.slice(0,4), +d.slice(5,7)-1, +d.slice(8,10)).getDay() + 6) % 7; }
 
 function fcRange(){
-  // Honor the global Week/Month selector. When "All weeks" is selected
-  // (F spans the whole data range) fall back to the Aug 3-9 default window
-  // (break-sheet coverage). Otherwise follow the user's week/month pick.
+  // When "All weeks" is selected, span the whole dataset so the 4-week block
+  // selector can show any window (e.g. Jul 6 – Aug 2). A specific global week/month
+  // still narrows the page to that range.
   const whole = (F.from === MIN_D && F.to === MAX_D);
-  return whole ? { from: FC.from, to: FC.to } : { from: F.from, to: F.to };
+  return whole ? { from: MIN_D, to: MAX_D } : { from: F.from, to: F.to };
 }
 
 // distinct dates present in the current filtered rows (for the date toggle)
