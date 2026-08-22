@@ -41,7 +41,8 @@ function fcDates(){
   return [...new Set(fcFilteredRows().map(r => r.d))].sort();
 }
 // 4-week blocks for the heatmap: each option starts on a Monday and spans 28 days
-// (4 weeks, Mon–Sun ×4). Blocks slide by one week so every Monday is selectable.
+// (4 weeks, Mon–Sun ×4). Blocks step by FOUR weeks (28 days) so they are
+// contiguous and non-overlapping: Jun 1→28, Jun 29→Jul 26, Jul 27→Aug 17, etc.
 function fcBlockOpts(){
   const all = [...new Set(ROWS.map(r => r.d))].sort();
   if (!all.length) return [];
@@ -52,7 +53,7 @@ function fcBlockOpts(){
   while (cur <= last){
     const end = addD(cur, 27);
     out.push({ start: cur, end: end > last ? last : end });
-    cur = addD(cur, 7);   // slide one week -> every Monday becomes a block start
+    cur = addD(cur, 28);   // step 4 weeks -> contiguous, non-overlapping blocks
   }
   return out;
 }
@@ -280,10 +281,11 @@ function buildHeatmap(M){
   let h = '<table class="schedgrid" style="min-width:680px"><thead><tr><th class="sticky-col">Week (Mon–Sun)</th>';
   for (let hh=0; hh<24; hh++) h += '<th>'+hourLbl(hh).replace(" ","")+'</th>';
   h += '</tr></thead><tbody>';
-  for (const row of M.heatRows){
+  for (let ri = 0; ri < M.heatRows.length; ri++){
+    const row = M.heatRows[ri];
     const sunday = addD(row.key, 6);
     const labelTxt = fmtMD(row.key) + ' → ' + fmtMD(sunday)   // Monday → Sunday of that week
-      + ' <span class="wd">wk'+(row.dates.length)+'</span>';
+      + ' <span class="wd">wk'+(ri+1)+'</span>';
     h += '<tr><td class="sticky-col">'+labelTxt+'</td>';
     for (let hh=0; hh<24; hh++){
       let calls=0, seatedN=0, unavN=0, any=false;
