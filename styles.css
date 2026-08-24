@@ -461,6 +461,6 @@ footer{margin-top:36px;text-align:center;font-size:11.5px;color:var(--mauve)}
 /* Call Breakdown week-by-week comparison toggle */
 .cmp-toggle{display:flex;align-items:center;gap:10px;margin-left:auto;flex-wrap:wrap}
 .cmp-vs{color:var(--mauve);font-weight:700;font-size:12px}
-#tBkWeekCmp .delta.up{color:var(--ok);font-weight:700}
-#tBkWeekCmp .delta.down{color:var(--bad);font-weight:700}
+#tBkWeekCmp .delta.up{color:var(--bad);font-weight:700}   /* increased = bad (red) */
+#tBkWeekCmp .delta.down{color:var(--ok);font-weight:700}   /* decreased = good (green) */
 #tBkWeekCmp .delta.flat{color:var(--ink2)}
