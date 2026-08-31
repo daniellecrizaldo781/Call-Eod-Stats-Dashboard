@@ -67,23 +67,55 @@ function renderStatus(){
   const filt = rows.filter(r =>
     (team === "all" || r.team_key === team) && inWeek(r.d, wk));
 
+  // Away (not-available, not-live-call) states considered for aux-jumping.
+  // An agent is flagged only when they flicker among these (offline / back office /
+  // other / etc.) 3+ times within a few minutes, then go back ONLINE (available).
+  // A normal call cycle (ringing -> in_call -> after_call_work -> available) is NOT a jump.
+  const AWAY = new Set(["offline","doing_back_office","back_office","other","do_not_disturb",
+    "on_a_break","out_for_lunch","in_training"]);
+  const JUMP_WINDOW = 10; // minutes: away flicker must resolve this fast before going online
+
   // aggregate per agent
-  const A = {};   // agent -> {team, team_key, min, bo_min, auxes:{norm:min}, perHour:{h:[norm...]}, statusMin:{raw:min}}
+  const A = {};   // agent -> {team, team_key, min, bo_min, auxes, statusMin}
+  // per-agent per-day timeline (event clock = cumulative minutes from day start)
+  const TL = {};  // agent -> { date -> {last, ev:[{state, off}]} }
   filt.forEach(r => {
     const a = A[r.agent] || (A[r.agent] = {team:r.team, team_key:r.team_key, min:0, bo_min:0,
-      auxes:{}, perHour:{}, statusMin:{}});
+      auxes:{}, statusMin:{}});
     const m = +r.min || 0;
     a.min += m;
     if (isBack(r.status)) a.bo_min += m;
     const ns = normStatus(r.status);
     if (ns) a.auxes[ns] = (a.auxes[ns]||0) + m;
     if (r.status) a.statusMin[r.status] = (a.statusMin[r.status]||0) + m;
-    if (r.t != null && ns) (a.perHour[r.t] = a.perHour[r.t]||[]).push(ns);
+    // timeline
+    TL[r.agent] = TL[r.agent] || {};
+    const day = TL[r.agent][r.d] || (TL[r.agent][r.d] = {last:0, ev:[]});
+    day.ev.push({state:(r.status||"").toLowerCase(), off:day.last});
+    day.last += m;
   });
+
+  // aux-jump = >=3 away toggles within JUMP_WINDOW minutes, ending when agent goes available
+  function computeJumps(ev){
+    let jumps = 0, win = [];
+    for (const e of ev){
+      if (e.state === "available"){
+        const recent = win.filter(w => (e.off - w.off) <= JUMP_WINDOW);
+        if (recent.length >= 3 && new Set(recent.map(w => w.state)).size >= 2) jumps++;
+        win = [];
+      } else if (AWAY.has(e.state)){
+        win.push({state:e.state, off:e.off});
+        while (win.length && (e.off - win[0].off) > JUMP_WINDOW) win.shift();
+      }
+      // live-call states (ringing/in_call/after_call_work) are ignored for jump detection
+    }
+    return jumps;
+  }
 
   const agents = Object.entries(A).map(([n,a]) => {
     let jumps = 0;
-    Object.keys(a.perHour).forEach(h => { if (new Set(a.perHour[h]).size >= 3) jumps++; });
+    const days = TL[n] || {};
+    Object.keys(days).forEach(d => { jumps += computeJumps(days[d].ev); });
     return {name:n, team:a.team, team_key:a.team_key, min:a.min, bo_min:a.bo_min,
             jumps, distinct_aux:Object.keys(a.auxes).length, auxes:a.auxes, statusMin:a.statusMin};
   });
@@ -105,7 +137,7 @@ function renderStatus(){
   wrap.innerHTML =
       kpi("Back-Office Hours", fmtHrs(totalBO), teamLabel + (wk!=="ALL" ? " · " + fmtWeek(wk) : " · total"), "alt")
     + kpi("Agents Tracked", nf(agents.length), teamLabel, "big")
-    + kpi("Aux-Jumping Agents", nf(jumpers.length), "flagged (3+ aux/hr)", jumpers.length ? "bad" : "good")
+    + kpi("Aux-Jumping Agents", nf(jumpers.length), "away-aux flicker before online", jumpers.length ? "bad" : "good")
     + kpi("Top Back-Office", topBO ? esc(topBO.name) : "—",
           topBO ? fmtHrs(topBO.bo_min) : "", "warn");
 
