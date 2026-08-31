@@ -189,7 +189,7 @@ select:focus,input[type=date]:focus{outline:0;border-color:var(--rose);box-shado
 .card-hd h3{margin-right:auto}
 
 /* tables */
-table{width:auto;border-collapse:collapse;font-size:11.8px}
+table{width:100%;border-collapse:collapse;font-size:11.8px}
 th{text-align:left;font-size:9.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--mauve);
   padding:7px 9px;border-bottom:2px solid var(--line);white-space:nowrap;position:sticky;top:0;background:var(--white)}
 th.n,td.n{text-align:right}
@@ -197,7 +197,7 @@ td{padding:7px 9px;border-bottom:1px solid #FAEDF3}
 tbody tr:hover{background:var(--blush)}
 tbody tr.tot{font-weight:700;background:var(--blush2)}
 .scroll{max-height:430px;overflow:auto;max-width:100%}
-.scroll>table{width:auto}
+.scroll>table{width:100%}
 .scroll::-webkit-scrollbar{width:9px;height:9px}
 .scroll::-webkit-scrollbar-thumb{background:var(--dusty);border-radius:9px}
 th.sortable{cursor:pointer} th.sortable:hover{color:var(--rose-d)}
@@ -268,7 +268,7 @@ footer{margin-top:36px;text-align:center;font-size:11.5px;color:var(--mauve)}
 
 /* any table can scroll sideways instead of overflowing the card */
 .tscroll{overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%}
-.tscroll table{width:auto}
+.tscroll table{width:100%}
 .grid>*{min-width:0}
 
 @media(max-width:1180px){
@@ -330,7 +330,7 @@ footer{margin-top:36px;text-align:center;font-size:11.5px;color:var(--mauve)}
   /* bump SVG label sizes: they shrink with the viewBox on small screens */
   .atxt{font-size:13px} .vtxt{font-size:12.5px} .axis{font-size:12px}
 
-  .tscroll table{width:auto}
+  .tscroll table{width:100%}
   table{font-size:11.5px}
   th{font-size:9px;letter-spacing:.3px}
   td{padding:6px 7px}
@@ -456,7 +456,7 @@ footer{margin-top:36px;text-align:center;font-size:11.5px;color:var(--mauve)}
 .agchips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
 .agchip{background:#FCE7F1;border:1px solid #F2B8D2;color:#9B2C6B;padding:3px 10px;border-radius:999px;font-size:12.5px;font-weight:600}
 .heatmap{overflow-x:auto;margin-top:6px;max-width:100%}
-.heatmap table{border-collapse:separate;border-spacing:3px}
+.heatmap table{border-collapse:separate;border-spacing:3px;width:100%}
 .heatmap th{font-size:11.5px;color:var(--ink2);padding:4px 6px;text-align:center;white-space:nowrap}
 .heatmap td.hm{width:30px;height:30px;text-align:center;border-radius:8px;cursor:pointer;font-size:13px;transition:transform .08s}
 .heatmap td.hm:hover{transform:scale(1.12);box-shadow:0 2px 8px rgba(0,0,0,.18)}
@@ -485,7 +485,7 @@ footer{margin-top:36px;text-align:center;font-size:11.5px;color:var(--mauve)}
 .sched-team{margin-bottom:22px}
 .sched-banner{font-weight:800;font-size:15px;letter-spacing:.04em;padding:11px 16px;border-radius:12px 12px 0 0}
 .sched-box{background:var(--white);border:1px solid var(--line);border-top:none;border-radius:0 0 12px 12px;padding:6px 10px 10px;overflow-x:auto;max-width:100%}
-.schedgrid{font-size:11.5px;border-collapse:separate;border-spacing:0;width:auto}
+.schedgrid{font-size:11.5px;border-collapse:separate;border-spacing:0;width:100%}
 .schedgrid th{position:sticky;top:0;z-index:3;background:#dbeafe;border-bottom:2px solid #bcd2f5;text-align:center;padding:8px 6px;white-space:nowrap;font-size:10.5px;letter-spacing:.02em;color:#1f3a5f}
 .schedgrid th .wd{display:block;font-weight:600;color:#3b82c4;font-size:9px;opacity:.85}
 .schedgrid th.sticky-col,.schedgrid td.sticky-col{position:sticky;left:0;z-index:2;background:var(--white);text-align:left;font-weight:700;padding:7px 10px;white-space:nowrap;color:var(--ink);border-right:1px solid var(--line)}
