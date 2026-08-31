@@ -4,8 +4,8 @@
    The sheet has ONE TAB PER TEAM; each row is tagged with its authoritative team_key.
 
    Surfaces (all computed client-side so the Week toggle filters live):
-     • Back-office load per agent  (hours in back_office/admin/training/after_call_work/etc.)
-     • Aux-jumping flags           (3+ distinct aux states within a single clock hour)
+     • Back-office load per agent  (hours in the "doing_back_office" status tag only)
+     • Aux-jumping flags           (3+ away-aux toggles within 10 min, resolving to available)
      • Time in Status per Status   (total hours per aux state, per agent)
    Honors the Team chips (Danielle / Brai / Cess / Entire) and a Week toggle.
    If STATUS_SHEET is not set, D.status is {rows:[]} and we show a friendly notice.
@@ -18,10 +18,17 @@ const ST_TEAMS = [
   {key:"cess",     label:"Team Cess"},
 ];
 
-// back-office = time NOT spent handling live calls
-const AUX_BACK = ["back_office","backoffice","admin","after_call_work","acw","training",
-  "coaching","meeting","project","non_call","noncall","offline","email","chat","wfm",
-  "qa","quality","floor","break","lunch","restroom","rest_room","personal","wrap"];
+// abbreviation map: full status label -> short column/cause label
+const AUX_ABBR = {
+  offline:"offline", available:"avail", in_call:"in_call", ringing:"ring",
+  after_call_work:"acw", doing_back_office:"back_off", back_office:"back_off",
+  other:"other", do_not_disturb:"dnd", on_a_break:"break", out_for_lunch:"lunch",
+  in_training:"train"
+};
+
+// back-office = ONLY the "doing_back_office" status tag from the sheet
+// (do NOT sum admin/training/break/lunch/offline/etc. — those are separate auxes)
+const AUX_BACK = ["doing_back_office","back_office"];
 function isBack(label){
   const l = (label||"").toLowerCase().replace(/ /g,"_");
   return !!l && AUX_BACK.some(k => l.indexOf(k) > -1);
@@ -95,13 +102,17 @@ function renderStatus(){
     day.last += m;
   });
 
-  // aux-jump = >=3 away toggles within JUMP_WINDOW minutes, ending when agent goes available
-  function computeJumps(ev){
+  // aux-jump = >=3 away toggles within JUMP_WINDOW minutes, ending when agent goes available.
+  // records the away-states seen in each qualifying flicker so we can show the CAUSE per agent.
+  function computeJumps(ev, cause){
     let jumps = 0, win = [];
     for (const e of ev){
       if (e.state === "available"){
         const recent = win.filter(w => (e.off - w.off) <= JUMP_WINDOW);
-        if (recent.length >= 3 && new Set(recent.map(w => w.state)).size >= 2) jumps++;
+        if (recent.length >= 3 && new Set(recent.map(w => w.state)).size >= 2){
+          jumps++;
+          recent.forEach(w => { cause[w.state] = (cause[w.state]||0) + 1; });
+        }
         win = [];
       } else if (AWAY.has(e.state)){
         win.push({state:e.state, off:e.off});
@@ -113,11 +124,12 @@ function renderStatus(){
   }
 
   const agents = Object.entries(A).map(([n,a]) => {
+    const cause = {};
     let jumps = 0;
     const days = TL[n] || {};
-    Object.keys(days).forEach(d => { jumps += computeJumps(days[d].ev); });
+    Object.keys(days).forEach(d => { jumps += computeJumps(days[d].ev, cause); });
     return {name:n, team:a.team, team_key:a.team_key, min:a.min, bo_min:a.bo_min,
-            jumps, distinct_aux:Object.keys(a.auxes).length, auxes:a.auxes, statusMin:a.statusMin};
+            jumps, cause, distinct_aux:Object.keys(a.auxes).length, auxes:a.auxes, statusMin:a.statusMin};
   });
 
   const s = ($("stSort") ? $("stSort").value : "bo_desc");
@@ -141,28 +153,32 @@ function renderStatus(){
     + kpi("Top Back-Office", topBO ? esc(topBO.name) : "—",
           topBO ? fmtHrs(topBO.bo_min) : "", "warn");
 
-  // Back-office bar chart (top 20)
+  // Back-office bar chart (top 20) -- show HOURS (value is minutes in data)
   const bo = agents.filter(a => a.bo_min > 0).slice(0, 20);
   if (bo.length){
-    hBars("chStatusBO", bo.map(a => ({label:a.name, value:a.bo_min,
+    hBars("chStatusBO", bo.map(a => ({label:a.name, value:a.bo_min/60,
       note: fmtHrs(a.bo_min) + " back-office"})), {unit:"h", labelW:160, color:"#B99BDD"});
   } else {
     $("chStatusBO").innerHTML = '<div class="empty">No back-office hours for this selection.</div>';
   }
 
-  // Aux-jumping table
+  // Aux-jumping table  -- with a "What Causes It" column explaining the away-aux flicker
   const flagged = jumpers.slice().sort((x,y) => y.jumps - x.jumps);
   const jrows = flagged.map(a => {
     const topAux = Object.entries(a.auxes).sort((x,y)=>y[1]-x[1]).slice(0,3)
       .map(([k,v]) => esc(k) + " (" + (v/60).toFixed(1) + "h)").join(", ");
+    // cause: away-states that appeared in the agent's flicker windows, by frequency
+    const cause = Object.entries(a.cause).sort((x,y)=>y[1]-x[1])
+      .map(([k,v]) => (AUX_ABBR[k]||k) + " ×" + v).join(", ");
     return {a:esc(a.name), t:'<span class="tag lav">'+esc(a.team)+'</span>',
-            j:nf(a.jumps), d:nf(a.distinct_aux), aux: topAux || "—", bo: fmtHrs(a.bo_min)};
+            j:nf(a.jumps), d:nf(a.distinct_aux), aux: topAux || "—",
+            cause: cause || "—", bo: fmtHrs(a.bo_min)};
   });
   tbl($("tStatusJump"),
     [{t:"Agent",k:"a"},{t:"Team",k:"t"},{t:"Aux-Jumps",k:"j",n:1},
-     {t:"Distinct Aux",k:"d",n:1},{t:"Top Aux States",k:"aux"},{t:"Back-Office",k:"bo",n:1}],
+     {t:"Distinct Aux",k:"d",n:1},{t:"Top Aux States",k:"aux"},{t:"What Causes It",k:"cause"},{t:"Back-Office",k:"bo",n:1}],
     jrows.length ? jrows :
-      [{a:'<div class="empty" style="padding:14px">No agents flagged for aux-jumping in this selection. 🎉</div>', t:"", j:"", d:"", aux:"", bo:""}]);
+      [{a:'<div class="empty" style="padding:14px">No agents flagged for aux-jumping in this selection. 🎉</div>', t:"", j:"", d:"", aux:"", cause:"", bo:""}]);
 
   // Per-agent time-in-status table  ->  PIVOT: one column per status, one row per agent
   // (much easier to scan than one giant stacked cell per agent)
