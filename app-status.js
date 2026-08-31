@@ -103,15 +103,32 @@ function renderStatus(){
   });
 
   // aux-jump = >=3 away toggles within JUMP_WINDOW minutes, ending when agent goes available.
-  // records the away-states seen in each qualifying flicker so we can show the CAUSE per agent.
+  // BUT we do NOT flag it when that availability flows straight into a NEW OUTBOUND CALL
+  // (ringing -> in_call): going back-office / online to engage an outbound call is legitimate
+  // work, not aux-jumping. Records the away-states seen in each qualifying flicker for the CAUSE column.
+  const ENGAGE_WINDOW = 12; // min: how soon after "available" an outbound call may start
   function computeJumps(ev, cause){
     let jumps = 0, win = [];
-    for (const e of ev){
+    for (let i=0;i<ev.length;i++){
+      const e = ev[i];
       if (e.state === "available"){
         const recent = win.filter(w => (e.off - w.off) <= JUMP_WINDOW);
         if (recent.length >= 3 && new Set(recent.map(w => w.state)).size >= 2){
-          jumps++;
-          recent.forEach(w => { cause[w.state] = (cause[w.state]||0) + 1; });
+          // peek ahead: if this availability leads into an outbound call (ringing/in_call) shortly,
+          // it's the agent going online to take/make a call — NOT an aux-jump
+          let engaged = false;
+          for (let j=i+1;j<ev.length;j++){
+            const dt = ev[j].off - e.off;
+            if (dt > ENGAGE_WINDOW) break;
+            const st = ev[j].state;
+            if (st === "ringing" || st === "in_call"){ engaged = true; break; }
+            // another away flicker or re-available before any call = not a clean call takeoff
+            if (st === "available" || AWAY.has(st)) break;
+          }
+          if (!engaged){
+            jumps++;
+            recent.forEach(w => { cause[w.state] = (cause[w.state]||0) + 1; });
+          }
         }
         win = [];
       } else if (AWAY.has(e.state)){
@@ -153,8 +170,10 @@ function renderStatus(){
     + kpi("Top Back-Office", topBO ? esc(topBO.name) : "—",
           topBO ? fmtHrs(topBO.bo_min) : "", "warn");
 
-  // Back-office bar chart (top 20) -- show HOURS (value is minutes in data)
-  const bo = agents.filter(a => a.bo_min > 0).slice(0, 20);
+  // Back-office bar chart -- show HOURS (value is minutes in data).
+  // Entire Call Team: top 5 only; individual teams: top 20.
+  const boTop = (team === "all") ? 5 : 20;
+  const bo = agents.filter(a => a.bo_min > 0).slice(0, boTop);
   if (bo.length){
     hBars("chStatusBO", bo.map(a => ({label:a.name, value:a.bo_min/60,
       note: fmtHrs(a.bo_min) + " back-office"})), {unit:"h", labelW:160, color:"#B99BDD"});

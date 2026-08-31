@@ -120,6 +120,21 @@ header.hero p{margin:5px 0 0;opacity:.9;font-size:13px}
 #stTeamPills .pill[data-v="cess"].on{background:linear-gradient(135deg,#4F8FD0,#2F6FB3);color:#fff;
   box-shadow:0 4px 14px rgba(47,111,179,.4)}
 
+/* emphasised status cards so the two key tables pop */
+.status-wrap .card.emphasis{
+  background:linear-gradient(135deg,#FFF6FB 0%,#FBEEF8 60%,#F3ECFB 100%);
+  border:1.5px solid var(--rose);
+  box-shadow:0 8px 26px rgba(201,59,114,.16)}
+.status-wrap .card.emphasis .card-hd{margin-bottom:12px}
+.status-wrap .card.emphasis .card-hd h3{font-size:14px;color:var(--rose-d)}
+.status-wrap .card.emphasis .card-hd h3:before{content:"";display:inline-block;width:9px;height:9px;
+  border-radius:3px;background:linear-gradient(135deg,var(--rose),var(--rose-d));margin-right:9px;vertical-align:middle}
+.status-wrap .card.emphasis table{font-size:12px}
+.status-wrap .card.emphasis th{background:#FCEAF3;color:var(--rose-d);border-bottom:2px solid var(--rose)}
+.status-wrap .card.emphasis td{border-bottom:1px solid #F6DCE7}
+.status-wrap .card.emphasis tbody tr:hover{background:#FCE0EC}
+  box-shadow:0 4px 14px rgba(47,111,179,.4)}
+
 
 /* filter bar */
 .filters{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end;background:var(--white);
