@@ -1,0 +1,293 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Call EOD Stats Dashboard</title><link rel="stylesheet" href="styles.css?v=20260901-TABLESZ"></head>
+<body><div class="wrap">
+
+<header class="hero">
+  <h1>&#128151; CALL EOD STATS DASHBOARD</h1>
+  <p>OHA &amp; Non-OHA Inbound Call Performance &mdash; Team Lead Command Center</p>
+  <div class="hero-meta"><div id="metaRange">&mdash;</div><div id="metaGen" style="opacity:.75"></div>
+    <button class="btn ghost refresh" id="btnRefresh" title="Reload the latest synced data from Google Sheets">&#8635; Refresh Data</button></div>
+</header>
+
+<!-- page navigation (SPA) -->
+<nav class="topnav">
+  <button class="navbtn on" id="navMain" data-page="main">&#127968; Main Dashboard</button>
+  <button class="navbtn" id="navIvr" data-page="ivr">&#128241; IVR Branch Performance</button>
+  <button class="navbtn" id="navBreak" data-page="break">&#128202; Call Breakdown</button>
+  <button class="navbtn" id="navAgent" data-page="agent">&#128100; Agent Performance</button>
+  <button class="navbtn" id="navForecast" data-page="forecast">&#128202; Call Forecast &amp; Staffing</button>
+  <button class="navbtn" id="navSched" data-page="sched">&#128197; Call Schedule</button>
+</nav>
+
+<div class="filters">
+  <div class="fgroup"><span class="flabel">Main Channel</span>
+    <div class="pills" id="chanPills">
+      <button class="pill on" data-v="ALL">All Channels</button>
+      <button class="pill" data-v="OHA">OHA</button>
+      <button class="pill" data-v="NON-OHA">Non-OHA</button></div></div>
+
+  <div class="fgroup"><span class="flabel">Week</span><select id="fWeek" class="pillsel"></select></div>
+  <div class="fgroup"><span class="flabel">Month</span><select id="fMonth" class="pillsel"></select></div>
+
+  <div class="fgroup"><span class="flabel">View</span>
+    <div class="pills" id="granPills">
+      <button class="pill" data-v="none">None</button>
+      <button class="pill on" data-v="daily">Daily</button>
+    </div></div>
+  <div class="fgroup" id="wrapFrom"><span class="flabel">From</span><input type="date" id="fFrom" disabled></div>
+  <div class="fgroup" id="wrapTo"><span class="flabel">To</span><input type="date" id="fTo" disabled></div>
+  <div class="fgroup"><span class="flabel">&nbsp;</span><button class="btn ghost" id="btnReset">Reset</button></div>
+</div>
+
+<div class="notice" id="dqNotice"></div>
+
+<!-- ============================ PAGE 1: MAIN DASHBOARD ============================ -->
+<section class="page" id="pageMain">
+
+<!-- KPIs -->
+<div class="sect"><h2>Executive KPIs</h2><span class="chip" id="kpiScope"></span><div class="line"></div></div>
+<div class="kpis" id="kpiRow"></div>
+<div class="kpis" id="kpiRow2" style="margin-top:14px"></div>
+
+<!-- Summary -->
+<div class="grid" style="margin-top:16px"><div class="summary" id="execSummary"></div></div>
+
+<!-- Volume + donut -->
+<div class="sect"><h2>Volume &amp; Mix</h2><div class="line"></div></div>
+<div class="periodnav" style="margin:-4px 0 12px">
+  <div class="fgroup"><span class="flabel">Week</span>
+    <select id="fDayWeek" class="pillsel"></select></div>
+  <div class="fgroup"><span class="flabel">Month</span>
+    <select id="fDayMonth" class="pillsel"></select></div>
+  <span class="flabel" style="text-transform:none;letter-spacing:0;font-weight:500;color:var(--ink2);align-self:center">
+    &mdash; daily breakdown for the selected week or month</span>
+</div>
+<div class="grid g2">
+  <div class="card"><div class="card-hd"><h3 id="trendTitle">Call Volume</h3>
+    <span class="sub" id="trendSub"></span></div><div id="chTrend"></div>
+    <div class="legend"><span><i style="background:#E8578E"></i>Answered</span>
+      <span><i style="background:#D9455F"></i>Missed</span>
+      <span><i style="background:#B99BDD"></i>Abandoned</span>
+      <span><i style="background:#D9A0B8"></i>Out of Hours</span></div></div>
+  <div class="card"><div class="card-hd"><h3>Call Type Distribution</h3></div><div id="chDonut"></div></div>
+</div>
+
+<div class="grid g2" style="margin-top:16px">
+  <div class="card"><div class="card-hd"><h3>Calls by Hour</h3><span class="sub" id="peakSub"></span></div>
+    <div id="chHour"></div>
+    <div class="legend"><span><i style="background:#E8578E"></i>Answered</span>
+      <span><i style="background:#D9455F"></i>Missed</span>
+      <span><i style="background:#B99BDD"></i>Abandoned</span>
+      <span><i style="background:#D9A0B8"></i>OOH</span></div></div>
+  <div class="card"><div class="card-hd"><h3>Answer Rate Trend</h3></div><div id="chRate"></div></div>
+</div>
+
+<!-- Comparisons -->
+<div class="sect"><h2>Comparisons</h2><div class="line"></div></div>
+<div class="grid">
+  <div class="card"><div class="card-hd"><h3>Period over Period</h3>
+    <select id="cmpA" style="min-width:150px"></select>
+    <span style="color:var(--mauve);font-weight:700">vs</span>
+    <select id="cmpB" style="min-width:150px"></select></div>
+    <table id="tWow"></table></div>
+</div>
+<div class="card" style="margin-top:16px"><div class="card-hd"><h3>IVR Branch &mdash; Period over Period</h3>
+  <span class="sub" id="wowIvrSub"></span></div>
+  <div class="scroll"><table id="tWowIvr"></table></div></div>
+
+<!-- Period performance -->
+<div class="sect"><h2>Period Performance</h2><div class="line"></div></div>
+<div class="card">
+  <div class="card-hd"><h3 id="periodTitle">Period Performance</h3>
+    <span class="sub" id="periodSub"></span></div>
+  <div class="scroll" style="margin-top:12px"><table id="tPeriod"></table></div>
+</div>
+<div class="card" style="margin-top:16px"><div class="card-hd"><h3>Hourly Breakdown</h3></div>
+  <div class="scroll"><table id="tHour"></table></div></div>
+
+</section>
+
+<!-- ============================ PAGE 2: IVR BRANCH PERFORMANCE ============================ -->
+<section class="page" id="pageIvr" hidden>
+<div class="sect"><h2>IVR Branch Performance</h2><span class="chip">follows the Main Channel filter above</span><div class="line"></div></div>
+<div class="kpis" id="ivrKpis"></div>
+<div class="ivr-wide" style="margin-top:16px">
+  <div class="card"><div class="card-hd"><h3>IVR Branch &mdash; Answered vs Abandoned</h3></div><div id="chIvrBar" class="chart-cap"></div>
+    <div class="legend"><span><i style="background:#E8578E"></i>Answered</span>
+      <span><i style="background:#B99BDD"></i>Abandoned</span>
+      <span><i style="background:#D9455F"></i>Missed</span></div></div>
+  <div class="card"><div class="card-hd"><h3>Abandoned Calls by IVR Branch</h3></div><div id="chIvrAband" class="chart-cap"></div></div>
+</div>
+
+<div class="card" id="ivrBranchDay" style="margin-top:16px">
+<div class="card-hd"><h3 id="ivrDayTitle">IVR Branch by Day</h3>
+  <span class="sub" id="ivrDaySub"></span>
+  <div class="pills" id="ivrScopePills" style="margin-left:auto">
+    <button class="pill on" data-v="daily">Day</button>
+    <button class="pill" data-v="weekly">Week</button>
+    <button class="pill" data-v="monthly">Month</button>
+  </div></div>
+<div class="scroll" style="max-height:none"><table id="tIvrDay" class="ivrday"></table></div>
+</div>
+<div class="card" id="ivrBranchOut" style="margin-top:16px">
+<div class="card-hd"><h3 id="ivrOutTitle">IVR Branch Outcome</h3>
+  <span class="sub" id="ivrOutSub"></span>
+  <div class="pills" id="ivrScopePills2" style="margin-left:auto">
+    <button class="pill on" data-v="daily">Day</button>
+    <button class="pill" data-v="weekly">Week</button>
+    <button class="pill" data-v="monthly">Month</button>
+  </div></div>
+<div class="scroll" style="max-height:none"><table id="tIvrOut" class="ivrout"></table></div>
+</div>
+<p class="pagehint">Abandoned calls with <b>no IVR branch selected</b> are tracked separately and shown above
+(&ldquo;Abandoned &mdash; No IVR Branch&rdquo; KPI and the red bar in the Abandoned-by-Branch chart).</p>
+</section>
+
+<!-- ============================ PAGE: CALL BREAKDOWN ============================ -->
+<section class="page" id="pageBreak" hidden>
+<div class="sect"><h2>Call Breakdown &mdash; Branches, Drivers &amp; Refunds</h2>
+  <span class="chip">ticket-level detail from the Call Breakdown sheet</span><div class="line"></div></div>
+
+<div class="break-controls">
+  <div class="fgroup"><span class="flabel">Brand</span><div id="bkBrand" class="brandpick"></div></div>
+  <div class="fgroup"><span class="flabel">Concern Type</span><select id="bkConcern">
+    <option value="ALL">All Concerns</option></select></div>
+  <div class="fgroup"><span class="flabel">&nbsp;</span><button class="btn ghost" id="bkReset">Reset</button></div>
+</div>
+
+<div class="kpis" id="bkKpis" style="margin-top:14px"></div>
+
+<div class="sect" style="margin-top:18px"><h2>Call Drivers by Branch</h2>
+  <span class="chip" id="bkBranchScope"></span><div class="line"></div></div>
+<div class="card" style="margin-top:14px"><div class="card-hd"><h3>Top Call Drivers (all branches)</h3>
+    <span class="sub">by subcategory volume</span>
+    <div id="bkDriversBrand" class="brandpick" style="margin-left:auto;min-width:220px"></div></div>
+    <div id="chBkDrivers" class="chart-cap"></div></div>
+
+<div class="card" style="margin-top:16px"><div class="card-hd"><h3>Per-Branch Top Call Drivers</h3>
+  <span class="sub">pick a branch to drill in</span>
+  <select id="bkBranchPick" style="min-width:200px;margin-left:auto"></select></div>
+  <div id="chBkBranchDrill" class="chart-cap"></div></div>
+
+<div class="sect" style="margin-top:18px"><h2>Refunds</h2><div class="line"></div></div>
+<div class="card" style="margin-top:14px"><div class="card-hd"><h3>Top Refund Reasons (Subcategory)</h3>
+    <span class="sub">among refunded tickets</span></div>
+    <div id="chBkRefundSub" class="chart-cap"></div></div>
+<div class="card" style="margin-top:16px"><div class="card-hd"><h3>Refunded Amount by Brand</h3>
+    <span class="sub">total $ refunded per brand</span></div>
+    <div id="chBkRefundBrand" class="chart-cap"></div></div>
+
+<div class="sect" style="margin-top:18px"><h2>Week-by-Week Refund Comparison</h2>
+  <span class="chip">refund tickets &amp; total refunded, per week</span><div class="line"></div></div>
+<div class="card" style="margin-top:14px">
+  <div class="card-hd"><h3>Compare Two Weeks</h3>
+    <span class="sub">pick any two weeks</span>
+    <div class="cmp-toggle">
+      <select id="bkCmpA" class="pillsel"></select>
+      <span class="cmp-vs">vs</span>
+      <select id="bkCmpB" class="pillsel"></select>
+    </div></div>
+  <div class="scroll"><table id="tBkWeekCmp"></table></div>
+</div>
+</section>
+
+<!-- ============================ PAGE 3: AGENT PERFORMANCE ============================ -->
+<section class="page" id="pageAgent" hidden>
+<div class="sect"><h2>Agent Performance</h2><div class="line"></div></div>
+
+<div class="agent-controls">
+  <div class="fgroup"><span class="flabel">View</span>
+    <div class="pills" id="agGranPills">
+      <button class="pill" data-v="daily">Daily</button>
+      <button class="pill on" data-v="weekly">Weekly</button>
+      <button class="pill" data-v="monthly">Monthly</button>
+    </div></div>
+  <div class="fgroup"><span class="flabel">Period</span><select id="agPeriod" style="min-width:180px"></select></div>
+</div>
+
+<div class="kpis" id="agKpis" style="margin-top:16px"></div>
+
+<div class="grid g2" style="margin-top:16px">
+  <div class="card"><div class="card-hd"><h3 id="agChartTitle">Calls Handled by Agent</h3>
+    <span class="sub">answered calls per agent &middot; sorted high &rarr; low</span></div>
+    <div id="chAgentCalls" class="chart-cap"></div></div>
+  <div class="card"><div class="card-hd"><h3>Top Performing Agents</h3>
+    <span class="sub">by calls handled in the selected period</span></div>
+    <div id="agRank" class="ranklist-wrap"></div></div>
+</div>
+
+<div class="card" style="margin-top:16px"><div class="card-hd"><h3>Agent Table</h3>
+    <select id="fAgentSort" style="min-width:170px">
+      <option value="calls_desc">Highest Calls</option><option value="calls_asc">Lowest Calls</option>
+      <option value="aht_asc">Best AHT</option><option value="aht_desc">Highest AHT</option>
+      <option value="name">Name (A&ndash;Z)</option></select></div>
+  <div class="scroll"><table id="tAgent"></table></div></div>
+
+  <!-- Agent Status History -->
+  <div class="sect" style="margin-top:20px"><h2>Agent Status History</h2>
+    <span class="sub">aux / status log &middot; back-office load &amp; aux-jumping flags</span><div class="line"></div></div>
+
+  <div class="status-wrap">
+    <div class="fgroup"><span class="flabel">Team</span>
+      <div class="pills" id="stTeamPills">
+        <button class="pill on" data-v="all">Entire Call Team</button>
+        <button class="pill" data-v="danielle">Team Danielle</button>
+        <button class="pill" data-v="brai">Team Brai</button>
+        <button class="pill" data-v="cess">Team Cess</button>
+      </div></div>
+    <div class="fgroup"><span class="flabel">Week</span>
+      <select id="stWeek" class="pillsel"></select></div>
+    <div class="fgroup"><span class="flabel">Sort</span>
+      <select id="stSort" style="min-width:200px">
+        <option value="bo_desc">Most Back Office hrs</option>
+        <option value="bo_asc">Least Back Office hrs</option>
+        <option value="jumps_desc">Most Aux-Jumps</option>
+        <option value="name">Name (A&ndash;Z)</option>
+      </select></div>
+  </div>
+
+  <div class="kpis" id="stKpis" style="margin-top:16px"></div>
+
+  <div class="card" style="margin-top:16px"><div class="card-hd"><h3>Back Office Load by Agent</h3>
+    <span class="sub">total <b>doing_back_office</b> hours &mdash; ranked high &rarr; low</span></div>
+    <div id="chStatusBO" class="chart-cap"></div></div>
+
+  <div class="card emphasis" style="margin-top:16px"><div class="card-hd"><h3>Aux-Jumping Flags</h3>
+    <span class="sub">agents flickering offline / back-office / other 3+ times within 10 min before going online</span></div>
+    <div class="scroll"><table id="tStatusJump"></table></div></div>
+
+  <div class="card emphasis" style="margin-top:16px"><div class="card-hd"><h3>Time in Status per Status &mdash; per Agent</h3>
+    <span class="sub">hours in each aux/status, per agent (for the selected team &amp; week)</span></div>
+    <div class="scroll"><table id="tStatusPerAgent"></table></div>
+    <div id="stStatusLegend" class="legend"></div></div>
+  </div><!-- /.status-wrap -->
+</section>
+
+<!-- ============================ PAGE: CALL FORECAST & STAFFING ============================ -->
+<section class="page" id="pageForecast" hidden>
+  <div id="forecastRoot"></div>
+</section>
+
+<!-- ============================ PAGE: CALL SCHEDULE ============================ -->
+<section class="page" id="pageSched" hidden>
+  <div id="schedRoot"></div>
+</section>
+
+<footer>Created by Danielle Ann Mari Crizaldo &mdash; Call Team Lead</footer>
+</div>
+<div class="tip" id="tip"></div>
+<script src="data.js?v=20260901-TABLESZ"></script>
+<script src="app-core.js?v=20260901-TABLESZ"></script>
+<script src="app-charts.js?v=20260901-TABLESZ"></script>
+<script src="app-period.js?v=20260901-TABLESZ"></script>
+<script src="app-render1.js?v=20260901-TABLESZ"></script>
+<script src="app-render2.js?v=20260901-TABLESZ"></script>
+<script src="app-render3.js?v=20260901-TABLESZ"></script>
+<script src="app-breakdown.js?v=20260901-TABLESZ"></script>
+<script src="app-forecast.js?v=20260901-TABLESZ"></script>
+<script src="app-schedule.js?v=20260901-TABLESZ"></script>
+<script src="app-status.js?v=20260901-TABLESZ"></script>
+<script src="app-init.js?v=20260901-TABLESZ"></script>
+</body></html>
+</body></html>
