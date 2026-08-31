@@ -236,6 +236,8 @@
         <button class="pill" data-v="brai">Team Brai</button>
         <button class="pill" data-v="cess">Team Cess</button>
       </div></div>
+    <div class="fgroup"><span class="flabel">Week</span>
+      <select id="stWeek" class="pillsel"></select></div>
     <div class="fgroup"><span class="flabel">Sort</span>
       <select id="stSort" style="min-width:200px">
         <option value="bo_desc">Most Back Office hrs</option>
@@ -248,12 +250,16 @@
   <div class="kpis" id="stKpis" style="margin-top:16px"></div>
 
   <div class="card" style="margin-top:16px"><div class="card-hd"><h3>Back Office Load by Agent</h3>
-    <span class="sub">total back-office / admin / training minutes &mdash; ranked high &rarr; low</span></div>
+    <span class="sub">total back-office / admin / training hours &mdash; ranked high &rarr; low</span></div>
     <div id="chStatusBO" class="chart-cap"></div></div>
 
   <div class="card" style="margin-top:16px"><div class="card-hd"><h3>Aux-Jumping Flags</h3>
     <span class="sub">agents toggling between 3+ distinct aux states within a single hour</span></div>
     <div class="scroll"><table id="tStatusJump"></table></div></div>
+
+  <div class="card" style="margin-top:16px"><div class="card-hd"><h3>Time in Status per Status &mdash; per Agent</h3>
+    <span class="sub">total hours spent in each aux/status, per agent (for the selected team &amp; week)</span></div>
+    <div class="scroll"><table id="tStatusPerAgent"></table></div></div>
   </div><!-- /.status-wrap -->
 </section>
 

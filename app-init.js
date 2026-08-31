@@ -19,6 +19,14 @@ function buildPeriodNav(){
   $("fDayMonth").innerHTML = ['<option value="ALL">All months (whole range)</option>']
     .concat(dm.map(s => '<option value="'+s+'">'+fmtMonth(s)+'</option>')).join("");
   $("fDayMonth").value = "ALL";
+  // Agent Status History week toggle (filters status rows directly)
+  const sw = listWeeks();
+  const stw = $("stWeek");
+  if (stw){
+    stw.innerHTML = ['<option value="ALL">All weeks</option>']
+      .concat(sw.map(s => '<option value="'+s+'">'+fmtWeek(s)+'</option>')).join("");
+    stw.value = "ALL";
+  }
 }
 function deselectPeriod(id){
   // when one period navigator is used, reset the other to "All" so they don't fight
@@ -59,6 +67,7 @@ function wire(){
     b.classList.add("on"); F.stTeam = b.dataset.v; renderStatus();
   });
   $("stSort").onchange = () => renderStatus();
+  $("stWeek").onchange = () => { F.stWeek = $("stWeek").value; renderStatus(); };
   $("chanPills").addEventListener("click", e=>{
     const b = e.target.closest(".pill"); if(!b) return;
     [...$("chanPills").children].forEach(x=>x.classList.remove("on"));
