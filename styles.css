@@ -139,7 +139,7 @@ header.hero p{margin:5px 0 0;opacity:.9;font-size:13px}
 /* filter bar */
 .filters{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end;background:var(--white);
   border:1px solid var(--line);border-radius:var(--r);padding:16px 18px;margin:18px 0;box-shadow:var(--sh)}
-.fgroup{display:flex;flex-direction:column;gap:6px}
+.fgroup{display:flex;flex-direction:column;gap:6px;flex:0 0 auto}
 .flabel{font-size:10.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--mauve)}
 .pills{display:inline-flex;background:var(--blush2);border-radius:999px;padding:4px;gap:2px}
 .pill{border:0;background:transparent;padding:8px 20px;border-radius:999px;font:600 13px inherit;
@@ -281,8 +281,6 @@ footer{margin-top:36px;text-align:center;font-size:11.5px;color:var(--mauve)}
 @media(max-width:900px){
   .wrap{padding:14px 13px 54px}
   .filters{gap:12px;padding:14px}
-  .fgroup{flex:1 1 168px;min-width:0}
-  .fgroup select,.fgroup input{width:100%}
   .kpis{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:11px}
   .scroll{max-height:none}
 }
@@ -300,11 +298,11 @@ footer{margin-top:36px;text-align:center;font-size:11.5px;color:var(--mauve)}
     margin-top:10px;font-size:11px;opacity:.85;display:flex;flex-direction:column;
     gap:4px;align-items:flex-start}
 
-  /* filters: stack vertically but keep toggle pills at their natural compact width */
+  /* filters: stack vertically but keep controls at their natural compact width (not stretched) */
   .filters{flex-direction:column;align-items:stretch;gap:11px;padding:13px;border-radius:14px}
-  .fgroup{flex:1 1 auto;width:100%}
-  select,input[type=date]{width:100%;font-size:15px;padding:9px 11px}  /* 16px-ish stops iOS zoom */
-  #btnReset{width:100%;padding:10px}
+  .fgroup{flex:0 0 auto;width:auto}
+  select,input[type=date]{width:auto;min-width:170px;font-size:14px;padding:8px 11px}
+  #btnReset{width:auto;padding:9px 22px}
   /* in-page secondary control rows (Forecast/Schedule): keep compact toggles, old style */
   .forecast-controls,.sched-controls{flex-direction:row;flex-wrap:wrap;align-items:flex-end}
   .forecast-controls .fgroup,.sched-controls .fgroup{width:auto;flex:0 0 auto}
