@@ -199,7 +199,7 @@ td{padding:7px 9px;border-bottom:1px solid #FAEDF3}
 tbody tr:hover{background:var(--blush)}
 tbody tr.tot{font-weight:700;background:var(--blush2)}
 .scroll{max-height:430px;overflow:auto;max-width:100%}
-.scroll>table{min-width:560px}
+.scroll>table{width:auto}
 .scroll::-webkit-scrollbar{width:9px;height:9px}
 .scroll::-webkit-scrollbar-thumb{background:var(--dusty);border-radius:9px}
 th.sortable{cursor:pointer} th.sortable:hover{color:var(--rose-d)}
@@ -270,7 +270,7 @@ footer{margin-top:36px;text-align:center;font-size:11.5px;color:var(--mauve)}
 
 /* any table can scroll sideways instead of overflowing the card */
 .tscroll{overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%}
-.tscroll table{min-width:560px}
+.tscroll table{width:auto}
 .grid>*{min-width:0}
 
 @media(max-width:1180px){
@@ -332,7 +332,7 @@ footer{margin-top:36px;text-align:center;font-size:11.5px;color:var(--mauve)}
   /* bump SVG label sizes: they shrink with the viewBox on small screens */
   .atxt{font-size:13px} .vtxt{font-size:12.5px} .axis{font-size:12px}
 
-  .tscroll table{min-width:620px}
+  .tscroll table{width:auto}
   table{font-size:11.5px}
   th{font-size:9px;letter-spacing:.3px}
   td{padding:6px 7px}
