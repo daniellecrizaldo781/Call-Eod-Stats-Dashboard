@@ -52,6 +52,13 @@ function wire(){
     [...$("agGranPills").children].forEach(x=>x.classList.remove("on"));
     b.classList.add("on"); F.agGran = b.dataset.v; F.agPeriod=null; render();
   });
+  // Agent Status History: team pills + sort select
+  $("stTeamPills").addEventListener("click", e=>{
+    const b = e.target.closest(".pill"); if(!b) return;
+    [...$("stTeamPills").children].forEach(x=>x.classList.remove("on"));
+    b.classList.add("on"); F.stTeam = b.dataset.v; renderStatus();
+  });
+  $("stSort").onchange = () => renderStatus();
   $("chanPills").addEventListener("click", e=>{
     const b = e.target.closest(".pill"); if(!b) return;
     [...$("chanPills").children].forEach(x=>x.classList.remove("on"));

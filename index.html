@@ -1,6 +1,6 @@
 <!DOCTYPE html><html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Call EOD Stats Dashboard</title><link rel="stylesheet" href="styles.css?v=20260831-33343886584"></head>
+<title>Call EOD Stats Dashboard</title><link rel="stylesheet" href="styles.css?v=20260825-070056"></head>
 <body><div class="wrap">
 
 <header class="hero">
@@ -223,6 +223,37 @@
       <option value="aht_asc">Best AHT</option><option value="aht_desc">Highest AHT</option>
       <option value="name">Name (A&ndash;Z)</option></select></div>
   <div class="scroll"><table id="tAgent"></table></div></div>
+
+  <!-- Agent Status History -->
+  <div class="sect" style="margin-top:20px"><h2>Agent Status History</h2>
+    <span class="sub">aux / status log &middot; back-office load &amp; aux-jumping flags</span><div class="line"></div></div>
+
+  <div class="agent-controls">
+    <div class="fgroup"><span class="flabel">Team</span>
+      <div class="pills" id="stTeamPills">
+        <button class="pill on" data-v="all">Entire Call Team</button>
+        <button class="pill" data-v="danielle">Team Danielle</button>
+        <button class="pill" data-v="brai">Team Brai</button>
+        <button class="pill" data-v="cess">Team Cess</button>
+      </div></div>
+    <div class="fgroup"><span class="flabel">Sort</span>
+      <select id="stSort" style="min-width:200px">
+        <option value="bo_desc">Most Back Office hrs</option>
+        <option value="bo_asc">Least Back Office hrs</option>
+        <option value="jumps_desc">Most Aux-Jumps</option>
+        <option value="name">Name (A&ndash;Z)</option>
+      </select></div>
+  </div>
+
+  <div class="kpis" id="stKpis" style="margin-top:16px"></div>
+
+  <div class="card" style="margin-top:16px"><div class="card-hd"><h3>Back Office Load by Agent</h3>
+    <span class="sub">total back-office / admin / training minutes &mdash; ranked high &rarr; low</span></div>
+    <div id="chStatusBO" class="chart-cap"></div></div>
+
+  <div class="card" style="margin-top:16px"><div class="card-hd"><h3>Aux-Jumping Flags</h3>
+    <span class="sub">agents toggling between 3+ distinct aux states within a single hour</span></div>
+    <div class="scroll"><table id="tStatusJump"></table></div></div>
 </section>
 
 <!-- ============================ PAGE: CALL FORECAST & STAFFING ============================ -->
@@ -238,15 +269,16 @@
 <footer>Created by Danielle Ann Mari Crizaldo &mdash; Call Team Lead</footer>
 </div>
 <div class="tip" id="tip"></div>
-<script src="data.js?v=20260831-33343886584"></script>
-<script src="app-core.js?v=20260831-33343886584"></script>
-<script src="app-charts.js?v=20260831-33343886584"></script>
-<script src="app-period.js?v=20260831-33343886584"></script>
-<script src="app-render1.js?v=20260831-33343886584"></script>
-<script src="app-render2.js?v=20260831-33343886584"></script>
-<script src="app-render3.js?v=20260831-33343886584"></script>
-<script src="app-breakdown.js?v=20260831-33343886584"></script>
-<script src="app-forecast.js?v=20260831-33343886584"></script>
-<script src="app-schedule.js?v=20260831-33343886584"></script>
-<script src="app-init.js?v=20260831-33343886584"></script>
+<script src="data.js?v=20260821-32538563530"></script>
+<script src="app-core.js?v=20260821-32538563530"></script>
+<script src="app-charts.js?v=20260821-32538563530"></script>
+<script src="app-period.js?v=20260821-32538563530"></script>
+<script src="app-render1.js?v=20260821-32538563530"></script>
+<script src="app-render2.js?v=20260821-32538563530"></script>
+<script src="app-render3.js?v=20260821-32538563530"></script>
+<script src="app-breakdown.js?v=20260825-070056"></script>
+<script src="app-forecast.js?v=20260822-092204"></script>
+<script src="app-schedule.js?v=20260821-32538563530"></script>
+<script src="app-status.js?v=20260821-32538563530"></script>
+<script src="app-init.js?v=20260821-32538563530"></script>
 </body></html>

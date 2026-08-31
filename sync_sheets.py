@@ -43,6 +43,11 @@ BREAKDOWN_SECRET = os.environ.get("BREAKDOWN_SHEET")
 # BREAK_SHEET = "SHEET_ID|GID" (single tab). If unset, breaks are skipped.
 BREAK_SECRET = os.environ.get("BREAK_SHEET")
 
+# Optional 6th sheet: the Agent Status History log (per agent/interval aux states).
+# Stored as repo secret STATUS_SHEET = "SHEET_ID|GID" (single tab).
+# If unset, the Agent Status History section is skipped.
+STATUS_SECRET = os.environ.get("STATUS_SHEET")
+
 
 # ---- shift parsing: turn a cell like "6AM-3PM" / "7AM - 8AM\n5PM - 6PM" into a set of hours ----
 _HOURS = {str(h): h for h in range(24)}
@@ -421,6 +426,199 @@ def _safe_schedule():
         return []
 
 
+def build_status():
+    """Pull the Agent Status History sheet (aux/status log per agent per interval).
+
+    Layout expectation (defensive — columns are auto-detected by header name so a
+    re-ordered sheet won't break parsing):
+        - a member / agent / name column        -> "Member" / "Agent" / "Name"
+        - a team column (optional)              -> "Team"
+        - a date column                         -> "Date"
+        - a time column (optional)              -> "Time"
+        - a status / aux / auxes column         -> "Status" / "Aux" / "Auxes" / "State"
+        - a duration column (optional, minutes)  -> "Duration" / "Minutes"
+
+    Team categorization (Danielle's request):
+        "Team Danielle" / "Team Brai" / "Team Cess" / "Entire Call Team" (all).
+    If a team column is absent, the team is inferred from the agent name where it
+    carries a team hint (e.g. "(Brai)"); otherwise it defaults to the whole team.
+    We DO NOT fabricate a team — unknown stays "Entire Call Team".
+
+    "Back office" minutes = any status row whose label matches the AUX_BACK list
+    below (Back Office / BO / Admin / Training / etc.). These are summed per agent.
+
+    "Aux jumping" flag = an agent whose status rows flip between 3+ distinct aux
+    states within any single hour (busy toggling between auxes = a red flag).
+
+    Returns [] if STATUS_SECRET is missing. Produces:
+        rows: [{d, t, agent, team, status}]          # one per log row (t may be null)
+        byAgent: {agent: {team, backoffice_min, auxes:{state:count}, perHour:{hour:[states]}}}
+        dates: [ISO...], members: [name...]
+    """
+    secret = os.environ.get("STATUS_SHEET")
+    if not secret or "|" not in secret:
+        print("STATUS_SHEET not set — skipping Agent Status History data", flush=True)
+        return []
+    sid, gid = secret.split("|", 1)
+    sid = sid.strip(); gid = gid.strip()
+    if not sid:
+        print("STATUS_SHEET missing sheet id — skipping Agent Status History", flush=True)
+        return []
+    print("fetching Agent Status History ...", flush=True)
+
+    # allow an optional 3rd field = team column override name (rare)
+    team_override = ""
+    if gid and "|" in gid:
+        gid, team_override = gid.split("|", 1)
+        gid = gid.strip(); team_override = team_override.strip()
+
+    try:
+        text = fetch(sid, gid)
+    except Exception as e:
+        print("  !! Agent Status History fetch failed: " + str(e) + " — skipping", flush=True)
+        return []
+
+    rdr = csv.reader(io.StringIO(text))
+    rows_raw = [r for r in rdr if r and any(str(x).strip() for x in r)]
+    if not rows_raw:
+        print("  (Agent Status History empty)", flush=True)
+        return []
+    hdr = [str(h).strip().lower() for h in rows_raw[0]]
+    idx = {h: i for i, h in enumerate(hdr) if h}
+
+    def col(*names, fallback=-1):
+        for n in names:
+            if n in idx:
+                return idx[n]
+        return fallback
+
+    i_member = col("member", "agent", "name", "user", "csr", fallback=0)
+    i_team   = col("team", fallback=-1)
+    i_date   = col("date", "day", fallback=1 if i_member != 1 else 2)
+    i_time   = col("time", "timestamp", "hour", fallback=-1)
+    i_status = col("status", "aux", "auxes", "state", "activity", "reason", fallback=-1)
+    i_dur    = col("duration", "minutes", "min", "dur", fallback=-1)
+    if i_status < 0:
+        # last column that isn't member/date/time/team is the status
+        for ci in range(len(hdr) - 1, -1, -1):
+            if ci not in (i_member, i_date, i_time, i_team):
+                i_status = ci
+                break
+
+    if team_override and team_override.lower() in idx:
+        i_team = idx[team_override.lower()]
+
+    # team keying (matches the schedule sheet's vocabulary)
+    def team_key(name):
+        u = (name or "").lower()
+        if "cess" in u or "cesn" in u: return "cess"
+        if "brai" in u: return "brai"
+        if "danielle" in u or "dani" in u: return "danielle"
+        return "all"
+    def team_label(key):
+        return {"danielle": "Team Danielle", "brai": "Team Brai",
+                "cess": "Team Cess", "all": "Entire Call Team"}[key]
+
+    AUX_BACK = ("back office", "back-office", "bo", "admin", "training", "coaching",
+                "meeting", "project", "non-call", "noncall", "offline work", "email",
+                "chat", "wfm", "qa", "quality", "floor support", "break", "lunch",
+                "restroom", "rest room", "personal")
+
+    def is_backoffice(label):
+        l = (label or "").lower().strip()
+        if not l:
+            return False
+        return any(k in l for k in AUX_BACK)
+
+    def norm_status(label):
+        """Normalise messy aux labels to a short base state for jump detection."""
+        l = (label or "").lower().strip()
+        if not l or l in ("-", "nan", "none", "null"):
+            return None
+        # strip leading markers / trailing minutes
+        l = re.sub(r"^\W+", "", l)
+        l = re.sub(r"\s*[\(\-]\s*\d+\s*m?\s*[\)]?$", "", l)
+        l = l.strip(" .:-")
+        if not l:
+            return None
+        # collapse to first word for jump comparison (e.g. "Back Office (BO)" -> "back")
+        base = re.split(r"[\s(/]+", l)[0]
+        return base
+
+    out_rows = []
+    byAgent = {}
+    dates = set()
+    members = set()
+    for r in rows_raw[1:]:
+        member = (r[i_member].strip() if i_member < len(r) else "")
+        if not member:
+            continue
+        raw_date = (r[i_date].strip() if i_date < len(r) else "")
+        d = parse_date_cell(raw_date)
+        if not d:
+            continue
+        t = None
+        if i_time >= 0 and i_time < len(r) and r[i_time].strip():
+            t = hour_from_cell(idx, r) if i_time in idx else None
+        raw_status = (r[i_status].strip() if i_status < len(r) else "")
+        if not raw_status:
+            continue
+        # team: explicit column else infer from name else whole team
+        if i_team >= 0 and i_team < len(r) and r[i_team].strip():
+            tk = team_key(r[i_team])
+        else:
+            tk = team_key(member)
+        tl = team_label(tk)
+        # duration (minutes)
+        dur_min = 0.0
+        if i_dur >= 0 and i_dur < len(r) and r[i_dur].strip():
+            try:
+                dur_min = float(str(r[i_dur]).replace(",", "").strip())
+            except ValueError:
+                dur_min = 0.0
+        back = is_backoffice(raw_status)
+        a = byAgent.setdefault(member, {
+            "team": tl, "team_key": tk,
+            "backoffice_min": 0.0, "rows": 0,
+            "auxes": collections.Counter(), "perHour": collections.defaultdict(list)})
+        a["rows"] += 1
+        a["team"] = tl  # keep most recent team label
+        a["team_key"] = tk
+        if back:
+            a["backoffice_min"] += (dur_min if dur_min > 0 else 1.0)
+        ns = norm_status(raw_status)
+        if ns:
+            a["auxes"][ns] += 1
+            if t is not None:
+                a["perHour"][t].append(ns)
+        out_rows.append({"d": d, "t": t, "agent": member, "team": tl, "status": raw_status})
+        dates.add(d)
+        members.add(member)
+
+    # aux-jumping flag: >=3 distinct aux states within any single hour
+    for a in byAgent.values():
+        a["jumps"] = 0
+        for hr, states in a["perHour"].items():
+            if len(set(states)) >= 3:
+                a["jumps"] += 1
+        a["distinct_aux"] = len(a["auxes"])
+        del a["perHour"]
+
+    print("  Agent Status History: %d log rows, %d agents, %d dates" %
+          (len(out_rows), len(members), len(dates)), flush=True)
+    return {"rows": out_rows, "byAgent": byAgent,
+            "dates": sorted(dates), "members": sorted(members)}
+
+
+def _safe_status():
+    """Run build_status() but never let it abort the whole sync."""
+    try:
+        return build_status()
+    except Exception as e:
+        print("!! Agent Status History failed (skipped): " + str(e), flush=True)
+        return []
+
+
 def build_breaks():
     """Pull the break/lunch/back-office tracker sheet.
 
@@ -638,6 +836,7 @@ def build():
         "breakdown": (_safe_breakdown()),
         "schedule": (_safe_schedule()),
         "breaks": (_safe_breaks()),
+        "status": (_safe_status()),
     }
     out = os.path.join(BASE, "data.js")
     tmp = out + ".tmp"
