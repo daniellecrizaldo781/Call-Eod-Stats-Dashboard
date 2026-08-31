@@ -225,8 +225,13 @@ svg{display:block;width:100%;overflow:visible}
 .axis{stroke:#F0DCE6;stroke-width:1}
 .atxt{font-size:9.8px;fill:var(--ink2)}
 .vtxt{font-size:9.5px;fill:var(--ink2);font-weight:700}
-.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:10.5px;color:var(--ink2);margin-top:8px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:10.5px;color:var(--ink2);margin-top:8px;padding:0 4px 2px}
 .legend i{width:11px;height:11px;border-radius:3px;display:inline-block;margin-right:5px;vertical-align:-1px}
+.legend .lg{white-space:nowrap}
+.legend .lg b{color:var(--mauve)}
+/* status pivot columns stay compact + right-aligned */
+#tStatusPerAgent th, #tStatusPerAgent td{white-space:nowrap}
+#tStatusPerAgent th.tight{padding-left:8px;padding-right:8px}
 .tip{position:fixed;pointer-events:none;background:var(--ink);color:#fff;padding:7px 11px;border-radius:9px;
   font-size:12px;z-index:99;opacity:0;transition:opacity .12s;white-space:pre;box-shadow:var(--sh2)}
 .bar{transition:opacity .15s} .bar:hover{opacity:.75;cursor:pointer}

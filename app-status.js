@@ -164,17 +164,39 @@ function renderStatus(){
     jrows.length ? jrows :
       [{a:'<div class="empty" style="padding:14px">No agents flagged for aux-jumping in this selection. 🎉</div>', t:"", j:"", d:"", aux:"", bo:""}]);
 
-  // Per-agent time-in-status table
+  // Per-agent time-in-status table  ->  PIVOT: one column per status, one row per agent
+  // (much easier to scan than one giant stacked cell per agent)
+  const STATUS_ABBR = {
+    offline:"offline", available:"avail", in_call:"in_call", ringing:"ring",
+    after_call_work:"acw", doing_back_office:"back_off", back_office:"back_off",
+    other:"other", do_not_disturb:"dnd", on_a_break:"break", out_for_lunch:"lunch",
+    in_training:"train"
+  };
+  const STATUS_ORDER = ["offline","available","in_call","ringing","after_call_work",
+    "doing_back_office","other","do_not_disturb","on_a_break","out_for_lunch","in_training"];
+  // union of statuses present, ordered by STATUS_ORDER then any extras
+  const allSt = [];
+  agents.forEach(a => Object.keys(a.statusMin).forEach(s => { if (!allSt.includes(s)) allSt.push(s); }));
+  allSt.sort((x,y) => {
+    const ix = STATUS_ORDER.indexOf(x), iy = STATUS_ORDER.indexOf(y);
+    return (ix<0?99:ix) - (iy<0?99:iy) || x.localeCompare(y);
+  });
+  const stCols = allSt.map(s => ({t: STATUS_ABBR[s] || s, k:"_" + s, n:1}));
   const perRows = agents.map(a => {
-    const cells = Object.entries(a.statusMin)
-      .sort((x,y)=>y[1]-x[1])
-      .map(([st,v]) => esc(st) + " <b>" + fmtHrs(v) + "</b>").join("<br>");
-    return {a:esc(a.name), t:'<span class="tag lav">'+esc(a.team)+'</span>',
-            tot:fmtHrs(a.min), bo:fmtHrs(a.bo_min), breakdown: cells || "—"};
+    const row = {a:esc(a.name), t:'<span class="tag lav">'+esc(a.team)+'</span>',
+                 tot:fmtHrs(a.min), bo:fmtHrs(a.bo_min)};
+    allSt.forEach(s => { row["_" + s] = a.statusMin[s] ? fmtHrs(a.statusMin[s]) : "0.00"; });
+    return row;
   });
   tbl($("tStatusPerAgent"),
-    [{t:"Agent",k:"a"},{t:"Team",k:"t"},{t:"Total Hrs",k:"tot",n:1},
-     {t:"Back-Office Hrs",k:"bo",n:1},{t:"Time in Status (hrs per status)",k:"breakdown"}],
+    [{t:"Agent",k:"a"},{t:"Team",k:"t"},{t:"Total Hrs",k:"tot",n:1},{t:"Back-Office Hrs",k:"bo",n:1}]
+      .concat(stCols),
     perRows.length ? perRows :
-      [{a:'<div class="empty" style="padding:14px">No status data for this selection.</div>', t:"", tot:"", bo:"", breakdown:""}]);
+      [{a:'<div class="empty" style="padding:14px">No status data for this selection.</div>', t:"", tot:"", bo:""}]);
+  // legend mapping abbreviations -> full status names
+  const leg = $("stStatusLegend");
+  if (leg){
+    leg.innerHTML = "<b>Status key:</b> " + allSt.map(s =>
+      '<span class="lg"><b>'+(STATUS_ABBR[s]||s)+'</b> = '+esc(s)+'</span>').join(" &middot; ");
+  }
 }
