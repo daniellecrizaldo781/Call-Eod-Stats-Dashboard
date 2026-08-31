@@ -39,21 +39,25 @@ jobs:
         run: python sync_sheets.py
 
       - name: Bump cache-buster in index.html
-        # Force browsers to re-fetch after an auto-sync (no hard refresh needed).
-        # Use a unique per-run stamp so the URL is never served from a stale CDN cache.
+        # Build a CONTENT HASH of every source file (styles.css, all *.js, app-*.js,
+        # index.html itself, plus data.js when it changed). The stamp changes ONLY
+        # when the served assets actually changed, so browsers always re-fetch the
+        # new CSS/JS and never stay stuck on stale cached assets.
         run: |
-          STAMP=$(date +%Y%m%d)-${GITHUB_RUN_ID:-manual}
-          sed -i -E "s/\?v=[0-9a-z-]+/?v=${STAMP}/g" index.html
+          STAMP=$(date +%Y%m%d)-$(cat styles.css app-*.js app-core.js data.js index.html 2>/dev/null | sha256sum | cut -c1-10)
+          sed -i -E "s/\?v=[0-9A-Za-z-]+/?v=${STAMP}/g" index.html
           echo "cache-buster set to v=${STAMP}"
 
-      - name: Commit and push if changed
+      - name: Commit and push
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add data.js index.html
+          # Always commit/push when index.html changed (stamp), even if data.js unchanged,
+          # so CSS/JS edits propagate to browsers via a fresh cache-buster.
           if git diff --cached --quiet; then
-            echo "No changes to data.js"
+            echo "No changes to commit"
           else
-            git commit -m "auto: refresh data.js from Google Sheets"
+            git commit -m "auto: refresh data.js + bump cache-buster"
             git push
           fi
