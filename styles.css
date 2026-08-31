@@ -98,6 +98,29 @@ header.hero p{margin:5px 0 0;opacity:.9;font-size:13px}
 .rc{font-weight:800;color:var(--ink);font-variant-numeric:tabular-nums}
 .rp{font-size:11px;color:var(--mauve);font-weight:700;min-width:46px;text-align:right}
 
+/* Agent Status History — emphasised module + standout team chips */
+.status-wrap{margin-top:18px;padding:18px;border-radius:var(--r);
+  background:linear-gradient(135deg,#FFF4F9 0%,#FBEEF8 55%,#F4ECFB 100%);
+  border:1.5px solid var(--line);box-shadow:var(--sh2)}
+.status-wrap .agent-controls{background:var(--white);border:1px solid var(--line)}
+.status-wrap .card{box-shadow:var(--sh)}
+.status-wrap > .sect{margin-top:0}
+
+/* Team filter chips — bigger, bolder, with team accents so they pop */
+#stTeamPills{background:var(--blush2);padding:5px;gap:4px}
+#stTeamPills .pill{font-weight:800;font-size:13.5px;padding:10px 18px;color:var(--mauve);
+  letter-spacing:.01em;transition:transform .12s ease, box-shadow .12s ease}
+#stTeamPills .pill:hover{color:var(--rose-d);transform:translateY(-1px)}
+#stTeamPills .pill[data-v="all"].on{background:linear-gradient(135deg,var(--rose),var(--rose-d));color:#fff;
+  box-shadow:0 4px 14px rgba(201,59,114,.45)}
+#stTeamPills .pill[data-v="danielle"].on{background:linear-gradient(135deg,#F06DA6,#E8578E);color:#fff;
+  box-shadow:0 4px 14px rgba(232,87,142,.45)}
+#stTeamPills .pill[data-v="brai"].on{background:linear-gradient(135deg,#3FA86B,#2E7D4F);color:#fff;
+  box-shadow:0 4px 14px rgba(46,125,79,.4)}
+#stTeamPills .pill[data-v="cess"].on{background:linear-gradient(135deg,#4F8FD0,#2F6FB3);color:#fff;
+  box-shadow:0 4px 14px rgba(47,111,179,.4)}
+
+
 /* filter bar */
 .filters{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end;background:var(--white);
   border:1px solid var(--line);border-radius:var(--r);padding:16px 18px;margin:18px 0;box-shadow:var(--sh)}

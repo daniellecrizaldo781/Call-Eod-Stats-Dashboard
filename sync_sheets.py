@@ -429,30 +429,36 @@ def _safe_schedule():
 def build_status():
     """Pull the Agent Status History sheet (aux/status log per agent per interval).
 
-    Layout expectation (defensive — columns are auto-detected by header name so a
-    re-ordered sheet won't break parsing):
-        - a member / agent / name column        -> "Member" / "Agent" / "Name"
-        - a team column (optional)              -> "Team"
-        - a date column                         -> "Date"
-        - a time column (optional)              -> "Time"
-        - a status / aux / auxes column         -> "Status" / "Aux" / "Auxes" / "State"
-        - a duration column (optional, minutes)  -> "Duration" / "Minutes"
+    Observed live schema (header row):
+        Agent, Status, Date, Start Time, End Time, Next Status,
+        Time In Status, Time in Status (Sec)
+    where Status looks like: available, in_call, ringing, after_call_work,
+    doing_back_office, lunch, break, meeting, training, etc.
 
-    Team categorization (Danielle's request):
-        "Team Danielle" / "Team Brai" / "Team Cess" / "Entire Call Team" (all).
-    If a team column is absent, the team is inferred from the agent name where it
-    carries a team hint (e.g. "(Brai)"); otherwise it defaults to the whole team.
-    We DO NOT fabricate a team — unknown stays "Entire Call Team".
+    Column detection is defensive (matched by header substring) so a re-ordered or
+    renamed sheet won't silently break:
+        - agent:    "agent" / "member" / "name" / "user"
+        - status:   "status" / "aux" / "state" / "activity"
+        - date:     "date" / "day"
+        - time:     "start time" / "time" / "timestamp"
+        - duration: "time in status (sec)" / "sec" / "duration" / "minutes"  (seconds-aware)
 
-    "Back office" minutes = any status row whose label matches the AUX_BACK list
-    below (Back Office / BO / Admin / Training / etc.). These are summed per agent.
+    Team categorization (Danielle's request): Entire Call Team / Team Danielle /
+    Team Brai / Team Cess. There is NO team column in this sheet, so the team is
+    resolved from the Call Schedule roster (build_schedule output) by agent name;
+    if an agent is not on any schedule roster, they fall back to "Entire Call Team".
+    We DO NOT fabricate a team.
 
-    "Aux jumping" flag = an agent whose status rows flip between 3+ distinct aux
-    states within any single hour (busy toggling between auxes = a red flag).
+    "Back office" minutes = any status row whose label matches AUX_BACK below
+    (doing_back_office / back_office / admin / training / after_call_work / etc.),
+    weighted by its real duration in seconds.
+
+    "Aux jumping" = an agent whose status flips between 3+ distinct states within
+    any single clock hour (busy toggling between auxes = a red flag).
 
     Returns [] if STATUS_SECRET is missing. Produces:
-        rows: [{d, t, agent, team, status}]          # one per log row (t may be null)
-        byAgent: {agent: {team, backoffice_min, auxes:{state:count}, perHour:{hour:[states]}}}
+        rows:    [{d, t, agent, team, status}]      # one per log row (t may be None)
+        byAgent: {agent: {team, team_key, backoffice_min, auxes, jumps, distinct_aux, rows}}
         dates: [ISO...], members: [name...]
     """
     secret = os.environ.get("STATUS_SHEET")
@@ -466,12 +472,6 @@ def build_status():
         return []
     print("fetching Agent Status History ...", flush=True)
 
-    # allow an optional 3rd field = team column override name (rare)
-    team_override = ""
-    if gid and "|" in gid:
-        gid, team_override = gid.split("|", 1)
-        gid = gid.strip(); team_override = team_override.strip()
-
     try:
         text = fetch(sid, gid)
     except Exception as e:
@@ -483,6 +483,35 @@ def build_status():
     if not rows_raw:
         print("  (Agent Status History empty)", flush=True)
         return []
+
+    # ---- schedule roster for team resolution (agent name -> team_key) ----
+    roster_team = {}
+    try:
+        sched = build_schedule()
+        for sec in (sched.get("raw") or []):
+            tk = sec.get("team_key")
+            for ag in sec.get("agents", []):
+                roster_team[ag.get("name", "").strip().lower()] = tk
+    except Exception:
+        roster_team = {}
+
+    def team_key_from_name(name):
+        u = (name or "").lower()
+        if "cess" in u or "cesn" in u: return "cess"
+        if "brai" in u: return "brai"
+        if "danielle" in u or "dani" in u: return "danielle"
+        return None
+
+    def team_for(agent):
+        low = (agent or "").strip().lower()
+        if low in roster_team and roster_team[low]:
+            return roster_team[low]
+        return team_key_from_name(agent) or "all"
+
+    def team_label(key):
+        return {"danielle": "Team Danielle", "brai": "Team Brai",
+                "cess": "Team Cess", "all": "Entire Call Team"}[key]
+
     hdr = [str(h).strip().lower() for h in rows_raw[0]]
     idx = {h: i for i, h in enumerate(hdr) if h}
 
@@ -492,58 +521,71 @@ def build_status():
                 return idx[n]
         return fallback
 
-    i_member = col("member", "agent", "name", "user", "csr", fallback=0)
-    i_team   = col("team", fallback=-1)
-    i_date   = col("date", "day", fallback=1 if i_member != 1 else 2)
-    i_time   = col("time", "timestamp", "hour", fallback=-1)
-    i_status = col("status", "aux", "auxes", "state", "activity", "reason", fallback=-1)
-    i_dur    = col("duration", "minutes", "min", "dur", fallback=-1)
-    if i_status < 0:
-        # last column that isn't member/date/time/team is the status
+    # substring-aware: pick the header that CONTAINS one of the candidates
+    def find_col(*cands, fallback=-1):
+        for c in cands:
+            for h, i in idx.items():
+                if c in h:
+                    return i
+        return fallback
+
+    i_member = col("agent", "member", "name", "user", "csr", fallback=0)
+    i_date   = find_col("date", "day", fallback=1 if i_member != 1 else 2)
+    i_status = find_col("status", "aux", "state", "activity", fallback=-1)
+    if i_status < 0:   # last column that isn't member/date is the status
         for ci in range(len(hdr) - 1, -1, -1):
-            if ci not in (i_member, i_date, i_time, i_team):
-                i_status = ci
-                break
+            if ci not in (i_member, i_date):
+                i_status = ci; break
+    i_time   = find_col("start time", "time", "timestamp", fallback=-1)
+    i_dur    = find_col("time in status (sec)", "sec", "duration", "minutes", fallback=-1)
 
-    if team_override and team_override.lower() in idx:
-        i_team = idx[team_override.lower()]
-
-    # team keying (matches the schedule sheet's vocabulary)
-    def team_key(name):
-        u = (name or "").lower()
-        if "cess" in u or "cesn" in u: return "cess"
-        if "brai" in u: return "brai"
-        if "danielle" in u or "dani" in u: return "danielle"
-        return "all"
-    def team_label(key):
-        return {"danielle": "Team Danielle", "brai": "Team Brai",
-                "cess": "Team Cess", "all": "Entire Call Team"}[key]
-
-    AUX_BACK = ("back office", "back-office", "bo", "admin", "training", "coaching",
-                "meeting", "project", "non-call", "noncall", "offline work", "email",
-                "chat", "wfm", "qa", "quality", "floor support", "break", "lunch",
-                "restroom", "rest room", "personal")
+    AUX_BACK = ("back_office", "backoffice", "admin", "after_call_work", "acw",
+                "training", "coaching", "meeting", "project", "non_call", "noncall",
+                "offline", "email", "chat", "wfm", "qa", "quality", "floor",
+                "break", "lunch", "restroom", "rest_room", "personal", "wrap")
 
     def is_backoffice(label):
-        l = (label or "").lower().strip()
+        l = (label or "").lower().replace(" ", "_").strip()
         if not l:
             return False
         return any(k in l for k in AUX_BACK)
 
     def norm_status(label):
-        """Normalise messy aux labels to a short base state for jump detection."""
-        l = (label or "").lower().strip()
+        """Normalise to a short base state for jump detection (e.g. doing_back_office -> back_office)."""
+        l = (label or "").lower().replace(" ", "_").strip()
         if not l or l in ("-", "nan", "none", "null"):
             return None
-        # strip leading markers / trailing minutes
-        l = re.sub(r"^\W+", "", l)
-        l = re.sub(r"\s*[\(\-]\s*\d+\s*m?\s*[\)]?$", "", l)
-        l = l.strip(" .:-")
+        l = re.sub(r"^[^a-z0-9]+", "", l)
+        l = re.sub(r"[\(\-]\s*\d+\s*[sm]?\s*[\)]?$", "", l)
+        l = l.strip("._:-")
         if not l:
             return None
-        # collapse to first word for jump comparison (e.g. "Back Office (BO)" -> "back")
-        base = re.split(r"[\s(/]+", l)[0]
+        base = re.split(r"[\(/]+", l)[0]
         return base
+
+    def hour_from_str(s):
+        s = (s or "").strip()
+        if not s:
+            return None
+        m = re.search(r"(\d{1,2}):(\d{2})", s)
+        if not m:
+            return None
+        h = int(m.group(1))
+        if h >= 24:
+            return None
+        return h
+
+    def seconds_from_str(s):
+        s = (s or "").strip().replace(",", "")
+        if not s:
+            return 0.0
+        m = re.search(r"(\d{1,3}):(\d{2}):(\d{2})", s)   # H:MM:SS
+        if m:
+            return int(m.group(1)) * 3600 + int(m.group(2)) * 60 + int(m.group(3))
+        try:
+            return float(s)                                # already a number (seconds)
+        except ValueError:
+            return 0.0
 
     out_rows = []
     byAgent = {}
@@ -557,35 +599,25 @@ def build_status():
         d = parse_date_cell(raw_date)
         if not d:
             continue
-        t = None
-        if i_time >= 0 and i_time < len(r) and r[i_time].strip():
-            t = hour_from_cell(idx, r) if i_time in idx else None
+        t = hour_from_str(r[i_time]) if (i_time >= 0 and i_time < len(r)) else None
         raw_status = (r[i_status].strip() if i_status < len(r) else "")
         if not raw_status:
             continue
-        # team: explicit column else infer from name else whole team
-        if i_team >= 0 and i_team < len(r) and r[i_team].strip():
-            tk = team_key(r[i_team])
-        else:
-            tk = team_key(member)
+        tk = team_for(member)
         tl = team_label(tk)
-        # duration (minutes)
-        dur_min = 0.0
-        if i_dur >= 0 and i_dur < len(r) and r[i_dur].strip():
-            try:
-                dur_min = float(str(r[i_dur]).replace(",", "").strip())
-            except ValueError:
-                dur_min = 0.0
+        # duration: prefer the explicit seconds column, else 0
+        dur_sec = seconds_from_str(r[i_dur]) if (i_dur >= 0 and i_dur < len(r)) else 0.0
+        dur_min = dur_sec / 60.0
         back = is_backoffice(raw_status)
         a = byAgent.setdefault(member, {
             "team": tl, "team_key": tk,
             "backoffice_min": 0.0, "rows": 0,
             "auxes": collections.Counter(), "perHour": collections.defaultdict(list)})
         a["rows"] += 1
-        a["team"] = tl  # keep most recent team label
+        a["team"] = tl
         a["team_key"] = tk
-        if back:
-            a["backoffice_min"] += (dur_min if dur_min > 0 else 1.0)
+        if back and dur_min > 0:
+            a["backoffice_min"] += dur_min
         ns = norm_status(raw_status)
         if ns:
             a["auxes"][ns] += 1
@@ -595,7 +627,6 @@ def build_status():
         dates.add(d)
         members.add(member)
 
-    # aux-jumping flag: >=3 distinct aux states within any single hour
     for a in byAgent.values():
         a["jumps"] = 0
         for hr, states in a["perHour"].items():
