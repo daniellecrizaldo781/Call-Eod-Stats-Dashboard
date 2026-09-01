@@ -485,14 +485,14 @@ def build_status():
 
     print("fetching Agent Status History (%d team tab(s)) ..." % len(gids), flush=True)
 
-    AUX_BACK = ("back_office", "backoffice", "admin", "after_call_work", "acw",
-                "training", "coaching", "meeting", "project", "non_call", "noncall",
-                "offline", "email", "chat", "wfm", "qa", "quality", "floor",
-                "break", "lunch", "restroom", "rest_room", "personal", "wrap")
+    # Back-office minutes = ONLY the "doing_back_office" status.
+    # Do NOT count after_call_work, training, meeting, lunch, break, offline, etc.
+    # (those are separate auxes, not back-office work).
+    AUX_BACK = ("doing_back_office",)
 
     def is_backoffice(label):
         l = (label or "").lower().replace(" ", "_").strip()
-        return bool(l) and any(k in l for k in AUX_BACK)
+        return l == "doing_back_office"
 
     def norm_status(label):
         l = (label or "").lower().replace(" ", "_").strip()
@@ -568,7 +568,21 @@ def build_status():
                 if ci not in (i_member, i_date):
                     i_status = ci; break
         i_time = find_col("start time", "time", "timestamp", fallback=-1)
-        i_dur  = find_col("time in status (sec)", "sec", "duration", "minutes", fallback=-1)
+        # Duration column(s). The sheet may expose:
+        #   "Time in Status (Sec)"  -> numeric seconds (sometimes EMPTY)
+        #   "Time In Status"        -> human-readable "H:MM:SS" (always populated)
+        # Locate each precisely, then per-row prefer seconds and fall back to
+        # the HH:MM:SS column when the seconds cell is blank — so back-office
+        # minutes are never 0 for a populated status log.
+        def find_hdr(*names):
+            for n in names:
+                for h, i in idx.items():
+                    if h.strip().lower() == n:
+                        return i
+            return find_col(*names, fallback=-1)
+        i_dur  = find_hdr("time in status (sec)", "time in status (seconds)",
+                          "seconds", "duration", "minutes")
+        i_dur_hh = find_hdr("time in status")
 
         for r in rows_raw[1:]:
             member = (r[i_member].strip() if i_member < len(r) else "")
@@ -581,7 +595,11 @@ def build_status():
             raw_status = (r[i_status].strip() if i_status < len(r) else "")
             if not raw_status:
                 continue
-            dur_min = seconds_from_str(r[i_dur]) / 60.0 if (i_dur >= 0 and i_dur < len(r)) else 0.0
+            # pick seconds column first; fall back to HH:MM:SS column if blank
+            dur_cell = r[i_dur] if (i_dur >= 0 and i_dur < len(r)) else ""
+            if not dur_cell.strip() and (i_dur_hh >= 0 and i_dur_hh < len(r)):
+                dur_cell = r[i_dur_hh]
+            dur_min = seconds_from_str(dur_cell) / 60.0 if dur_cell is not None else 0.0
             back = is_backoffice(raw_status)
             a = byAgent.setdefault(member, {"team": tl, "team_key": tk, "rows": 0})
             a["rows"] += 1
