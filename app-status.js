@@ -28,10 +28,10 @@ const AUX_ABBR = {
 
 // back-office = ONLY the "doing_back_office" status tag from the sheet
 // (do NOT sum admin/training/break/lunch/offline/etc. — those are separate auxes)
-const AUX_BACK = ["doing_back_office","back_office"];
+const AUX_BACK = ["doing_back_office"];
 function isBack(label){
   const l = (label||"").toLowerCase().replace(/ /g,"_");
-  return !!l && AUX_BACK.some(k => l.indexOf(k) > -1);
+  return l === "doing_back_office";
 }
 function normStatus(label){
   let l = (label||"").toLowerCase().replace(/ /g,"_").trim();
