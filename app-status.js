@@ -62,7 +62,7 @@ function renderStatus(){
     wrap.innerHTML = '<div class="empty" style="padding:18px">No Agent Status History data. '
       + 'Add the <b>STATUS_SHEET</b> repo secret (SHEET_ID|GID_BRAI|GID_DANIELLE|GID_CESS) and '
       + 'make the sheet public ("Anyone with the link can view"). The hourly sync will populate this section.</div>';
-    ["chStatusBO","tStatusJump","tStatusPerAgent"].forEach(id => { const e=$(id); if (e) e.innerHTML=""; });
+    ["chStatusBO","tStatusJump","tStatusPerAgent","tStatusDailyBO"].forEach(id => { const e=$(id); if (e) e.innerHTML=""; });
     return;
   }
 
@@ -234,4 +234,29 @@ function renderStatus(){
     leg.innerHTML = "<b>Status key:</b> " + allSt.map(s =>
       '<span class="lg"><b>'+(STATUS_ABBR[s]||s)+'</b> = '+esc(s)+'</span>').join(" &middot; ");
   }
+
+  // Daily back-office hours per agent  -- pivot: one row per agent-day, ranked by BO hours.
+  (function(){
+    const byAD = {};
+    filt.forEach(r => {
+      if (!isBack(r.status)) return;
+      if (F.stDaily && F.stDay && F.stDay !== "ALL" && r.d !== F.stDay) return;
+      const key = r.agent + "|" + r.d;
+      const o = byAD[key] || (byAD[key] = {agent:r.agent, team:r.team, team_key:r.team_key, d:r.d, bo_min:0});
+      o.bo_min += +r.min || 0;
+    });
+    const days = Object.keys(byAD).map(k => {
+      const o = byAD[k];
+      return {a:esc(o.agent), t:'<span class="tag lav">'+esc(o.team)+'</span>',
+              d:fmtDY(o.d), bo:fmtHrs(o.bo_min), _bo:o.bo_min};
+    });
+    days.sort((x,y) => (y.d < x.d ? 1 : y.d > x.d ? -1 : 0) || y._bo - x._bo);
+    const t = $("tStatusDailyBO");
+    if (t){
+      tbl(t,
+        [{t:"Date",k:"d"},{t:"Agent",k:"a"},{t:"Team",k:"t"},{t:"Back-Office Hrs",k:"bo",n:1}],
+        days.length ? days :
+          [{d:'<div class="empty" style="padding:14px">No back-office hours for this selection.</div>', a:"", t:"", bo:""}]);
+    }
+  })();
 }
