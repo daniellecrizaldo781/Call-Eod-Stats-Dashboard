@@ -243,7 +243,6 @@ function renderStatus(){
     const dates = new Set();
     filt.forEach(r => {
       if (!isBack(r.status)) return;
-      if (F.stDaily && F.stDay && F.stDay !== "ALL" && r.d !== F.stDay) return;
       dates.add(r.d);
       const key = r.agent + "|" + r.d;
       const o = byAD[key] || (byAD[key] = {agent:r.agent, team:r.team, team_key:r.team_key, d:r.d, bo_min:0});

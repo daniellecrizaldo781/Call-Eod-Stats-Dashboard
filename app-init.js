@@ -27,16 +27,6 @@ function buildPeriodNav(){
       .concat(sw.map(s => '<option value="'+s+'">'+fmtWeek(s)+'</option>')).join("");
     stw.value = "ALL";
   }
-  // Agent Status History: daily date dropdown (shown when Daily view is active)
-  const std = $("stDay");
-  if (std){
-    std.innerHTML = '<option value="ALL">All days</option>' +
-      ALL_DATES.map(s => '<option value="'+s+'">'+fmtDY(s)+'</option>').join("");
-    std.value = "ALL";
-  }
-  // show the status history Day toggle pills (Weekly/Daily + date dropdown)
-  const dp = $("stDailyPills");
-  if (dp) dp.style.display = "";
 }
 function deselectPeriod(id){
   // when one period navigator is used, reset the other to "All" so they don't fight
@@ -78,20 +68,6 @@ function wire(){
   });
   $("stSort").onchange = () => renderStatus();
   $("stWeek").onchange = () => { F.stWeek = $("stWeek").value; renderStatus(); };
-  // Agent Status History: weekly vs daily toggle + daily date dropdown
-  if ($("stDailyPills")){
-    $("stDailyPills").addEventListener("click", e=>{
-      const b = e.target.closest(".pill"); if(!b) return;
-      [...$("stDailyPills").children].forEach(x=>x.classList.remove("on"));
-      b.classList.add("on"); F.stDaily = b.dataset.v === "daily";
-      const std = $("stDay");
-      if (std) std.style.display = F.stDaily ? "" : "none";
-      renderStatus();
-    });
-  }
-  if ($("stDay")){
-    $("stDay").onchange = () => { F.stDay = $("stDay").value; renderStatus(); };
-  }
   $("chanPills").addEventListener("click", e=>{
     const b = e.target.closest(".pill"); if(!b) return;
     [...$("chanPills").children].forEach(x=>x.classList.remove("on"));
