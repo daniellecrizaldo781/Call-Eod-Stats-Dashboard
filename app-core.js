@@ -16,7 +16,9 @@ for (const k in D.agents){
   AROWS.push({d:p[0], ch:p[1], ag:p[2], st:p[3], n:v[0], sec:v[1]});
 }
 
-const ALL_DATES = [...new Set(ROWS.map(r=>r.d))].sort();
+const _cubeDates = new Set(ROWS.map(r=>r.d));
+if (D.status && D.status.dates) D.status.dates.forEach(d=>_cubeDates.add(d));
+const ALL_DATES = [..._cubeDates].sort();
 const MIN_D = ALL_DATES[0], MAX_D = ALL_DATES[ALL_DATES.length-1];
 const IVRS = [...new Set(ROWS.map(r=>r.ivr))].sort((a,b)=> a===NO_IVR?1:b===NO_IVR?-1:a.localeCompare(b));
 
