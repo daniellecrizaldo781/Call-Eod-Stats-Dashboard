@@ -79,15 +79,17 @@ function bkRangeRefund(from, to){
   const rr = bkRefundRows(rows);
   return { tickets: rr.length, amount: bkRefundSum(rows), total: rows.length };
 }
-// Dollar-based Refund Rate: each week's refunded $ as a share of the total
-// refunded $ across both compared weeks. This makes the rate DECREASE when the
-// refund dollar amount decreases (the old count-based tickets/total ratio could
-// rise while refunded $ fell because it ignored magnitudes). Falls back to the
-// count-based ratio when order/line totals are unavailable.
+// Refund Rate = refund tickets / total tickets for that week (a true per-week %).
+// When both weeks carry refunded $ we blend in the dollar signal so the rate also
+// reflects magnitude: rate = 0.5*(ticket%) + 0.5*(dollar-share%). Falls back to
+// the plain ticket% when refund $ is unavailable.
 function bkRefundRatePct(cur, other){
-  if (cur && other && (cur.amount + other.amount) > 0)
-    return cur.amount / (cur.amount + other.amount) * 100;
-  return cur.total ? cur.tickets / cur.total * 100 : 0;
+  const ticketPct = cur.total ? cur.tickets / cur.total * 100 : 0;
+  if (cur && other && (cur.amount + other.amount) > 0){
+    const dollarShare = cur.amount / (cur.amount + other.amount) * 100;
+    return (ticketPct + dollarShare) / 2;
+  }
+  return ticketPct;
 }
 
 function bkFillSelects(){
