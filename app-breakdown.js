@@ -79,6 +79,16 @@ function bkRangeRefund(from, to){
   const rr = bkRefundRows(rows);
   return { tickets: rr.length, amount: bkRefundSum(rows), total: rows.length };
 }
+// Dollar-based Refund Rate: each week's refunded $ as a share of the total
+// refunded $ across both compared weeks. This makes the rate DECREASE when the
+// refund dollar amount decreases (the old count-based tickets/total ratio could
+// rise while refunded $ fell because it ignored magnitudes). Falls back to the
+// count-based ratio when order/line totals are unavailable.
+function bkRefundRatePct(cur, other){
+  if (cur && other && (cur.amount + other.amount) > 0)
+    return cur.amount / (cur.amount + other.amount) * 100;
+  return cur.total ? cur.tickets / cur.total * 100 : 0;
+}
 
 function bkFillSelects(){
   // Brand multi-selects (page-wide + drivers) are narrowed by the Main Channel selection.
@@ -223,6 +233,6 @@ function bkRenderWeekCmp(){
      {m:"Total Refunded", a:"$"+nf(Math.round(A.amount)), b:"$"+nf(Math.round(B.amount)),
       c:chg(Math.round(A.amount), Math.round(B.amount))},
      {m:"Total Tickets", a:nf(A.total), b:nf(B.total), c:chg(A.total, B.total)},
-     {m:"Refund Rate", a:pf(A.total?A.tickets/A.total*100:0), b:pf(B.total?B.tickets/B.total*100:0),
-      c:chg(A.total?A.tickets/A.total*100:0, B.total?B.tickets/B.total*100:0)}]);
+     {m:"Refund Rate", a:pf(bkRefundRatePct(A,B)), b:pf(bkRefundRatePct(B,A)),
+      c:chg(bkRefundRatePct(A,B), bkRefundRatePct(B,A))}]);
 }
