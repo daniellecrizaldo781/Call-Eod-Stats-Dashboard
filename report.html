@@ -220,7 +220,9 @@ function groupBy(rows, keyFn){ const g=new Map(); rows.forEach(r=>{ const k=keyF
 
 /* ---- breakdown / refund ---- */
 const BD = D.breakdown || [];
-function bdWeek(wk, chan){ return BD.filter(r=>r.d>=wk && r.d<=addD(wk,6) && (chan==="ALL"||r.ch===chan)); }
+// Channel split for breakdown/refund data: OHA = Oricle brands, Non-OHA = non-Oricle (matches dashboard bkChannelMatch)
+function isOricle(b){ return typeof b === "string" && b.toLowerCase().indexOf("oricle") === 0; }
+function bdWeek(wk, chan){ return BD.filter(r=>r.d>=wk && r.d<=addD(wk,6) && (chan==="ALL"|| (chan==="OHA"?isOricle(r.brand):!isOricle(r.brand)))); }
 function refundRows(rows){ return rows.filter(r=>r.refund>0); }
 function refundSum(rows){ return refundRows(rows).reduce((a,r)=>a+r.refund,0); }
 function topBy(rows, keyFn, n){ const m=new Map(); rows.forEach(r=>{ const k=keyFn(r); m.set(k,(m.get(k)||0)+1); }); return [...m.entries()].sort((a,b)=>b[1]-a[1]).slice(0,n); }
@@ -387,70 +389,77 @@ function buildSlides(wk){
     </div>`);
 
   /* ---- Slide 4: Call Breakdown ---- */
-  slides.push(`
-    <div class="shead"><div class="snum">4</div>
-      <div><div class="stitle">Call Breakdown</div><div class="ssub">Why customers contacted us this week</div></div>
-      <div class="spacer"></div><div class="weekbadge">${fmtWeekY(wk)}</div></div>
-    <div class="sbody">
-      <div class="kpis">
-        ${kpi("Total Tickets", nf(bdW.length), delta(bdW.length,bdP.length))}
-        ${kpi("Top Driver", esc(topBy(bdW,r=>r.cat,1)[0]?.[0]||"\u2014"), "")}
-        ${kpi("Top Reason", esc(topBy(bdW,r=>r.sub,1)[0]?.[0]||"\u2014"), "")}
-        ${kpi("Refund Tickets", nf(rrW.length), delta(rrW.length,rrP.length,true))}
-      </div>
-      <div class="cols">
-        <div class="col"><h3><span class="dot" style="background:var(--pink)"></span>Top Call Drivers (category)</h3>${barChart(bdW, r=>r.cat, "#E8578E", 6)}</div>
-        <div class="col"><h3><span class="dot" style="background:var(--lav)"></span>Top Call Reasons (subcategory)</h3>${barChart(bdW, r=>r.sub, "#B99BDD", 6)}</div>
-      </div>
-    </div>`);
+    const bdWO = bdWeek(wk,"OHA"), bdWN = bdWeek(wk,"NON-OHA");
+    slides.push(`
+      <div class="shead"><div class="snum">4</div>
+        <div><div class="stitle">Call Breakdown</div><div class="ssub">Why customers contacted us this week</div></div>
+        <div class="spacer"></div><div class="weekbadge">${fmtWeekY(wk)}</div></div>
+      <div class="sbody">
+        <div class="kpis">
+          ${kpi("Total Tickets", nf(bdW.length), delta(bdW.length,bdP.length))}
+          ${kpi("OHA Tickets", nf(bdWO.length), pct(bdWO.length,bdW.length).toFixed(0)+"% of total")}
+          ${kpi("Non-OHA Tickets", nf(bdWN.length), pct(bdWN.length,bdW.length).toFixed(0)+"% of total")}
+          ${kpi("Refund Tickets", nf(rrW.length), delta(rrW.length,rrP.length,true))}
+        </div>
+        <div class="cols">
+                  <div class="col"><h3><span class="dot" style="background:var(--pink)"></span>OHA Top Call Drivers</h3>${barChart(bdWO, r=>r.cat, "#E8578E", 6)}</div>
+                  <div class="col"><h3><span class="dot" style="background:var(--blue)"></span>Non-OHA Top Call Drivers</h3>${barChart(bdWN, r=>r.cat, "#7FB8E6", 6)}</div>
+                          </div>    </div>  </div>
+                        </div>`);
 
   /* ---- Slide 5: Refund Overview ---- */
-  slides.push(`
-    <div class="shead"><div class="snum">5</div>
-      <div><div class="stitle">Refund Overview</div><div class="ssub">Refund tickets, amounts &amp; top reasons</div></div>
-      <div class="spacer"></div><div class="weekbadge">${fmtWeekY(wk)}</div></div>
-    <div class="sbody">
-      <div class="kpis">
-        ${kpi("Total Tickets", nf(bdW.length), "")}
-        ${kpi("Refund Tickets", nf(rrW.length), pct(rrW.length,bdW.length).toFixed(1)+"% of tickets")}
-        ${kpi("Total Refunded", money(amtW), delta(amtW,amtP,money))}
-        ${kpi("Avg Refund", money(rrW.length?amtW/rrW.length:0), "")}
-      </div>
-      <div class="cols">
-        <div class="col"><h3><span class="dot" style="background:var(--peach)"></span>Top Refund Reasons (by tickets)</h3>${barChart(rrW, r=>r.sub, "#F2B36B", 6)}</div>
-        <div class="col"><h3><span class="dot" style="background:var(--mint)"></span>Top Refund Reasons (by amount)</h3>${barChartSum(rrW, r=>r.sub, "#6FC7A8", 6)}</div>
-      </div>
-    </div>`);
+    const rrWO = refundRows(bdWO), rrWN = refundRows(bdWN);
+    const amtWO = refundSum(bdWO), amtWN = refundSum(bdWN);
+    slides.push(`
+      <div class="shead"><div class="snum">5</div>
+        <div><div class="stitle">Refund Overview</div><div class="ssub">Refund tickets, amounts &amp; top reasons</div></div>
+        <div class="spacer"></div><div class="weekbadge">${fmtWeekY(wk)}</div></div>
+      <div class="sbody">
+        <div class="kpis">
+                  ${kpi("Total Tickets", nf(bdW.length), "")}
+                  ${kpi("Refund Tickets", nf(rrW.length), pct(rrW.length,bdW.length).toFixed(1)+"% of tickets")}
+                  ${kpi("Total Refunded", money(amtW), delta(amtW,amtP,money))}
+                  ${kpi("OHA Refunded", money(amtWO), nf(rrWO.length)+" tickets")}
+                  ${kpi("Non-OHA Refunded", money(amtWN), nf(rrWN.length)+" tickets")}
+                </div>
+        <div class="cols">
+          <div class="col"><h3><span class="dot" style="background:var(--pink)"></span>OHA Top Refund Reasons</h3>${barChart(rrWO, r=>r.sub, "#E8578E", 5)}</div>
+                    <div class="col"><h3><span class="dot" style="background:var(--blue)"></span>Non-OHA Top Refund Reasons</h3>${barChart(rrWN, r=>r.sub, "#7FB8E6", 5)}</div>
+        </div>
+      </div>`);
 
   /* ---- Slide 6: WoW Refund Trends ---- */
-  slides.push(`
-    <div class="shead"><div class="snum">6</div>
-      <div><div class="stitle">Week-over-Week Refund Trends</div><div class="ssub">${fmtWeekY(prev)} vs ${fmtWeekY(wk)}</div></div>
-      <div class="spacer"></div><div class="weekbadge">${fmtWeekY(wk)}</div></div>
-    <div class="sbody">
-      <div class="kpis">
-        ${kpi("Prev Week Refunded", money(amtP), fmtWeek(prev))}
-        ${kpi("This Week Refunded", money(amtW), fmtWeek(wk))}
-        ${kpi("Change in Amount", money(amtW-amtP), delta(amtW,amtP,money))}
-        ${kpi("Change in Volume", (rrW.length-rrP.length>0?"+":"")+(rrW.length-rrP.length), delta(rrW.length,rrP.length))}
-      </div>
-      <div class="cols">
-        <div class="col">
-          <h3><span class="dot" style="background:var(--pink)"></span>Refunded Amount</h3>
-          <div class="bars">
-            <div class="bar-row"><div class="bar-lbl">Prev Week</div><div class="bar-track"><div class="bar-fill" style="width:${amtP&&amtW?amtP/amtW*100:100}%;background:#B99BDD"><span>${money(amtP)}</span></div></div><div class="bar-val">${money(amtP)}</div></div>
-            <div class="bar-row"><div class="bar-lbl">This Week</div><div class="bar-track"><div class="bar-fill" style="width:100%;background:#E8578E"><span>${money(amtW)}</span></div></div><div class="bar-val">${money(amtW)}</div></div>
+    const bdPO = bdWeek(prev,"OHA"), bdPN = bdWeek(prev,"NON-OHA");
+    const rrPO = refundRows(bdPO), rrPN = refundRows(bdPN);
+    const amtPO = refundSum(bdPO), amtPN = refundSum(bdPN);
+    slides.push(`
+      <div class="shead"><div class="snum">6</div>
+        <div><div class="stitle">Week-over-Week Refund Trends</div><div class="ssub">${fmtWeekY(prev)} vs ${fmtWeekY(wk)}</div></div>
+        <div class="spacer"></div><div class="weekbadge">${fmtWeekY(wk)}</div></div>
+      <div class="sbody">
+        <div class="kpis">
+          ${kpi("Prev Week Refunded", money(amtP), fmtWeek(prev))}
+          ${kpi("This Week Refunded", money(amtW), fmtWeek(wk))}
+          ${kpi("Change in Amount", money(amtW-amtP), delta(amtW,amtP,money))}
+          ${kpi("Change in Volume", (rrW.length-rrP.length>0?"+":"")+(rrW.length-rrP.length), delta(rrW.length,rrP.length))}
+        </div>
+        <div class="cols">
+          <div class="col">
+            <h3><span class="dot" style="background:var(--pink)"></span>OHA Refunded Amount</h3>
+            <div class="bars">
+              <div class="bar-row"><div class="bar-lbl">Prev Week</div><div class="bar-track"><div class="bar-fill" style="width:${amtPO&&amtWO?amtPO/amtWO*100:100}%;background:#B99BDD"><span>${money(amtPO)}</span></div></div><div class="bar-val">${money(amtPO)}</div></div>
+              <div class="bar-row"><div class="bar-lbl">This Week</div><div class="bar-track"><div class="bar-fill" style="width:100%;background:#E8578E"><span>${money(amtWO)}</span></div></div><div class="bar-val">${money(amtWO)}</div></div>
+            </div>
+          </div>
+          <div class="col">
+            <h3><span class="dot" style="background:var(--blue)"></span>Non-OHA Refunded Amount</h3>
+            <div class="bars">
+              <div class="bar-row"><div class="bar-lbl">Prev Week</div><div class="bar-track"><div class="bar-fill" style="width:${amtPN&&amtWN?amtPN/amtWN*100:100}%;background:#B99BDD"><span>${money(amtPN)}</span></div></div><div class="bar-val">${money(amtPN)}</div></div>
+              <div class="bar-row"><div class="bar-lbl">This Week</div><div class="bar-track"><div class="bar-fill" style="width:100%;background:#7FB8E6"><span>${money(amtWN)}</span></div></div><div class="bar-val">${money(amtWN)}</div></div>
+            </div>
           </div>
         </div>
-        <div class="col">
-          <h3><span class="dot" style="background:var(--lav)"></span>Refund Tickets</h3>
-          <div class="bars">
-            <div class="bar-row"><div class="bar-lbl">Prev Week</div><div class="bar-track"><div class="bar-fill" style="width:${rrP.length&&rrW.length?rrP.length/rrW.length*100:100}%;background:#B99BDD"><span>${nf(rrP.length)}</span></div></div><div class="bar-val">${nf(rrP.length)}</div></div>
-            <div class="bar-row"><div class="bar-lbl">This Week</div><div class="bar-track"><div class="bar-fill" style="width:100%;background:#E8578E"><span>${nf(rrW.length)}</span></div></div><div class="bar-val">${nf(rrW.length)}</div></div>
-          </div>
-        </div>
-      </div>
-    </div>`);
+      </div>`);
 
   /* ---- Slide 7: Back Office Hours ---- */
   const boAgents = boByAgent(boW);
