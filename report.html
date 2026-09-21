@@ -173,7 +173,6 @@ body{
 <button class="navarrow next" id="navNext" title="Next slide">&#10095;</button>
 
 <script src="data.js"></script>
-<script src="https://daniellecrizaldo781.github.io/Sales-Dashboard/data.js"></script>
 <script>
 /* ============================================================
    Weekly Call Team Report — 8-slide presentation deck
@@ -233,12 +232,6 @@ function isBack(l){ return (l||"").toLowerCase()==="doing_back_office"; }
 function boWeek(wk){ return ST_ROWS.filter(r=>r.d>=wk && r.d<=addD(wk,6) && isBack(r.status)); }
 function boByTeam(rows){ const m=new Map(); rows.forEach(r=>{ m.set(r.team_key,(m.get(r.team_key)||0)+r.min); }); return [...m.entries()].sort((a,b)=>b[1]-a[1]); }
 const fmtHrs = min => { const h=min/60; return h>=1 ? h.toFixed(1)+" h" : Math.round(min)+" min"; };
-
-/* ---- sales (from Sales-Dashboard data.js) ---- */
-const SALES = (window.SALES_DATA && window.SALES_DATA.rows) || [];
-function salesWeek(wk){ return SALES.filter(r=>r.d>=wk && r.d<=addD(wk,6)); }
-function salesAgg(rows){ return { orders: rows.length, amount: rows.reduce((a,r)=>a+(r.amt||0),0) }; }
-function salesByChannel(rows){ const m=new Map(); rows.forEach(r=>{ m.set(r.ch,(m.get(r.ch)||0)+(r.amt||0)); }); return [...m.entries()].sort((a,b)=>b[1]-a[1]); }
 
 /* ---- delta helper ---- */
 function delta(cur, prev, invert, fmt){
@@ -318,8 +311,6 @@ function buildSlides(wk){
   const slides = [];
 
   /* ---- Slide 1: Overview ---- */
-    const sW = salesAgg(salesWeek(wk)), sP = salesAgg(salesWeek(prev));
-    const sCh = salesByChannel(salesWeek(wk));
     slides.push(`
       <div class="shead"><div class="snum">1</div>
         <div><div class="stitle">Weekly Call Team Overview</div><div class="ssub">Overall performance at a glance</div></div>
@@ -332,12 +323,6 @@ function buildSlides(wk){
           ${kpi("Total Refunded", money(amtW), delta(amtW,amtP,money))}
           ${kpi("Answer Rate", pct(W.answered,W.csrBase).toFixed(1)+"%", delta(W.answerRate,P.answerRate,false, x=>x.toFixed(1)+"pp"))}
           ${kpi("Missed Rate", pct(W.missed,W.csrBase).toFixed(1)+"%", delta(W.missRate,P.missRate,true, x=>x.toFixed(1)+"pp"))}
-        </div>
-        <div class="kpis" style="margin-top:12px">
-          ${kpi("Sales Orders", nf(sW.orders), delta(sW.orders,sP.orders))}
-          ${kpi("Sales Amount", money(sW.amount), delta(sW.amount,sP.amount,money))}
-          ${kpi("Avg Order Value", money(sW.orders?sW.amount/sW.orders:0), delta(sW.orders?sW.amount/sW.orders:0, sP.orders?sP.amount/sP.orders:0, money))}
-          ${kpi("Top Sales Channel", esc(sCh[0]?.[0]||"\u2014"), sCh[0]?money(sCh[0][1]):"")}
         </div>
         <div class="cols">
           <div class="col">
@@ -352,8 +337,7 @@ function buildSlides(wk){
                 <li><span class="ic">\u2605</span><span><b>${nf(rrW.length)}</b> refund tickets \u00b7 <b>${money(amtW)}</b> refunded</span></li>
                 <li><span class="ic">\u2605</span><span>Answer rate <b>${pct(W.answered,W.csrBase).toFixed(1)}%</b>, missed <b>${pct(W.missed,W.csrBase).toFixed(1)}%</b></span></li>
                 <li><span class="ic">\u2605</span><span>OHA <b>${nf(WO.total)}</b> vs Non-OHA <b>${nf(WN.total)}</b> calls</span></li>
-                <li><span class="ic">\u2605</span><span>Sales <b>${money(sW.amount)}</b> across <b>${nf(sW.orders)}</b> orders</span></li>
-              </ul>
+                </ul>
             </div>
           </div>
         </div>
