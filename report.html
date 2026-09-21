@@ -145,6 +145,19 @@ body{
 .team-fill span{font-size:11.5px; font-weight:700; color:#fff; text-shadow:0 1px 2px rgba(0,0,0,.15);}
 .team-val{width:70px; font-size:12.5px; font-weight:700; flex:none;}
 
+/* ---------- on-screen nav arrows (always visible) ---------- */
+.navarrow{
+  position:fixed; top:50%; transform:translateY(-50%); z-index:50;
+  width:52px; height:52px; border-radius:50%; border:none; cursor:pointer;
+  background:rgba(232,87,142,.92); color:#fff; font-size:26px; font-weight:800;
+  display:flex; align-items:center; justify-content:center;
+  box-shadow:0 6px 20px rgba(232,87,142,.45); transition:all .2s; line-height:1;
+}
+.navarrow:hover{background:var(--pink); transform:translateY(-50%) scale(1.08);}
+.navarrow.prev{left:14px;}
+.navarrow.next{right:14px;}
+.navarrow:disabled{opacity:.25; cursor:default; transform:translateY(-50%) scale(1);}
+
 /* ---------- print / PDF ---------- */
 @media print{
   body{background:#fff; overflow:visible;}
@@ -156,8 +169,11 @@ body{
 </head>
 <body>
 <div id="deck"></div>
+<button class="navarrow prev" id="navPrev" title="Previous slide">&#10094;</button>
+<button class="navarrow next" id="navNext" title="Next slide">&#10095;</button>
 
 <script src="data.js"></script>
+<script src="https://daniellecrizaldo781.github.io/Sales-Dashboard/data.js"></script>
 <script>
 /* ============================================================
    Weekly Call Team Report — 8-slide presentation deck
@@ -217,6 +233,12 @@ function isBack(l){ return (l||"").toLowerCase()==="doing_back_office"; }
 function boWeek(wk){ return ST_ROWS.filter(r=>r.d>=wk && r.d<=addD(wk,6) && isBack(r.status)); }
 function boByTeam(rows){ const m=new Map(); rows.forEach(r=>{ m.set(r.team_key,(m.get(r.team_key)||0)+r.min); }); return [...m.entries()].sort((a,b)=>b[1]-a[1]); }
 const fmtHrs = min => { const h=min/60; return h>=1 ? h.toFixed(1)+" h" : Math.round(min)+" min"; };
+
+/* ---- sales (from Sales-Dashboard data.js) ---- */
+const SALES = (window.SALES_DATA && window.SALES_DATA.rows) || [];
+function salesWeek(wk){ return SALES.filter(r=>r.d>=wk && r.d<=addD(wk,6)); }
+function salesAgg(rows){ return { orders: rows.length, amount: rows.reduce((a,r)=>a+(r.amt||0),0) }; }
+function salesByChannel(rows){ const m=new Map(); rows.forEach(r=>{ m.set(r.ch,(m.get(r.ch)||0)+(r.amt||0)); }); return [...m.entries()].sort((a,b)=>b[1]-a[1]); }
 
 /* ---- delta helper ---- */
 function delta(cur, prev, invert, fmt){
@@ -296,37 +318,46 @@ function buildSlides(wk){
   const slides = [];
 
   /* ---- Slide 1: Overview ---- */
-  slides.push(`
-    <div class="shead"><div class="snum">1</div>
-      <div><div class="stitle">Weekly Call Team Overview</div><div class="ssub">Overall performance at a glance</div></div>
-      <div class="spacer"></div><div class="weekbadge">${fmtWeekY(wk)}</div></div>
-    <div class="sbody">
-      <div class="kpis">
-        ${kpi("Total Calls", nf(W.total), delta(W.total,P.total))}
-        ${kpi("Total Tickets", nf(bdW.length), delta(bdW.length,bdP.length))}
-        ${kpi("Refund Tickets", nf(rrW.length), delta(rrW.length,rrP.length,true))}
-        ${kpi("Total Refunded", money(amtW), delta(amtW,amtP,money))}
-        ${kpi("Answer Rate", pct(W.answered,W.csrBase).toFixed(1)+"%", delta(W.answerRate,P.answerRate,false, x=>x.toFixed(1)+"pp"))}
-        ${kpi("Missed Rate", pct(W.missed,W.csrBase).toFixed(1)+"%", delta(W.missRate,P.missRate,true, x=>x.toFixed(1)+"pp"))}
-      </div>
-      <div class="cols">
-        <div class="col">
-          <h3><span class="dot" style="background:var(--pink)"></span>OHA vs Non-OHA</h3>
-          ${donut(weekRows(wk,"ALL"), r=>r.ch, i=>PAL[i], 2)}
+    const sW = salesAgg(salesWeek(wk)), sP = salesAgg(salesWeek(prev));
+    const sCh = salesByChannel(salesWeek(wk));
+    slides.push(`
+      <div class="shead"><div class="snum">1</div>
+        <div><div class="stitle">Weekly Call Team Overview</div><div class="ssub">Overall performance at a glance</div></div>
+        <div class="spacer"></div><div class="weekbadge">${fmtWeekY(wk)}</div></div>
+      <div class="sbody">
+        <div class="kpis">
+          ${kpi("Total Calls", nf(W.total), delta(W.total,P.total))}
+          ${kpi("Total Tickets", nf(bdW.length), delta(bdW.length,bdP.length))}
+          ${kpi("Refund Tickets", nf(rrW.length), delta(rrW.length,rrP.length,true))}
+          ${kpi("Total Refunded", money(amtW), delta(amtW,amtP,money))}
+          ${kpi("Answer Rate", pct(W.answered,W.csrBase).toFixed(1)+"%", delta(W.answerRate,P.answerRate,false, x=>x.toFixed(1)+"pp"))}
+          ${kpi("Missed Rate", pct(W.missed,W.csrBase).toFixed(1)+"%", delta(W.missRate,P.missRate,true, x=>x.toFixed(1)+"pp"))}
         </div>
-        <div class="col">
-          <h3><span class="dot" style="background:var(--mint)"></span>Key Highlights</h3>
-          <div class="hl-card star" style="flex:1">
-            <ul>
-              <li><span class="ic">\u2605</span><span><b>${nf(W.total)}</b> total calls this week</span></li>
-              <li><span class="ic">\u2605</span><span><b>${nf(rrW.length)}</b> refund tickets \u00b7 <b>${money(amtW)}</b> refunded</span></li>
-              <li><span class="ic">\u2605</span><span>Answer rate <b>${pct(W.answered,W.csrBase).toFixed(1)}%</b>, missed <b>${pct(W.missed,W.csrBase).toFixed(1)}%</b></span></li>
-              <li><span class="ic">\u2605</span><span>OHA <b>${nf(WO.total)}</b> vs Non-OHA <b>${nf(WN.total)}</b> calls</span></li>
-            </ul>
+        <div class="kpis" style="margin-top:12px">
+          ${kpi("Sales Orders", nf(sW.orders), delta(sW.orders,sP.orders))}
+          ${kpi("Sales Amount", money(sW.amount), delta(sW.amount,sP.amount,money))}
+          ${kpi("Avg Order Value", money(sW.orders?sW.amount/sW.orders:0), delta(sW.orders?sW.amount/sW.orders:0, sP.orders?sP.amount/sP.orders:0, money))}
+          ${kpi("Top Sales Channel", esc(sCh[0]?.[0]||"\u2014"), sCh[0]?money(sCh[0][1]):"")}
+        </div>
+        <div class="cols">
+          <div class="col">
+            <h3><span class="dot" style="background:var(--pink)"></span>OHA vs Non-OHA</h3>
+            ${donut(weekRows(wk,"ALL"), r=>r.ch, i=>PAL[i], 2)}
+          </div>
+          <div class="col">
+            <h3><span class="dot" style="background:var(--mint)"></span>Key Highlights</h3>
+            <div class="hl-card star" style="flex:1">
+              <ul>
+                <li><span class="ic">\u2605</span><span><b>${nf(W.total)}</b> total calls this week</span></li>
+                <li><span class="ic">\u2605</span><span><b>${nf(rrW.length)}</b> refund tickets \u00b7 <b>${money(amtW)}</b> refunded</span></li>
+                <li><span class="ic">\u2605</span><span>Answer rate <b>${pct(W.answered,W.csrBase).toFixed(1)}%</b>, missed <b>${pct(W.missed,W.csrBase).toFixed(1)}%</b></span></li>
+                <li><span class="ic">\u2605</span><span>OHA <b>${nf(WO.total)}</b> vs Non-OHA <b>${nf(WN.total)}</b> calls</span></li>
+                <li><span class="ic">\u2605</span><span>Sales <b>${money(sW.amount)}</b> across <b>${nf(sW.orders)}</b> orders</span></li>
+              </ul>
+            </div>
           </div>
         </div>
-      </div>
-    </div>`);
+      </div>`);
 
   /* ---- Slide 2: OHA IVR ---- */
   const ohaRows = weekRows(wk,"OHA");
@@ -540,6 +571,9 @@ function go(i){
   els[curIdx].classList.add("active");
   els[curIdx].classList.remove("prev");
   document.querySelectorAll(".foot .dot").forEach((d,j)=>d.classList.toggle("on",j===curIdx));
+  const p=document.getElementById("navPrev"), n=document.getElementById("navNext");
+  if(p) p.disabled = (curIdx===0);
+  if(n) n.disabled = (curIdx===slides.length-1);
 }
 document.addEventListener("keydown",e=>{
   if(e.key==="ArrowRight"||e.key==="PageDown"||e.key===" "){e.preventDefault();go(curIdx+1);}
@@ -547,6 +581,8 @@ document.addEventListener("keydown",e=>{
   if(e.key==="Home"){e.preventDefault();go(0);}
   if(e.key==="End"){e.preventDefault();go(slides.length-1);}
 });
+document.getElementById("navPrev").onclick=()=>go(curIdx-1);
+document.getElementById("navNext").onclick=()=>go(curIdx+1);
 
 render();
 </script>
