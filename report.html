@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Weekly Call Team Report</title>
+<style>
+:root{
+  --pink:#E8578E; --pink-soft:#F7C9D9; --pink-bg:#FFF5F8;
+  --lav:#D9CEF2; --blue:#BFDDF5; --mint:#C4E8D6; --peach:#FBD5BE; --yellow:#FBEFC0;
+  --ink:#3A2A33; --muted:#9A8A92; --card:#FFFFFF; --line:#F3E3EA;
+  --up:#2E9E6B; --down:#D9455F; --flat:#9A8A92;
+  --shadow:0 8px 30px rgba(232,87,142,.10);
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+html,body{height:100%;}
+body{
+  font-family:'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
+  background:linear-gradient(160deg,#FFF0F5 0%,#FDF3F8 40%,#F6EEFB 100%);
+  color:var(--ink); overflow:hidden;
+}
+/* ---------- deck stage ---------- */
+#deck{position:fixed; inset:0; display:flex; align-items:center; justify-content:center;}
+.slide{
+  position:absolute; width:min(96vw,1280px); height:min(96vh,720px);
+  aspect-ratio:16/9; background:var(--card); border-radius:22px;
+  box-shadow:var(--shadow); padding:34px 44px; overflow:hidden;
+  opacity:0; transform:translateX(40px) scale(.985); pointer-events:none;
+  transition:opacity .35s ease, transform .35s ease;
+  display:flex; flex-direction:column;
+}
+.slide.active{opacity:1; transform:none; pointer-events:auto;}
+.slide.prev{opacity:0; transform:translateX(-40px) scale(.985);}
+
+/* ---------- slide chrome ---------- */
+.shead{display:flex; align-items:center; gap:14px; margin-bottom:6px;}
+.snum{
+  width:34px; height:34px; border-radius:10px; background:var(--pink);
+  color:#fff; font-weight:700; font-size:15px; display:flex; align-items:center; justify-content:center;
+  box-shadow:0 4px 12px rgba(232,87,142,.35); flex:none;
+}
+.stitle{font-size:26px; font-weight:700; letter-spacing:-.3px;}
+.ssub{font-size:13px; color:var(--muted); margin-top:2px;}
+.shead .spacer{flex:1;}
+.weekbadge{
+  font-size:12.5px; font-weight:600; color:var(--pink); background:var(--pink-bg);
+  border:1px solid var(--pink-soft); padding:6px 14px; border-radius:999px;
+}
+.sbody{flex:1; display:flex; flex-direction:column; gap:16px; margin-top:14px; min-height:0;}
+
+/* ---------- KPI cards ---------- */
+.kpis{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:14px;}
+.kpi{
+  background:linear-gradient(180deg,#FFFFFF,#FFF9FB); border:1px solid var(--line);
+  border-radius:16px; padding:14px 16px; box-shadow:0 3px 12px rgba(232,87,142,.06);
+}
+.kpi .lbl{font-size:11.5px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.5px;}
+.kpi .val{font-size:26px; font-weight:800; margin-top:4px; letter-spacing:-.5px;}
+.kpi .sub{font-size:11.5px; margin-top:4px; color:var(--muted);}
+.kpi .sub b{color:var(--ink);}
+.kpi.accent{background:linear-gradient(135deg,var(--pink),#F06BA0); color:#fff; border:none;}
+.kpi.accent .lbl{color:rgba(255,255,255,.85);}
+.kpi.accent .sub{color:rgba(255,255,255,.9);}
+.kpi.accent .sub b{color:#fff;}
+
+/* ---------- delta chips ---------- */
+.delta{font-weight:700; font-size:12px; padding:2px 8px; border-radius:999px; display:inline-block;}
+.delta.up{color:var(--up); background:rgba(46,158,107,.10);}
+.delta.down{color:var(--down); background:rgba(217,69,95,.10);}
+.delta.flat{color:var(--flat); background:rgba(154,138,146,.10);}
+
+/* ---------- two-column layout ---------- */
+.cols{display:grid; grid-template-columns:1fr 1fr; gap:20px; flex:1; min-height:0;}
+.col{display:flex; flex-direction:column; gap:10px; min-height:0;}
+.col h3{font-size:14px; font-weight:700; color:var(--ink); display:flex; align-items:center; gap:8px;}
+.col h3 .dot{width:9px; height:9px; border-radius:50%; flex:none;}
+
+/* ---------- bar chart ---------- */
+.bars{display:flex; flex-direction:column; gap:9px; flex:1; min-height:0; overflow:hidden;}
+.bar-row{display:flex; align-items:center; gap:10px;}
+.bar-lbl{width:150px; font-size:12px; font-weight:600; color:var(--ink); text-align:right; flex:none; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.bar-track{flex:1; height:22px; background:#F7F0F4; border-radius:8px; overflow:hidden; position:relative;}
+.bar-fill{height:100%; border-radius:8px; display:flex; align-items:center; justify-content:flex-end; padding-right:8px; min-width:0; transition:width .6s ease;}
+.bar-fill span{font-size:11px; font-weight:700; color:#fff; text-shadow:0 1px 2px rgba(0,0,0,.15);}
+.bar-val{width:56px; font-size:12px; font-weight:700; color:var(--ink); flex:none; text-align:left;}
+
+/* ---------- donut ---------- */
+.donut-wrap{display:flex; align-items:center; gap:18px; flex:1; min-height:0;}
+.donut{position:relative; width:150px; height:150px; flex:none;}
+.donut svg{width:100%; height:100%; transform:rotate(-90deg);}
+.donut .center{position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;}
+.donut .center .v{font-size:22px; font-weight:800;}
+.donut .center .l{font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:.5px;}
+.legend{display:flex; flex-direction:column; gap:7px; flex:1; min-width:0;}
+.legend .li{display:flex; align-items:center; gap:8px; font-size:12.5px;}
+.legend .sw{width:12px; height:12px; border-radius:4px; flex:none;}
+.legend .nm{flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.legend .pc{font-weight:700; color:var(--ink);}
+
+/* ---------- highlights / notes ---------- */
+.hl-grid{display:grid; grid-template-columns:1fr 1fr; gap:16px; flex:1; min-height:0;}
+.hl-card{border-radius:16px; padding:16px 18px; border:1px solid var(--line); display:flex; flex-direction:column; gap:8px; overflow:hidden;}
+.hl-card h4{font-size:13.5px; font-weight:700; display:flex; align-items:center; gap:8px;}
+.hl-card ul{list-style:none; display:flex; flex-direction:column; gap:7px; overflow:hidden;}
+.hl-card li{font-size:12.5px; line-height:1.4; display:flex; gap:8px; align-items:flex-start;}
+.hl-card li .ic{flex:none;}
+.hl-card.up{background:linear-gradient(180deg,#F2FBF6,#FFFFFF);}
+.hl-card.down{background:linear-gradient(180deg,#FDF2F5,#FFFFFF);}
+.hl-card.star{background:linear-gradient(180deg,#FFF8EC,#FFFFFF);}
+.hl-card.idea{background:linear-gradient(180deg,#F3F0FC,#FFFFFF);}
+.hl-card.attn{background:linear-gradient(180deg,#FFF0F5,#FFFFFF);}
+
+/* ---------- footer / nav ---------- */
+.foot{display:flex; align-items:center; justify-content:space-between; margin-top:14px; font-size:11.5px; color:var(--muted);}
+.foot .nav{display:flex; align-items:center; gap:10px;}
+.foot .dots{display:flex; gap:6px;}
+.foot .dot{width:8px; height:8px; border-radius:50%; background:var(--pink-soft); cursor:pointer; transition:background .2s;}
+.foot .dot.on{background:var(--pink);}
+.foot .btn{
+  border:1px solid var(--pink-soft); background:#fff; color:var(--pink); font-weight:600;
+  font-size:11.5px; padding:5px 12px; border-radius:999px; cursor:pointer; transition:all .2s;
+}
+.foot .btn:hover{background:var(--pink); color:#fff;}
+
+/* ---------- week selector ---------- */
+.weekbar{display:flex; align-items:center; gap:10px; margin-bottom:2px;}
+.weekbar select{
+  border:1px solid var(--pink-soft); background:#fff; color:var(--ink); font-weight:600;
+  font-size:12.5px; padding:6px 12px; border-radius:10px; cursor:pointer; outline:none;
+}
+.weekbar .hint{font-size:11.5px; color:var(--muted);}
+
+/* ---------- misc ---------- */
+.bo-cards{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:14px;}
+.bo-card{background:linear-gradient(135deg,#FFF0F5,#FDEBF3); border:1px solid var(--pink-soft); border-radius:16px; padding:14px 16px;}
+.bo-card .lbl{font-size:11.5px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.5px;}
+.bo-card .val{font-size:24px; font-weight:800; margin-top:4px;}
+.bo-card .sub{font-size:11.5px; color:var(--muted); margin-top:3px;}
+.bo-card .sub b{color:var(--ink);}
+.team-bars{display:flex; flex-direction:column; gap:10px; flex:1; min-height:0;}
+.team-row{display:flex; align-items:center; gap:10px;}
+.team-lbl{width:110px; font-size:12.5px; font-weight:700; text-align:right; flex:none;}
+.team-track{flex:1; height:26px; background:#F7F0F4; border-radius:9px; overflow:hidden;}
+.team-fill{height:100%; border-radius:9px; display:flex; align-items:center; justify-content:flex-end; padding-right:8px;}
+.team-fill span{font-size:11.5px; font-weight:700; color:#fff; text-shadow:0 1px 2px rgba(0,0,0,.15);}
+.team-val{width:70px; font-size:12.5px; font-weight:700; flex:none;}
+
+/* ---------- print / PDF ---------- */
+@media print{
+  body{background:#fff; overflow:visible;}
+  #deck{position:static; display:block;}
+  .slide{position:relative; width:1280px; height:720px; page-break-after:always; opacity:1; transform:none; box-shadow:none; border:1px solid #eee;}
+  .foot{display:none;}
+}
+</style>
+</head>
+<body>
+<div id="deck"></div>
+
+<script src="data.js"></script>
+<script>
+/* ============================================================
+   Weekly Call Team Report — 8-slide presentation deck
+   Data-driven from the same data.js as the dashboard.
+   Defaults to the latest full week (Mon-Sun); WoW vs prior week.
+   ============================================================ */
+const D = window.CALL_DATA, NO_IVR = D.noIvrLabel;
+const SEP = "\u0001";
+const ST = ["answered","missed","abandoned","ooh"];
+const COL = {answered:"#E8578E", missed:"#D9455F", abandoned:"#B99BDD", ooh:"#D9A0B8"};
+const PAL = ["#E8578E","#B99BDD","#7FB8E6","#6FC7A8","#F2B36B","#E8C96B","#C98BD6","#7FA8E0","#E88BA0","#9AC7B0"];
+
+/* ---- explode cube ---- */
+const ROWS = [];
+for (const k in D.cube){ const p=k.split(SEP), v=D.cube[k]; ROWS.push({d:p[0],h:+p[1],ch:p[2],line:p[3],ivr:p[4],st:p[5],n:v[0],sec:v[1]}); }
+const ALL_DATES = [...new Set(ROWS.map(r=>r.d))].sort();
+const MIN_D = ALL_DATES[0], MAX_D = ALL_DATES[ALL_DATES.length-1];
+
+/* ---- date helpers ---- */
+const dt = s => { const p=s.split("-"); return new Date(+p[0],+p[1]-1,+p[2]); };
+const iso = d => d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+const addD = (s,n) => { const d=dt(s); d.setDate(d.getDate()+n); return iso(d); };
+function weekStart(s){ const d=dt(s); const w=(d.getDay()+6)%7; d.setDate(d.getDate()-w); return iso(d); }
+const MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const fmtD = s => { const d=dt(s); return MON[d.getMonth()]+" "+d.getDate(); };
+const fmtWeek = s => fmtD(s)+"\u2013"+fmtD(addD(s,6));
+const fmtWeekY = s => fmtWeek(s)+", "+s.slice(0,4);
+const nf = n => (n||0).toLocaleString("en-US");
+const money = n => "$"+nf(Math.round(n||0));
+const pct = (a,b) => b ? (a/b*100) : 0;
+
+/* ---- weeks ---- */
+function listWeeks(){ const seen=new Set(), out=[]; for(const d of ALL_DATES){ const k=weekStart(d); if(!seen.has(k)){seen.add(k);out.push(k);} } return out; }
+const WEEKS = listWeeks();
+const CUR = WEEKS[WEEKS.length-1];          // latest full week
+const PREV = WEEKS[WEEKS.length-2] || CUR;  // prior week
+
+/* ---- aggregation ---- */
+function blank(){ return {total:0,answered:0,missed:0,abandoned:0,ooh:0,sec:0}; }
+function acc(m,r){ m.total+=r.n; m[r.st]+=r.n; if(r.st==="answered") m.sec+=r.sec; return m; }
+function finish(m){ m.agentReceived=m.total-m.abandoned-m.ooh; m.unanswered=m.agentReceived-m.answered; m.csrBase=m.answered+m.missed; m.answerRate=m.csrBase?m.answered/m.csrBase*100:0; m.missRate=m.csrBase?m.missed/m.csrBase*100:0; m.aht=m.answered?m.sec/m.answered:0; return m; }
+function agg(rows){ const m=blank(); rows.forEach(r=>acc(m,r)); return finish(m); }
+function weekRows(wk, chan){ return ROWS.filter(r=>r.d>=wk && r.d<=addD(wk,6) && (chan==="ALL"||r.ch===chan)); }
+function groupBy(rows, keyFn){ const g=new Map(); rows.forEach(r=>{ const k=keyFn(r); if(!g.has(k)) g.set(k,blank()); acc(g.get(k),r); }); const out=new Map(); g.forEach((v,k)=>out.set(k,finish(v))); return out; }
+
+/* ---- breakdown / refund ---- */
+const BD = D.breakdown || [];
+function bdWeek(wk, chan){ return BD.filter(r=>r.d>=wk && r.d<=addD(wk,6) && (chan==="ALL"||r.ch===chan)); }
+function refundRows(rows){ return rows.filter(r=>r.refund>0); }
+function refundSum(rows){ return refundRows(rows).reduce((a,r)=>a+r.refund,0); }
+function topBy(rows, keyFn, n){ const m=new Map(); rows.forEach(r=>{ const k=keyFn(r); m.set(k,(m.get(k)||0)+1); }); return [...m.entries()].sort((a,b)=>b[1]-a[1]).slice(0,n); }
+function topBySum(rows, keyFn, n){ const m=new Map(); rows.forEach(r=>{ const k=keyFn(r); m.set(k,(m.get(k)||0)+r.refund); }); return [...m.entries()].sort((a,b)=>b[1]-a[1]).slice(0,n); }
+
+/* ---- back-office hours ---- */
+const ST_ROWS = (D.status && D.status.rows) || [];
+function isBack(l){ return (l||"").toLowerCase()==="doing_back_office"; }
+function boWeek(wk){ return ST_ROWS.filter(r=>r.d>=wk && r.d<=addD(wk,6) && isBack(r.status)); }
+function boByTeam(rows){ const m=new Map(); rows.forEach(r=>{ m.set(r.team_key,(m.get(r.team_key)||0)+r.min); }); return [...m.entries()].sort((a,b)=>b[1]-a[1]); }
+const fmtHrs = min => { const h=min/60; return h>=1 ? h.toFixed(1)+" h" : Math.round(min)+" min"; };
+
+/* ---- delta helper ---- */
+function delta(cur, prev, invert, fmt){
+  if(prev===undefined||prev===null) return '<span class="delta flat">\u2014</span>';
+  const d=cur-prev; if(Math.abs(d)<1e-9) return '<span class="delta flat">no change</span>';
+  const better = invert ? d<0 : d>0;
+  const f = fmt||nf;
+  return '<span class="delta '+(better?"up":"down")+'">'+(d>0?"\u25B2 +":"\u25BC ")+f(Math.abs(d))+'</span>';
+}
+const esc = s => String(s).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+const deck = document.getElementById("deck");
+let curIdx = 0, slides = [], curWeek = CUR;
+
+function buildSlides(wk){
+  const prev = weekStart(addD(wk,-1));
+  const W = agg(weekRows(wk,"ALL")), P = agg(weekRows(prev,"ALL"));
+  const WO = agg(weekRows(wk,"OHA")), WN = agg(weekRows(wk,"NON-OHA"));
+  const bdW = bdWeek(wk,"ALL"), bdP = bdWeek(prev,"ALL");
+  const rrW = refundRows(bdW), rrP = refundRows(bdP);
+  const amtW = refundSum(bdW), amtP = refundSum(bdP);
+  const boW = boWeek(wk), boP = boWeek(prev);
+  const boWSum = boW.reduce((a,r)=>a+r.min,0), boPSum = boP.reduce((a,r)=>a+r.min,0);
+
+  const kpi = (lbl,val,sub,accent) =>
+    '<div class="kpi'+(accent?" accent":"")+'"><div class="lbl">'+lbl+'</div><div class="val">'+val+'</div>'+(sub?'<div class="sub">'+sub+'</div>':'')+'</div>';
+
+  const barChart = (rows, keyFn, color, n) => {
+    const top = topBy(rows, keyFn, n||6);
+    const max = top.length?top[0][1]:1;
+    return '<div class="bars">'+top.map(([k,v],i)=>
+      '<div class="bar-row"><div class="bar-lbl">'+esc(k)+'</div>'+
+      '<div class="bar-track"><div class="bar-fill" style="width:'+(v/max*100)+'%;background:'+color+'"></div></div>'+
+      '<div class="bar-val">'+nf(v)+'</div></div>').join("")+'</div>';
+  };
+
+  const barChartSum = (rows, keyFn, color, n) => {
+    const top = topBySum(rows, keyFn, n||6);
+    const max = top.length?top[0][1]:1;
+    return '<div class="bars">'+top.map(([k,v],i)=>
+      '<div class="bar-row"><div class="bar-lbl">'+esc(k)+'</div>'+
+      '<div class="bar-track"><div class="bar-fill" style="width:'+(v/max*100)+'%;background:'+color+'"></div></div>'+
+      '<div class="bar-val">'+money(v)+'</div></div>').join("")+'</div>';
+  };
+
+  const donut = (rows, keyFn, colorFn, n) => {
+    const top = topBy(rows, keyFn, n||5);
+    const total = top.reduce((a,[,v])=>a+v,0);
+    let accA=0; const segs = top.map(([k,v],i)=>{ const start=accA/total*360; accA+=v; return {k,v,start,end:accA/total*360,c:colorFn(i)}; });
+    const circ = 2*Math.PI*54;
+    const arcs = segs.map(s=>{ const len=(s.end-s.start)/360*circ; return '<circle r="54" cx="60" cy="60" fill="none" stroke="'+s.c+'" stroke-width="20" stroke-dasharray="'+len+' '+(circ-len)+'" stroke-dashoffset="'+(-s.start/360*circ)+'"></circle>'; }).join("");
+    return '<div class="donut-wrap"><div class="donut"><svg viewBox="0 0 120 120">'+arcs+'</svg>'+
+      '<div class="center"><div class="v">'+nf(total)+'</div><div class="l">calls</div></div></div>'+
+      '<div class="legend">'+segs.map(s=>'<div class="li"><span class="sw" style="background:'+s.c+'"></span><span class="nm">'+esc(s.k)+'</span><span class="pc">'+pct(s.v,total).toFixed(0)+'%</span></div>').join("")+'</div></div>';
+  };
+
+  const slides = [];
+
+  /* ---- Slide 1: Overview ---- */
+  slides.push(`
+    <div class="shead"><div class="snum">1</div>
+      <div><div class="stitle">Weekly Call Team Overview</div><div class="ssub">Overall performance at a glance</div></div>
+      <div class="spacer"></div><div class="weekbadge">${fmtWeekY(wk)}</div></div>
+    <div class="sbody">
+      <div class="kpis">
+        ${kpi("Total Calls", nf(W.total), delta(W.total,P.total))}
+        ${kpi("Total Tickets", nf(bdW.length), delta(bdW.length,bdP.length))}
+        ${kpi("Refund Tickets", nf(rrW.length), delta(rrW.length,rrP.length,true))}
+        ${kpi("Total Refunded", money(amtW), delta(amtW,amtP,money))}
+        ${kpi("Answer Rate", pct(W.answered,W.csrBase).toFixed(1)+"%", delta(W.answerRate,P.answerRate,false, x=>x.toFixed(1)+"pp"))}
+        ${kpi("Missed Rate", pct(W.missed,W.csrBase).toFixed(1)+"%", delta(W.missRate,P.missRate,true, x=>x.toFixed(1)+"pp"))}
+      </div>
+      <div class="cols">
+        <div class="col">
+          <h3><span class="dot" style="background:var(--pink)"></span>OHA vs Non-OHA</h3>
+          ${donut(weekRows(wk,"ALL"), r=>r.ch, i=>PAL[i], 2)}
+        </div>
+        <div class="col">
+          <h3><span class="dot" style="background:var(--mint)"></span>Key Highlights</h3>
+          <div class="hl-card star" style="flex:1">
+            <ul>
+              <li><span class="ic">\u2605</span><span><b>${nf(W.total)}</b> total calls this week</span></li>
+              <li><span class="ic">\u2605</span><span><b>${nf(rrW.length)}</b> refund tickets \u00b7 <b>${money(amtW)}</b> refunded</span></li>
+              <li><span class="ic">\u2605</span><span>Answer rate <b>${pct(W.answered,W.csrBase).toFixed(1)}%</b>, missed <b>${pct(W.missed,W.csrBase).toFixed(1)}%</b></span></li>
+              <li><span class="ic">\u2605</span><span>OHA <b>${nf(WO.total)}</b> vs Non-OHA <b>${nf(WN.total)}</b> calls</span></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>`);
+
+  /* ---- Slide 2: OHA IVR ---- */
+  const ohaRows = weekRows(wk,"OHA");
+  slides.push(`
+    <div class="shead"><div class="snum">2</div>
+      <div><div class="stitle">OHA IVR Branch Performance</div><div class="ssub">Which branches handled the most calls</div></div>
+      <div class="spacer"></div><div class="weekbadge">${fmtWeekY(wk)}</div></div>
+    <div class="sbody">
+      <div class="kpis">
+        ${kpi("OHA Calls", nf(WO.total), delta(WO.total, agg(weekRows(prev,"OHA")).total))}
+        ${kpi("Answered", nf(WO.answered), delta(WO.answered, agg(weekRows(prev,"OHA")).answered))}
+        ${kpi("Missed", nf(WO.missed), delta(WO.missed, agg(weekRows(prev,"OHA")).missed))}
+        ${kpi("AHT", (WO.aht/60).toFixed(1)+"m", delta(WO.aht, agg(weekRows(prev,"OHA")).aht, true, x=>(x/60).toFixed(1)+"m"))}
+      </div>
+      <div class="cols">
+        <div class="col"><h3><span class="dot" style="background:var(--pink)"></span>Call Volume by IVR Branch</h3>${barChart(ohaRows, r=>r.ivr, "#E8578E", 6)}</div>
+        <div class="col"><h3><span class="dot" style="background:var(--lav)"></span>Branch Share</h3>${donut(ohaRows, r=>r.ivr, i=>PAL[i], 5)}</div>
+      </div>
+    </div>`);
+
+  /* ---- Slide 3: Non-OHA IVR ---- */
+  const nonRows = weekRows(wk,"NON-OHA");
+  slides.push(`
+    <div class="shead"><div class="snum">3</div>
+      <div><div class="stitle">Non-OHA IVR Branch Performance</div><div class="ssub">Which branches handled the most calls</div></div>
+      <div class="spacer"></div><div class="weekbadge">${fmtWeekY(wk)}</div></div>
+    <div class="sbody">
+      <div class="kpis">
+        ${kpi("Non-OHA Calls", nf(WN.total), delta(WN.total, agg(weekRows(prev,"NON-OHA")).total))}
+        ${kpi("Answered", nf(WN.answered), delta(WN.answered, agg(weekRows(prev,"NON-OHA")).answered))}
+        ${kpi("Missed", nf(WN.missed), delta(WN.missed, agg(weekRows(prev,"NON-OHA")).missed))}
+        ${kpi("AHT", (WN.aht/60).toFixed(1)+"m", delta(WN.aht, agg(weekRows(prev,"NON-OHA")).aht, true, x=>(x/60).toFixed(1)+"m"))}
+      </div>
+      <div class="cols">
+        <div class="col"><h3><span class="dot" style="background:var(--blue)"></span>Call Volume by IVR Branch</h3>${barChart(nonRows, r=>r.ivr, "#7FB8E6", 6)}</div>
+        <div class="col"><h3><span class="dot" style="background:var(--mint)"></span>Branch Share</h3>${donut(nonRows, r=>r.ivr, i=>PAL[i], 5)}</div>
+      </div>
+    </div>`);
+
+  /* ---- Slide 4: Call Breakdown ---- */
+  slides.push(`
+    <div class="shead"><div class="snum">4</div>
+      <div><div class="stitle">Call Breakdown</div><div class="ssub">Why customers contacted us this week</div></div>
+      <div class="spacer"></div><div class="weekbadge">${fmtWeekY(wk)}</div></div>
+    <div class="sbody">
+      <div class="kpis">
+        ${kpi("Total Tickets", nf(bdW.length), delta(bdW.length,bdP.length))}
+        ${kpi("Top Driver", esc(topBy(bdW,r=>r.cat,1)[0]?.[0]||"\u2014"), "")}
+        ${kpi("Top Reason", esc(topBy(bdW,r=>r.sub,1)[0]?.[0]||"\u2014"), "")}
+        ${kpi("Refund Tickets", nf(rrW.length), delta(rrW.length,rrP.length,true))}
+      </div>
+      <div class="cols">
+        <div class="col"><h3><span class="dot" style="background:var(--pink)"></span>Top Call Drivers (category)</h3>${barChart(bdW, r=>r.cat, "#E8578E", 6)}</div>
+        <div class="col"><h3><span class="dot" style="background:var(--lav)"></span>Top Call Reasons (subcategory)</h3>${barChart(bdW, r=>r.sub, "#B99BDD", 6)}</div>
+      </div>
+    </div>`);
+
+  /* ---- Slide 5: Refund Overview ---- */
+  slides.push(`
+    <div class="shead"><div class="snum">5</div>
+      <div><div class="stitle">Refund Overview</div><div class="ssub">Refund tickets, amounts &amp; top reasons</div></div>
+      <div class="spacer"></div><div class="weekbadge">${fmtWeekY(wk)}</div></div>
+    <div class="sbody">
+      <div class="kpis">
+        ${kpi("Total Tickets", nf(bdW.length), "")}
+        ${kpi("Refund Tickets", nf(rrW.length), pct(rrW.length,bdW.length).toFixed(1)+"% of tickets")}
+        ${kpi("Total Refunded", money(amtW), delta(amtW,amtP,money))}
+        ${kpi("Avg Refund", money(rrW.length?amtW/rrW.length:0), "")}
+      </div>
+      <div class="cols">
+        <div class="col"><h3><span class="dot" style="background:var(--peach)"></span>Top Refund Reasons (by tickets)</h3>${barChart(rrW, r=>r.sub, "#F2B36B", 6)}</div>
+        <div class="col"><h3><span class="dot" style="background:var(--mint)"></span>Top Refund Reasons (by amount)</h3>${barChartSum(rrW, r=>r.sub, "#6FC7A8", 6)}</div>
+      </div>
+    </div>`);
+
+  /* ---- Slide 6: WoW Refund Trends ---- */
+  slides.push(`
+    <div class="shead"><div class="snum">6</div>
+      <div><div class="stitle">Week-over-Week Refund Trends</div><div class="ssub">${fmtWeekY(prev)} vs ${fmtWeekY(wk)}</div></div>
+      <div class="spacer"></div><div class="weekbadge">${fmtWeekY(wk)}</div></div>
+    <div class="sbody">
+      <div class="kpis">
+        ${kpi("Prev Week Refunded", money(amtP), fmtWeek(prev))}
+        ${kpi("This Week Refunded", money(amtW), fmtWeek(wk))}
+        ${kpi("Change in Amount", money(amtW-amtP), delta(amtW,amtP,money))}
+        ${kpi("Change in Volume", (rrW.length-rrP.length>0?"+":"")+(rrW.length-rrP.length), delta(rrW.length,rrP.length))}
+      </div>
+      <div class="cols">
+        <div class="col">
+          <h3><span class="dot" style="background:var(--pink)"></span>Refunded Amount</h3>
+          <div class="bars">
+            <div class="bar-row"><div class="bar-lbl">Prev Week</div><div class="bar-track"><div class="bar-fill" style="width:${amtP&&amtW?amtP/amtW*100:100}%;background:#B99BDD"><span>${money(amtP)}</span></div></div><div class="bar-val">${money(amtP)}</div></div>
+            <div class="bar-row"><div class="bar-lbl">This Week</div><div class="bar-track"><div class="bar-fill" style="width:100%;background:#E8578E"><span>${money(amtW)}</span></div></div><div class="bar-val">${money(amtW)}</div></div>
+          </div>
+        </div>
+        <div class="col">
+          <h3><span class="dot" style="background:var(--lav)"></span>Refund Tickets</h3>
+          <div class="bars">
+            <div class="bar-row"><div class="bar-lbl">Prev Week</div><div class="bar-track"><div class="bar-fill" style="width:${rrP.length&&rrW.length?rrP.length/rrW.length*100:100}%;background:#B99BDD"><span>${nf(rrP.length)}</span></div></div><div class="bar-val">${nf(rrP.length)}</div></div>
+            <div class="bar-row"><div class="bar-lbl">This Week</div><div class="bar-track"><div class="bar-fill" style="width:100%;background:#E8578E"><span>${nf(rrW.length)}</span></div></div><div class="bar-val">${nf(rrW.length)}</div></div>
+          </div>
+        </div>
+      </div>
+    </div>`);
+
+  /* ---- Slide 7: Back Office Hours ---- */
+  const boTeams = boByTeam(boW);
+  const boMax = boTeams.length?boTeams[0][1]:1;
+  slides.push(`
+    <div class="shead"><div class="snum">7</div>
+      <div><div class="stitle">Back Office Hours Overview</div><div class="ssub">Total back-office time by team</div></div>
+      <div class="spacer"></div><div class="weekbadge">${fmtWeekY(wk)}</div></div>
+    <div class="sbody">
+      <div class="kpis">
+        ${kpi("Total Back-Office", fmtHrs(boWSum), delta(boWSum,boPSum,true,fmtHrs))}
+        ${kpi("Teams", nf(boTeams.length), "")}
+        ${kpi("Top Team", esc(boTeams[0]?.[0]||"\u2014"), boTeams[0]?fmtHrs(boTeams[0][1]):"")}
+      </div>
+      <div class="cols">
+        <div class="col">
+          <h3><span class="dot" style="background:var(--pink)"></span>Back-Office Hours by Team</h3>
+          <div class="team-bars">
+            ${boTeams.length?boTeams.map(([k,v])=>
+              '<div class="team-row"><div class="team-lbl">'+esc(k)+'</div><div class="team-track"><div class="team-fill" style="width:'+(v/boMax*100)+'%;background:#E8578E"><span>'+fmtHrs(v)+'</span></div></div><div class="team-val">'+fmtHrs(v)+'</div></div>').join("")
+              :'<div class="hl-card idea" style="flex:1"><ul><li><span class="ic">\u2139</span><span>No back-office status data for this week.</span></li></ul></div>'}
+          </div>
+        </div>
+        <div class="col">
+          <h3><span class="dot" style="background:var(--mint)"></span>Week-over-Week</h3>
+          <div class="bars">
+            <div class="bar-row"><div class="bar-lbl">Prev Week</div><div class="bar-track"><div class="bar-fill" style="width:${boPSum&&boWSum?boPSum/boWSum*100:0}%;background:#B99BDD"><span>${fmtHrs(boPSum)}</span></div></div><div class="bar-val">${fmtHrs(boPSum)}</div></div>
+            <div class="bar-row"><div class="bar-lbl">This Week</div><div class="bar-track"><div class="bar-fill" style="width:100%;background:#E8578E"><span>${fmtHrs(boWSum)}</span></div></div><div class="bar-val">${fmtHrs(boWSum)}</div></div>
+          </div>
+        </div>
+      </div>
+    </div>`);
+
+  /* ---- Slide 8: Weekly Highlights ---- */
+  const upList=[], downList=[], starList=[], ideaList=[], attnList=[];
+  if(W.total>P.total) upList.push("Total calls up <b>"+nf(W.total-P.total)+"</b> to <b>"+nf(W.total)+"</b>");
+  else if(W.total<P.total) downList.push("Total calls down <b>"+nf(P.total-W.total)+"</b> to <b>"+nf(W.total)+"</b>");
+  if(amtW>amtP) upList.push("Refunded amount up <b>"+money(amtW-amtP)+"</b> to <b>"+money(amtW)+"</b>");
+  else if(amtW<amtP) downList.push("Refunded amount down <b>"+money(amtP-amtW)+"</b> to <b>"+money(amtW)+"</b>");
+  if(rrW.length>rrP.length) upList.push("Refund tickets up <b>"+nf(rrW.length-rrP.length)+"</b> to <b>"+nf(rrW.length)+"</b>");
+  else if(rrW.length<rrP.length) downList.push("Refund tickets down <b>"+nf(rrP.length-rrW.length)+"</b> to <b>"+nf(rrW.length)+"</b>");
+  if(W.answerRate>P.answerRate) upList.push("Answer rate up <b>"+(W.answerRate-P.answerRate).toFixed(1)+"pp</b> to <b>"+W.answerRate.toFixed(1)+"%</b>");
+  else if(W.answerRate<P.answerRate) downList.push("Answer rate down <b>"+(P.answerRate-W.answerRate).toFixed(1)+"pp</b> to <b>"+W.answerRate.toFixed(1)+"%</b>");
+  if(boWSum>boPSum) upList.push("Back-office hours up <b>"+fmtHrs(boWSum-boPSum)+"</b> to <b>"+fmtHrs(boWSum)+"</b>");
+  else if(boWSum<boPSum) downList.push("Back-office hours down <b>"+fmtHrs(boPSum-boWSum)+"</b> to <b>"+fmtHrs(boWSum)+"</b>");
+  const topCat = topBy(bdW,r=>r.cat,1)[0]; if(topCat) starList.push("Top call driver: <b>"+esc(topCat[0])+"</b> ("+nf(topCat[1])+" tickets)");
+  const topSub = topBy(bdW,r=>r.sub,1)[0]; if(topSub) starList.push("Top reason: <b>"+esc(topSub[0])+"</b> ("+nf(topSub[1])+")");
+  const topRef = topBy(rrW,r=>r.sub,1)[0]; if(topRef) starList.push("Top refund reason: <b>"+esc(topRef[0])+"</b> ("+nf(topRef[1])+" tickets)");
+  const topBr = topBy(weekRows(wk,"ALL"),r=>r.ivr,1)[0]; if(topBr) starList.push("Busiest IVR branch: <b>"+esc(topBr[0])+"</b> ("+nf(topBr[1])+" calls)");
+  if(W.missRate>P.missRate) attnList.push("Missed rate rose to <b>"+W.missRate.toFixed(1)+"%</b> \u2014 worth watching next week");
+  if(amtW>amtP) attnList.push("Refunded amount increased \u2014 review top refund reasons");
+  if(boWSum>boPSum) attnList.push("Back-office load increased \u2014 check staffing balance");
+  if(!attnList.length) attnList.push("No major red flags this week \u2014 steady performance");
+  ideaList.push("Continue monitoring <b>"+esc(topCat?.[0]||"top driver")+"</b> as the leading contact reason");
+  ideaList.push("Keep an eye on <b>"+esc(topRef?.[0]||"refund reasons")+"</b> for recurring refund patterns");
+  const hl = (cls,ic,title,items)=>'<div class="hl-card '+cls+'"><h4><span>'+ic+'</span>'+title+'</h4><ul>'+items.map(i=>'<li><span class="ic">\u2022</span><span>'+i+'</span></li>').join("")+'</ul></div>';
+  slides.push(`
+    <div class="shead"><div class="snum">8</div>
+      <div><div class="stitle">Weekly Highlights</div><div class="ssub">Summary &amp; focus for next week</div></div>
+      <div class="spacer"></div><div class="weekbadge">${fmtWeekY(wk)}</div></div>
+    <div class="sbody">
+      <div class="hl-grid">
+        ${hl("up","\u25B2","Notable Increases",upList.length?upList:["No notable increases this week"])}
+        ${hl("down","\u25BC","Notable Decreases",downList.length?downList:["No notable decreases this week"])}
+        ${hl("star","\u2605","Key Performance Highlights",starList.length?starList:["No highlights recorded"])}
+        ${hl("idea","\u2139","Observations &amp; Next-Week Focus",ideaList)}
+      </div>
+    </div>`);
+
+  return slides;
+}
+
+/* ============================================================
+   NAVIGATION
+   ============================================================ */
+function render(){
+  const wk = curWeek;
+  slides = buildSlides(wk);
+  deck.innerHTML = slides.map((s,i)=>'<div class="slide'+(i===curIdx?" active":"")+'" data-i="'+i+'">'+s+
+    '<div class="foot"><div>Weekly Call Team Report \u00b7 '+fmtWeekY(wk)+'</div>'+
+    '<div class="nav"><div class="dots">'+slides.map((_,i)=>'<span class="dot'+(i===curIdx?" on":"")+'" data-dot="'+i+'"></span>').join("")+'</div>'+
+    '<button class="btn" data-prev>\u2190 Prev</button><button class="btn" data-next>Next \u2192</button></div></div></div>').join("");
+  // week selector
+  const wb = document.createElement("div");
+  wb.className="weekbar";
+  wb.innerHTML='<select id="weekSel">'+WEEKS.map(w=>'<option value="'+w+'"'+(w===wk?" selected":"")+'>'+fmtWeekY(w)+'</option>').join("")+'</select>'+
+    '<span class="hint">\u2190 \u2192 to navigate slides \u00b7 Print / Ctrl+P to export PDF</span>';
+  deck.insertBefore(wb, deck.firstChild);
+  bind();
+}
+function bind(){
+  document.querySelectorAll("[data-dot]").forEach(d=>d.onclick=()=>go(+d.dataset.dot));
+  document.querySelector("[data-prev]").onclick=()=>go(curIdx-1);
+  document.querySelector("[data-next]").onclick=()=>go(curIdx+1);
+  document.getElementById("weekSel").onchange=()=>{ curIdx=0; curWeek=document.getElementById("weekSel").value; render(); };
+}
+function go(i){
+  if(i<0||i>=slides.length) return;
+  const els=deck.querySelectorAll(".slide");
+  els[curIdx]&&els[curIdx].classList.remove("active");
+  els[curIdx]&&els[curIdx].classList.add("prev");
+  curIdx=i;
+  els[curIdx].classList.add("active");
+  els[curIdx].classList.remove("prev");
+  document.querySelectorAll(".foot .dot").forEach((d,j)=>d.classList.toggle("on",j===curIdx));
+}
+document.addEventListener("keydown",e=>{
+  if(e.key==="ArrowRight"||e.key==="PageDown"||e.key===" "){e.preventDefault();go(curIdx+1);}
+  if(e.key==="ArrowLeft"||e.key==="PageUp"){e.preventDefault();go(curIdx-1);}
+  if(e.key==="Home"){e.preventDefault();go(0);}
+  if(e.key==="End"){e.preventDefault();go(slides.length-1);}
+});
+
+render();
+</script>
+</body>
+</html>
