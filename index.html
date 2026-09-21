@@ -18,6 +18,7 @@
   <button class="navbtn" id="navAgent" data-page="agent">&#128100; Agent Performance</button>
   <button class="navbtn" id="navForecast" data-page="forecast">&#128202; Call Forecast &amp; Staffing</button>
   <button class="navbtn" id="navSched" data-page="sched">&#128197; Call Schedule</button>
+  <button class="navbtn" id="navReport" data-page="report">&#128202; Weekly Report</button>
 </nav>
 
 <div class="filters">
@@ -277,6 +278,12 @@
 <!-- ============================ PAGE: CALL SCHEDULE ============================ -->
 <section class="page" id="pageSched" hidden>
   <div id="schedRoot"></div>
+</section>
+
+<!-- ============================ PAGE: WEEKLY REPORT ============================ -->
+<section class="page" id="pageReport" hidden>
+  <div class="pagehint">&#128202; Weekly Call Team Report &mdash; present with &#8592;/&#8594; arrow keys, or Print / Ctrl+P to export a PDF. Auto-updates with the latest synced data.</div>
+  <iframe id="reportFrame" src="report.html" title="Weekly Call Team Report" loading="lazy"></iframe>
 </section>
 
 <footer>Created by Danielle Ann Mari Crizaldo &mdash; Call Team Lead</footer>
