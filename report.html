@@ -231,6 +231,7 @@ const ST_ROWS = (D.status && D.status.rows) || [];
 function isBack(l){ return (l||"").toLowerCase()==="doing_back_office"; }
 function boWeek(wk){ return ST_ROWS.filter(r=>r.d>=wk && r.d<=addD(wk,6) && isBack(r.status)); }
 function boByTeam(rows){ const m=new Map(); rows.forEach(r=>{ m.set(r.team_key,(m.get(r.team_key)||0)+r.min); }); return [...m.entries()].sort((a,b)=>b[1]-a[1]); }
+function boByAgent(rows){ const m=new Map(); rows.forEach(r=>{ m.set(r.agent,(m.get(r.agent)||0)+r.min); }); return [...m.entries()].sort((a,b)=>b[1]-a[1]); }
 const fmtHrs = min => { const h=min/60; return h>=1 ? h.toFixed(1)+" h" : Math.round(min)+" min"; };
 
 /* ---- delta helper ---- */
@@ -452,27 +453,27 @@ function buildSlides(wk){
     </div>`);
 
   /* ---- Slide 7: Back Office Hours ---- */
-  const boTeams = boByTeam(boW);
-  const boMax = boTeams.length?boTeams[0][1]:1;
-  slides.push(`
-    <div class="shead"><div class="snum">7</div>
-      <div><div class="stitle">Back Office Hours Overview</div><div class="ssub">Total back-office time by team</div></div>
-      <div class="spacer"></div><div class="weekbadge">${fmtWeekY(wk)}</div></div>
-    <div class="sbody">
-      <div class="kpis">
-        ${kpi("Total Back-Office", fmtHrs(boWSum), delta(boWSum,boPSum,true,fmtHrs))}
-        ${kpi("Teams", nf(boTeams.length), "")}
-        ${kpi("Top Team", esc(boTeams[0]?.[0]||"\u2014"), boTeams[0]?fmtHrs(boTeams[0][1]):"")}
-      </div>
-      <div class="cols">
-        <div class="col">
-          <h3><span class="dot" style="background:var(--pink)"></span>Back-Office Hours by Team</h3>
-          <div class="team-bars">
-            ${boTeams.length?boTeams.map(([k,v])=>
-              '<div class="team-row"><div class="team-lbl">'+esc(k)+'</div><div class="team-track"><div class="team-fill" style="width:'+(v/boMax*100)+'%;background:#E8578E"><span>'+fmtHrs(v)+'</span></div></div><div class="team-val">'+fmtHrs(v)+'</div></div>').join("")
-              :'<div class="hl-card idea" style="flex:1"><ul><li><span class="ic">\u2139</span><span>No back-office status data for this week.</span></li></ul></div>'}
-          </div>
+  const boAgents = boByAgent(boW);
+    const boMax = boAgents.length?boAgents[0][1]:1;
+    slides.push(`
+      <div class="shead"><div class="snum">7</div>
+        <div><div class="stitle">Back Office Hours Overview</div><div class="ssub">Total back-office time by agent</div></div>
+        <div class="spacer"></div><div class="weekbadge">${fmtWeekY(wk)}</div></div>
+      <div class="sbody">
+        <div class="kpis">
+          ${kpi("Total Back-Office", fmtHrs(boWSum), delta(boWSum,boPSum,true,fmtHrs))}
+          ${kpi("Agents", nf(boAgents.length), "")}
+          ${kpi("Top Agent", esc(boAgents[0]?.[0]||"\u2014"), boAgents[0]?fmtHrs(boAgents[0][1]):"")}
         </div>
+        <div class="cols">
+          <div class="col">
+            <h3><span class="dot" style="background:var(--pink)"></span>Back-Office Hours by Agent</h3>
+            <div class="team-bars">
+              ${boAgents.length?boAgents.map(([k,v])=>
+                '<div class="team-row"><div class="team-lbl">'+esc(k)+'</div><div class="team-track"><div class="team-fill" style="width:'+(v/boMax*100)+'%;background:#E8578E"><span>'+fmtHrs(v)+'</span></div></div><div class="team-val">'+fmtHrs(v)+'</div></div>').join("")
+                :'<div class="hl-card idea" style="flex:1"><ul><li><span class="ic">\u2139</span><span>No back-office status data for this week.</span></li></ul></div>'}
+            </div>
+          </div>
         <div class="col">
           <h3><span class="dot" style="background:var(--mint)"></span>Week-over-Week</h3>
           <div class="bars">
