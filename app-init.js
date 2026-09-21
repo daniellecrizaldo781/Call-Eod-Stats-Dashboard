@@ -55,6 +55,16 @@ function renderDQ(){
 }
 function wire(){
   document.querySelectorAll(".topnav .navbtn").forEach(b=>b.onclick=()=>setPage(b.dataset.page));
+  // Weekly Report: fullscreen toggle + focus the iframe so arrow keys work
+  const rf = document.getElementById("reportFrame");
+  if (rf){
+    rf.addEventListener("click", ()=>rf.focus());
+    const fsBtn = document.getElementById("reportFullscreen");
+    if (fsBtn) fsBtn.onclick = () => {
+      if (document.fullscreenElement) document.exitFullscreen();
+      else { rf.focus(); rf.requestFullscreen && rf.requestFullscreen(); }
+    };
+  }
   $("agGranPills").addEventListener("click", e=>{
     const b = e.target.closest(".pill"); if(!b) return;
     [...$("agGranPills").children].forEach(x=>x.classList.remove("on"));
