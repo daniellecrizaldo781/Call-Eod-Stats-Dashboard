@@ -3,14 +3,16 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Weekly Call Team Report</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📊</text></svg>">
+<title>Call Team Weekly Report</title>
 <style>
 :root{
-  --pink:#E8578E; --pink-soft:#F7C9D9; --pink-bg:#FFF5F8;
-  --lav:#D9CEF2; --blue:#BFDDF5; --mint:#C4E8D6; --peach:#FBD5BE; --yellow:#FBEFC0;
+  --pink:#E8578E; --pink-soft:#F7C9D9; --pink-bg:#FFF3F8;
+  --blue:#4E9BE5; --blue-soft:#CBE2F7; --blue-bg:#F2F8FE;
+  --lav:#D9CEF2; --mint:#C4E8D6; --peach:#FBD5BE; --yellow:#FBEFC0;
   --ink:#3A2A33; --muted:#9A8A92; --card:#FFFFFF; --line:#F3E3EA;
   --up:#2E9E6B; --down:#D9455F; --flat:#9A8A92;
-  --shadow:0 8px 30px rgba(232,87,142,.10);
+  --shadow:0 10px 34px rgba(232,87,142,.13);
 }
 *{box-sizing:border-box; margin:0; padding:0;}
 html,body{height:100%;}
@@ -19,566 +21,489 @@ body{
   background:linear-gradient(160deg,#FFF0F5 0%,#FDF3F8 40%,#F6EEFB 100%);
   color:var(--ink); overflow:hidden;
 }
-/* ---------- deck stage ---------- */
-#deck{position:fixed; inset:0; display:flex; align-items:center; justify-content:center;}
+/* ---------------- top control bar ---------------- */
+#bar{
+  position:fixed; top:0; left:0; right:0; height:54px; z-index:50;
+  display:flex; align-items:center; gap:14px; padding:0 20px;
+  background:linear-gradient(100deg,#FFE6F1 0%,#FFD3E8 45%,#F9C9EC 100%);
+  border-bottom:2px solid var(--pink);
+  box-shadow:0 6px 20px rgba(224,69,123,.18);
+}
+#bar .brand{font-weight:800; font-size:15px; letter-spacing:-.2px; color:var(--ink); display:flex; align-items:center; gap:8px; white-space:nowrap;}
+#bar .brand .bmark{width:26px;height:26px;border-radius:8px;background:linear-gradient(135deg,var(--pink),#B14EAE);color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;}
+#bar .spacer{flex:1;}
+#bar label{font-size:11px; font-weight:700; color:#A3547C; letter-spacing:.4px; text-transform:uppercase;}
+#weekSel{
+  font-family:inherit; font-size:13px; font-weight:700; color:var(--ink);
+  background:#fff; border:1.5px solid var(--pink-soft); border-radius:999px;
+  padding:7px 14px; cursor:pointer; min-width:180px;
+}
+#weekSel:focus{outline:none; border-color:var(--pink);}
+#bar .btn{
+  border:1.5px solid var(--pink-soft); background:#fff; color:var(--pink);
+  font-weight:700; font-size:12.5px; padding:7px 13px; border-radius:999px; cursor:pointer;
+  display:flex; align-items:center; gap:6px; white-space:nowrap;
+}
+#bar .btn:hover{border-color:var(--pink);}
+#bar .btn.solid{background:linear-gradient(135deg,var(--pink),#D74F8A); color:#fff; border:none;}
+/* ---------------- stage ---------------- */
+#deck{position:fixed; top:54px; left:0; right:0; bottom:0; display:flex; align-items:center; justify-content:center; background:
+  radial-gradient(1000px 500px at 80% 0%,rgba(246,231,250,.6),transparent),
+  radial-gradient(800px 400px at 10% 100%,rgba(255,224,238,.5),transparent),
+  linear-gradient(160deg,#FFF0F5 0%,#FDF3F8 40%,#F6EEFB 100%);}
 .slide{
-  position:absolute; width:min(96vw,1280px); height:min(96vh,720px);
-  aspect-ratio:16/9; background:var(--card); border-radius:22px;
-  box-shadow:var(--shadow); padding:34px 44px; overflow:hidden;
-  opacity:0; transform:translateX(40px) scale(.985); pointer-events:none;
+  position:absolute; width:min(94vw,1280px); height:min(92vh,720px);
+  background:var(--card); border-radius:22px; box-shadow:var(--shadow);
+  padding:34px 42px; overflow:hidden; display:flex; flex-direction:column;
+  opacity:0; transform:translateX(42px) scale(.985); pointer-events:none;
   transition:opacity .35s ease, transform .35s ease;
-  display:flex; flex-direction:column;
 }
 .slide.active{opacity:1; transform:none; pointer-events:auto;}
-.slide.prev{opacity:0; transform:translateX(-40px) scale(.985);}
+.slide.prev{opacity:0; transform:translateX(-42px) scale(.985);}
+/* slide header */
+.shead{display:flex; align-items:center; gap:13px; margin-bottom:4px; flex:none;}
+.snum{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--pink),#C2509A);color:#fff;font-weight:800;font-size:15px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(232,87,142,.35);flex:none;}
+.stitle{font-size:25px; font-weight:800; letter-spacing:-.3px;}
+.ssub{font-size:12.5px; color:var(--muted); margin-top:2px;}
+.shead .weekbadge{margin-left:auto; font-size:12.5px; font-weight:700; color:var(--pink); background:var(--pink-bg); border:1px solid var(--pink-soft); padding:6px 15px; border-radius:999px; white-space:nowrap;}
+.sbody{flex:1; display:flex; flex-direction:column; gap:16px; margin-top:14px; min-height:0; overflow:auto;}
+.snote{font-size:11.5px; color:var(--muted); margin-top:10px; flex:none; font-style:italic;}
 
-/* ---------- slide chrome ---------- */
-.shead{display:flex; align-items:center; gap:14px; margin-bottom:6px;}
-.snum{
-  width:34px; height:34px; border-radius:10px; background:var(--pink);
-  color:#fff; font-weight:700; font-size:15px; display:flex; align-items:center; justify-content:center;
-  box-shadow:0 4px 12px rgba(232,87,142,.35); flex:none;
-}
-.stitle{font-size:26px; font-weight:700; letter-spacing:-.3px;}
-.ssub{font-size:13px; color:var(--muted); margin-top:2px;}
-.shead .spacer{flex:1;}
-.weekbadge{
-  font-size:12.5px; font-weight:600; color:var(--pink); background:var(--pink-bg);
-  border:1px solid var(--pink-soft); padding:6px 14px; border-radius:999px;
-}
-.sbody{flex:1; display:flex; flex-direction:column; gap:16px; margin-top:14px; min-height:0;}
-
-/* ---------- KPI cards ---------- */
+/* KPI cards */
 .kpis{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:14px;}
-.kpi{
-  background:linear-gradient(180deg,#FFFFFF,#FFF9FB); border:1px solid var(--line);
-  border-radius:16px; padding:14px 16px; box-shadow:0 3px 12px rgba(232,87,142,.06);
-}
-.kpi .lbl{font-size:11.5px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.5px;}
-.kpi .val{font-size:26px; font-weight:800; margin-top:4px; letter-spacing:-.5px;}
+.kpi{background:linear-gradient(180deg,#FFFFFF,#FFF9FB); border:1px solid var(--line); border-radius:16px; padding:14px 16px; box-shadow:0 3px 12px rgba(232,87,142,.06);}
+.kpi .lbl{font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.6px;}
+.kpi .val{font-size:27px; font-weight:800; margin-top:4px; letter-spacing:-.5px;}
 .kpi .sub{font-size:11.5px; margin-top:4px; color:var(--muted);}
-.kpi .sub b{color:var(--ink);}
 .kpi.accent{background:linear-gradient(135deg,var(--pink),#F06BA0); color:#fff; border:none;}
-.kpi.accent .lbl{color:rgba(255,255,255,.85);}
-.kpi.accent .sub{color:rgba(255,255,255,.9);}
-.kpi.accent .sub b{color:#fff;}
+.kpi.accent .lbl,.kpi.accent .sub{color:rgba(255,255,255,.9);}
+.kpi.tot{background:linear-gradient(135deg,#FFE3EF,#FFF3F8); border-color:var(--pink-soft);}
+.kpi.tot .val{color:var(--pink);}
+.kpi.blue{background:linear-gradient(135deg,#E7F2FC,#F4FAFF); border-color:var(--blue-soft);}
+.kpi.blue .val{color:#2E7FC4;}
+.kpi.blue .lbl{color:#4E7BA8;}
 
-/* ---------- delta chips ---------- */
-.delta{font-weight:700; font-size:12px; padding:2px 8px; border-radius:999px; display:inline-block;}
-.delta.up{color:var(--up); background:rgba(46,158,107,.10);}
-.delta.down{color:var(--down); background:rgba(217,69,95,.10);}
-.delta.flat{color:var(--flat); background:rgba(154,138,146,.10);}
+/* delta chips */
+.delta{font-weight:800; font-size:12px; padding:2px 9px; border-radius:999px; display:inline-block; white-space:nowrap;}
+.delta.up{color:var(--up); background:rgba(46,158,107,.11);}
+.delta.down{color:var(--down); background:rgba(217,69,95,.11);}
+.delta.flat{color:var(--flat); background:rgba(154,138,146,.11);}
 
-/* ---------- two-column layout ---------- */
-.cols{display:grid; grid-template-columns:1fr 1fr; gap:20px; flex:1; min-height:0;}
-.col{display:flex; flex-direction:column; gap:10px; min-height:0;}
-.col h3{font-size:14px; font-weight:700; color:var(--ink); display:flex; align-items:center; gap:8px;}
-.col h3 .dot{width:9px; height:9px; border-radius:50%; flex:none;}
+/* two-column */
+.cols{display:grid; grid-template-columns:1fr 1fr; gap:22px; flex:1; min-height:0;}
+.col{display:flex; flex-direction:column; gap:12px; min-height:0; background:#FFFBFD; border:1px solid var(--line); border-radius:18px; padding:18px 20px;}
+.col h3{font-size:14.5px; font-weight:800; display:flex; align-items:center; gap:9px; flex:none;}
+.col h3 .dot{width:11px; height:11px; border-radius:50%; flex:none;}
+.colh .subq{font-size:11.5px; color:var(--muted); font-weight:600;}
+.mini-kpis{display:grid; grid-template-columns:repeat(auto-fit,minmax(110px,1fr)); gap:10px; flex:none;}
+.mk{background:#fff; border:1px solid var(--line); border-radius:13px; padding:10px 12px;}
+.mk .l{font-size:10px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.4px;}
+.mk .v{font-size:19px; font-weight:800; margin-top:3px;}
 
-/* ---------- bar chart ---------- */
-.bars{display:flex; flex-direction:column; gap:9px; flex:1; min-height:0; overflow:hidden;}
+/* bar charts */
+.bars{display:flex; flex-direction:column; gap:8px; flex:1; min-height:0; overflow:hidden;}
 .bar-row{display:flex; align-items:center; gap:10px;}
-.bar-lbl{width:150px; font-size:12px; font-weight:600; color:var(--ink); text-align:right; flex:none; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
-.bar-track{flex:1; height:22px; background:#F7F0F4; border-radius:8px; overflow:hidden; position:relative;}
-.bar-fill{height:100%; border-radius:8px; display:flex; align-items:center; justify-content:flex-end; padding-right:8px; min-width:0; transition:width .6s ease;}
-.bar-fill span{font-size:11px; font-weight:700; color:#fff; text-shadow:0 1px 2px rgba(0,0,0,.15);}
-.bar-val{width:56px; font-size:12px; font-weight:700; color:var(--ink); flex:none; text-align:left;}
+.bar-lbl{width:150px; font-size:12px; font-weight:700; color:var(--ink); text-align:right; flex:none; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.bar-track{flex:1; height:20px; background:#F7F0F4; border-radius:8px; overflow:hidden;}
+.bar-fill{height:100%; border-radius:8px; min-width:0;}
+.bar-val{width:88px; font-size:11.5px; font-weight:700; color:var(--muted); flex:none; text-align:left; white-space:nowrap;}
+.bar-val b{color:var(--ink);}
 
-/* ---------- donut ---------- */
-.donut-wrap{display:flex; align-items:center; gap:18px; flex:1; min-height:0;}
-.donut{position:relative; width:150px; height:150px; flex:none;}
-.donut svg{width:100%; height:100%; transform:rotate(-90deg);}
-.donut .center{position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;}
-.donut .center .v{font-size:22px; font-weight:800;}
-.donut .center .l{font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:.5px;}
-.legend{display:flex; flex-direction:column; gap:7px; flex:1; min-width:0;}
-.legend .li{display:flex; align-items:center; gap:8px; font-size:12.5px;}
-.legend .sw{width:12px; height:12px; border-radius:4px; flex:none;}
-.legend .nm{flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
-.legend .pc{font-weight:700; color:var(--ink);}
+/* tables */
+table{width:100%; border-collapse:collapse; font-size:12.5px;}
+th{font-size:10.5px; text-align:left; text-transform:uppercase; letter-spacing:.5px; color:var(--muted); font-weight:700; padding:7px 10px; border-bottom:2px solid var(--line);}
+td{padding:8px 10px; border-bottom:1px solid #F7EDF2;}
+tbody tr:last-child td{border-bottom:none;}
+tr td:first-child{font-weight:700;}
+.scrollbox{background:#FFFBFD; border:1px solid var(--line); border-radius:16px; padding:6px 4px; overflow:auto; flex:1; min-height:0;}
 
-/* ---------- highlights / notes ---------- */
-.hl-grid{display:grid; grid-template-columns:1fr 1fr; gap:16px; flex:1; min-height:0;}
-.hl-card{border-radius:16px; padding:16px 18px; border:1px solid var(--line); display:flex; flex-direction:column; gap:8px; overflow:hidden;}
-.hl-card h4{font-size:13.5px; font-weight:700; display:flex; align-items:center; gap:8px;}
-.hl-card ul{list-style:none; display:flex; flex-direction:column; gap:7px; overflow:hidden;}
-.hl-card li{font-size:12.5px; line-height:1.4; display:flex; gap:8px; align-items:flex-start;}
-.hl-card li .ic{flex:none;}
-.hl-card.up{background:linear-gradient(180deg,#F2FBF6,#FFFFFF);}
-.hl-card.down{background:linear-gradient(180deg,#FDF2F5,#FFFFFF);}
-.hl-card.star{background:linear-gradient(180deg,#FFF8EC,#FFFFFF);}
-.hl-card.idea{background:linear-gradient(180deg,#F3F0FC,#FFFFFF);}
-.hl-card.attn{background:linear-gradient(180deg,#FFF0F5,#FFFFFF);}
+/* pill / chip */
+.chiprow{display:flex; gap:10px; flex-wrap:wrap; flex:none;}
+.pill{display:inline-flex; align-items:center; gap:7px; padding:7px 15px; border-radius:999px; font-size:12.5px; font-weight:800; border:1.5px solid var(--line); background:#fff;}
+.pill.pink{color:var(--pink); border-color:var(--pink-soft); background:var(--pink-bg);}
+.pill.blue{color:#2E7FC4; border-color:var(--blue-soft); background:var(--blue-bg);}
+.pill .sw{width:9px;height:9px;border-radius:50%;}
 
-/* ---------- footer / nav ---------- */
-.foot{display:flex; align-items:center; justify-content:space-between; margin-top:14px; font-size:11.5px; color:var(--muted);}
-.foot .nav{display:flex; align-items:center; gap:10px;}
+.donut-wrap{display:flex;align-items:center;gap:16px;flex:1;min-height:0;}
+.donut{position:relative;width:130px;height:130px;flex:none;}
+.donut svg{width:100%;height:100%;transform:rotate(-90deg);}
+.donut .center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+.donut .center .v{font-size:18px;font-weight:800;}
+.donut .center .l{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;}
+.legend{display:flex;flex-direction:column;gap:6px;flex:1;min-width:0;}
+.legend .li{display:flex;align-items:center;gap:7px;font-size:12px;}
+.legend .sw{width:11px;height:11px;border-radius:4px;flex:none;}
+.legend .nm{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.legend .pc{font-weight:700;color:var(--ink);}
+.small{font-size:11px; color:var(--muted);}
+.bigv{font-size:46px; font-weight:800; letter-spacing:-1px; line-height:1;}
+.bigv small{font-size:18px; font-weight:700; color:var(--muted); letter-spacing:0;}
+
+/* hero for slide 1 */
+.hero{display:flex; flex-direction:column; gap:6px; flex:none;}
+.hero .lbl{font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.6px;}
+.herorow{display:flex; align-items:flex-end; gap:16px; flex-wrap:wrap;}
+.heroL{flex:1; min-width:280px;}
+.heroR{display:flex; gap:12px; flex-wrap:wrap;}
+
+/* foot */
+.foot{display:flex; align-items:center; justify-content:space-between; margin-top:12px; font-size:11.5px; color:var(--muted); flex:none;}
+.foot .nvg{display:flex; align-items:center; gap:10px;}
 .foot .dots{display:flex; gap:6px;}
 .foot .dot{width:8px; height:8px; border-radius:50%; background:var(--pink-soft); cursor:pointer; transition:background .2s;}
 .foot .dot.on{background:var(--pink);}
-.foot .btn{
-  border:1px solid var(--pink-soft); background:#fff; color:var(--pink); font-weight:600;
-  font-size:11.5px; padding:5px 12px; border-radius:999px; cursor:pointer; transition:all .2s;
-}
-.foot .btn:hover{background:var(--pink); color:#fff;}
+.fbtn{border:1px solid var(--pink-soft); background:#fff; color:var(--pink); font-weight:700; font-size:12px; padding:5px 12px; border-radius:999px; cursor:pointer;}
+.fbtn:hover{border-color:var(--pink);}
 
-/* ---------- week selector ---------- */
-.weekbar{display:flex; align-items:center; gap:10px; margin-bottom:2px;}
-.weekbar select{
-  border:1px solid var(--pink-soft); background:#fff; color:var(--ink); font-weight:600;
-  font-size:12.5px; padding:6px 12px; border-radius:10px; cursor:pointer; outline:none;
+@media(max-width:820px){
+  .cols{grid-template-columns:1fr;}
+  .slide{padding:22px 22px; width:94vw;}
+  .bar-lbl{width:105px; font-size:11px;}
+  .bigv{font-size:36px;}
 }
-.weekbar .hint{font-size:11.5px; color:var(--muted);}
-
-/* ---------- misc ---------- */
-.bo-cards{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:14px;}
-.bo-card{background:linear-gradient(135deg,#FFF0F5,#FDEBF3); border:1px solid var(--pink-soft); border-radius:16px; padding:14px 16px;}
-.bo-card .lbl{font-size:11.5px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.5px;}
-.bo-card .val{font-size:24px; font-weight:800; margin-top:4px;}
-.bo-card .sub{font-size:11.5px; color:var(--muted); margin-top:3px;}
-.bo-card .sub b{color:var(--ink);}
-.team-bars{display:flex; flex-direction:column; gap:10px; flex:1; min-height:0;}
-.team-row{display:flex; align-items:center; gap:10px;}
-.team-lbl{width:110px; font-size:12.5px; font-weight:700; text-align:right; flex:none;}
-.team-track{flex:1; height:26px; background:#F7F0F4; border-radius:9px; overflow:hidden;}
-.team-fill{height:100%; border-radius:9px; display:flex; align-items:center; justify-content:flex-end; padding-right:8px;}
-.team-fill span{font-size:11.5px; font-weight:700; color:#fff; text-shadow:0 1px 2px rgba(0,0,0,.15);}
-.team-val{width:70px; font-size:12.5px; font-weight:700; flex:none;}
-
-/* ---------- on-screen nav arrows (always visible) ---------- */
-.navarrow{
-  position:fixed; top:50%; transform:translateY(-50%); z-index:50;
-  width:52px; height:52px; border-radius:50%; border:none; cursor:pointer;
-  background:rgba(232,87,142,.92); color:#fff; font-size:26px; font-weight:800;
-  display:flex; align-items:center; justify-content:center;
-  box-shadow:0 6px 20px rgba(232,87,142,.45); transition:all .2s; line-height:1;
-}
-.navarrow:hover{background:var(--pink); transform:translateY(-50%) scale(1.08);}
-.navarrow.prev{left:14px;}
-.navarrow.next{right:14px;}
-.navarrow:disabled{opacity:.25; cursor:default; transform:translateY(-50%) scale(1);}
-
-/* ---------- print / PDF ---------- */
-@media print{
-  body{background:#fff; overflow:visible;}
-  #deck{position:static; display:block;}
-  .slide{position:relative; width:1280px; height:720px; page-break-after:always; opacity:1; transform:none; box-shadow:none; border:1px solid #eee;}
-  .foot{display:none;}
-}
+/* vertical bars */
+.vbars{display:flex; align-items:flex-end; gap:18px; flex:1; min-height:0; padding-top:10px;}
+.vbar{flex:1; display:flex; flex-direction:column; align-items:center; gap:6px; min-width:0; height:100%;}
+.vbar-val{font-size:11px; font-weight:800; color:var(--ink);}
+.vbar-track{flex:1; width:100%; max-width:64px; background:#F7F0F4; border-radius:8px; display:flex; align-items:flex-end; overflow:hidden; min-height:40px;}
+.vbar-fill{width:100%; border-radius:8px;}
+.vbar-lbl{font-size:10px; color:var(--muted); text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%;}
+/* inline legend */
+.legend-inline{display:flex; gap:16px; flex:none; font-size:12px; font-weight:700; color:var(--ink);}
+.legend-inline .li{display:inline-flex; align-items:center; gap:6px;}
+.legend-inline .sw{width:11px;height:11px;border-radius:4px;}
+/* nav arrows */
+.navarrow{position:fixed; top:50%; transform:translateY(-50%); z-index:50; width:46px; height:46px; border-radius:50%; border:1.5px solid var(--pink-soft); background:rgba(255,255,255,.85); color:var(--pink); font-size:20px; font-weight:800; display:flex; align-items:center; justify-content:center; cursor:pointer; box-shadow:0 4px 14px rgba(232,87,142,.18); transition:background .2s, transform .2s;}
+.navarrow:hover{background:#fff; transform:translateY(-50%) scale(1.06);}
+.navarrow.left{left:14px;}
+.navarrow.right{right:14px;}
 </style>
 </head>
 <body>
-<div id="deck"></div>
-<button class="navarrow prev" id="navPrev" title="Previous slide">&#10094;</button>
-<button class="navarrow next" id="navNext" title="Next slide">&#10095;</button>
+<div id="bar">
+  <div class="brand"><span class="bmark">W</span> TL Danielle Weekly Report</div>
+  <span class="spacer"></span>
+  <label for="weekSel">Report Week</label>
+  <select id="weekSel" aria-label="Select report week"></select>
+  <button class="btn" id="btnPng" title="Download each slide as a high-res PNG">🖼️ PNG</button>
+  <button class="btn" id="btnPrint" title="Save as PDF">🖨️ Print / PDF</button>
+  <button class="btn solid" id="btnFull" title="Fullscreen">⛶ Full</button>
+</div>
+
+<div id="deck">
+  <!-- slides injected here -->
+</div>
+<button class="navarrow left" id="btnPrev" title="Previous slide">◀</button>
+<button class="navarrow right" id="btnNext" title="Next slide">▶</button>
 
 <script src="data.js"></script>
 <script>
 /* ============================================================
-   Weekly Call Team Report — 8-slide presentation deck
+   Call Team Weekly Report — 5-slide deck
+   Layout copied from the weeklyreport.daniellecrizaldo.com deck.
    Data-driven from the same data.js as the dashboard.
-   Defaults to the latest full week (Mon-Sun); WoW vs prior week.
+   Slides: IVR Branch Performance · Call Breakdown · Refund
+   Overview · Week-over-Week Refund Trends · Back Office Hours.
    ============================================================ */
-const D = window.CALL_DATA, NO_IVR = D.noIvrLabel;
-const SEP = "\u0001";
-const ST = ["answered","missed","abandoned","ooh"];
-const COL = {answered:"#E8578E", missed:"#D9455F", abandoned:"#B99BDD", ooh:"#D9A0B8"};
-const PAL = ["#E8578E","#B99BDD","#7FB8E6","#6FC7A8","#F2B36B","#E8C96B","#C98BD6","#7FA8E0","#E88BA0","#9AC7B0"];
+(function(){
+"use strict";
+var D = window.CALL_DATA, NO_IVR = D.noIvrLabel;
+var SEP = "\u0001";
+var ST = ["answered","missed","abandoned","ooh"];
+var COL = {answered:"#E8578E", missed:"#D9455F", abandoned:"#B99BDD", ooh:"#D9A0B8"};
+var PAL = ["#E8578E","#B99BDD","#7FB8E6","#6FC7A8","#F2B36B","#E8C96B","#C98BD6","#7FA8E0","#E88BA0","#9AC7B0"];
 
 /* ---- explode cube ---- */
-const ROWS = [];
-for (const k in D.cube){ const p=k.split(SEP), v=D.cube[k]; ROWS.push({d:p[0],h:+p[1],ch:p[2],line:p[3],ivr:p[4],st:p[5],n:v[0],sec:v[1]}); }
-const ALL_DATES = [...new Set(ROWS.map(r=>r.d))].sort();
-const MIN_D = ALL_DATES[0], MAX_D = ALL_DATES[ALL_DATES.length-1];
+var ROWS = [];
+for (var k in D.cube){ var p=k.split(SEP), v=D.cube[k]; ROWS.push({d:p[0],h:+p[1],ch:p[2],line:p[3],ivr:p[4],st:p[5],n:v[0],sec:v[1]}); }
+var ALL_DATES = ROWS.map(function(r){return r.d;}).filter(function(x,i,a){return a.indexOf(x)===i;}).sort();
+var MIN_D = ALL_DATES[0], MAX_D = ALL_DATES[ALL_DATES.length-1];
 
 /* ---- date helpers ---- */
-const dt = s => { const p=s.split("-"); return new Date(+p[0],+p[1]-1,+p[2]); };
-const iso = d => d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
-const addD = (s,n) => { const d=dt(s); d.setDate(d.getDate()+n); return iso(d); };
-function weekStart(s){ const d=dt(s); const w=(d.getDay()+6)%7; d.setDate(d.getDate()-w); return iso(d); }
-const MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-const fmtD = s => { const d=dt(s); return MON[d.getMonth()]+" "+d.getDate(); };
-const fmtWeek = s => fmtD(s)+"\u2013"+fmtD(addD(s,6));
-const fmtWeekY = s => fmtWeek(s)+", "+s.slice(0,4);
-const nf = n => (n||0).toLocaleString("en-US");
-const money = n => "$"+nf(Math.round(n||0));
-const pct = (a,b) => b ? (a/b*100) : 0;
+function dt(s){ var p=s.split("-"); return new Date(+p[0],+p[1]-1,+p[2]); }
+function iso(d){ return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+function addD(s,n){ var d=dt(s); d.setDate(d.getDate()+n); return iso(d); }
+function weekStart(s){ var d=dt(s); var w=(d.getDay()+6)%7; d.setDate(d.getDate()-w); return iso(d); }
+var MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+function fmtD(s){ var d=dt(s); return MON[d.getMonth()]+" "+d.getDate(); }
+function fmtWeek(s){ return fmtD(s)+"\u2013"+fmtD(addD(s,6)); }
+function fmtWeekY(s){ return fmtWeek(s)+", "+s.slice(0,4); }
+function nf(n){ return (n||0).toLocaleString("en-US"); }
+function money(x){ x=x||0; return (x<0?'-':'')+'$'+Math.abs(x).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function moneyS(x){ x=x||0; return (x>=0?'+':'-')+'$'+Math.abs(x).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function pctS(x){ x=x||0; return (x>=0?'+':'-')+Math.abs(x).toFixed(1)+'%'; }
+function pct(a,b){ return b ? (a/b*100) : 0; }
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
 /* ---- weeks ---- */
-function listWeeks(){ const seen=new Set(), out=[]; for(const d of ALL_DATES){ const k=weekStart(d); if(!seen.has(k)){seen.add(k);out.push(k);} } return out; }
-const WEEKS = listWeeks();
-const CUR = WEEKS[WEEKS.length-1];          // latest full week
-const PREV = WEEKS[WEEKS.length-2] || CUR;  // prior week
+function listWeeks(){ var seen={}, out=[]; for(var i=0;i<ALL_DATES.length;i++){ var k=weekStart(ALL_DATES[i]); if(!seen[k]){seen[k]=1;out.push(k);} } return out; }
+var WEEKS = listWeeks();
+var CUR = WEEKS[WEEKS.length-1];
+var PREV = WEEKS[WEEKS.length-2] || CUR;
 
 /* ---- aggregation ---- */
 function blank(){ return {total:0,answered:0,missed:0,abandoned:0,ooh:0,sec:0}; }
 function acc(m,r){ m.total+=r.n; m[r.st]+=r.n; if(r.st==="answered") m.sec+=r.sec; return m; }
 function finish(m){ m.agentReceived=m.total-m.abandoned-m.ooh; m.unanswered=m.agentReceived-m.answered; m.csrBase=m.answered+m.missed; m.answerRate=m.csrBase?m.answered/m.csrBase*100:0; m.missRate=m.csrBase?m.missed/m.csrBase*100:0; m.aht=m.answered?m.sec/m.answered:0; return m; }
-function agg(rows){ const m=blank(); rows.forEach(r=>acc(m,r)); return finish(m); }
-function weekRows(wk, chan){ return ROWS.filter(r=>r.d>=wk && r.d<=addD(wk,6) && (chan==="ALL"||r.ch===chan)); }
-function groupBy(rows, keyFn){ const g=new Map(); rows.forEach(r=>{ const k=keyFn(r); if(!g.has(k)) g.set(k,blank()); acc(g.get(k),r); }); const out=new Map(); g.forEach((v,k)=>out.set(k,finish(v))); return out; }
+function agg(rows){ var m=blank(); rows.forEach(function(r){acc(m,r);}); return finish(m); }
+function weekRows(wk, chan){ return ROWS.filter(function(r){return r.d>=wk && r.d<=addD(wk,6) && (chan==="ALL"||r.ch===chan);}); }
 
 /* ---- breakdown / refund ---- */
-const BD = D.breakdown || [];
-// Channel split for breakdown/refund data: OHA = Oricle brands, Non-OHA = non-Oricle (matches dashboard bkChannelMatch)
+var BD = D.breakdown || [];
 function isOricle(b){ return typeof b === "string" && b.toLowerCase().indexOf("oricle") === 0; }
-function bdWeek(wk, chan){ return BD.filter(r=>r.d>=wk && r.d<=addD(wk,6) && (chan==="ALL"|| (chan==="OHA"?isOricle(r.brand):!isOricle(r.brand)))); }
-function refundRows(rows){ return rows.filter(r=>r.refund>0); }
-function refundSum(rows){ return refundRows(rows).reduce((a,r)=>a+r.refund,0); }
-function topBy(rows, keyFn, n){ const m=new Map(); rows.forEach(r=>{ const k=keyFn(r); m.set(k,(m.get(k)||0)+1); }); return [...m.entries()].sort((a,b)=>b[1]-a[1]).slice(0,n); }
-function topBySum(rows, keyFn, n){ const m=new Map(); rows.forEach(r=>{ const k=keyFn(r); m.set(k,(m.get(k)||0)+r.refund); }); return [...m.entries()].sort((a,b)=>b[1]-a[1]).slice(0,n); }
+function bdWeek(wk, chan){ return BD.filter(function(r){return r.d>=wk && r.d<=addD(wk,6) && (chan==="ALL"|| (chan==="OHA"?isOricle(r.brand):!isOricle(r.brand)));}); }
+function refundRows(rows){ return rows.filter(function(r){return r.refund>0;}); }
+function refundSum(rows){ return refundRows(rows).reduce(function(a,r){return a+r.refund;},0); }
+function topBy(rows, keyFn, n){ var m=new Map(); rows.forEach(function(r){ var k=keyFn(r); m.set(k,(m.get(k)||0)+1); }); return [...m.entries()].sort(function(a,b){return b[1]-a[1];}).slice(0,n); }
+function topBySum(rows, keyFn, n){ var m=new Map(); rows.forEach(function(r){ var k=keyFn(r); m.set(k,(m.get(k)||0)+r.refund); }); return [...m.entries()].sort(function(a,b){return b[1]-a[1];}).slice(0,n); }
 
 /* ---- back-office hours ---- */
-const ST_ROWS = (D.status && D.status.rows) || [];
+var ST_ROWS = (D.status && D.status.rows) || [];
 function isBack(l){ return (l||"").toLowerCase()==="doing_back_office"; }
-function boWeek(wk){ return ST_ROWS.filter(r=>r.d>=wk && r.d<=addD(wk,6) && isBack(r.status)); }
-function boByTeam(rows){ const m=new Map(); rows.forEach(r=>{ m.set(r.team_key,(m.get(r.team_key)||0)+r.min); }); return [...m.entries()].sort((a,b)=>b[1]-a[1]); }
-function boByAgent(rows){ const m=new Map(); rows.forEach(r=>{ m.set(r.agent,(m.get(r.agent)||0)+r.min); }); return [...m.entries()].sort((a,b)=>b[1]-a[1]); }
-const fmtHrs = min => { const h=min/60; return h>=1 ? h.toFixed(1)+" h" : Math.round(min)+" min"; };
+function boWeek(wk){ return ST_ROWS.filter(function(r){return r.d>=wk && r.d<=addD(wk,6) && isBack(r.status);}); }
+function boByAgent(rows){ var m=new Map(); rows.forEach(function(r){ m.set(r.agent,(m.get(r.agent)||0)+r.min); }); return [...m.entries()].sort(function(a,b){return b[1]-a[1];}); }
+function fmtHrs(min){ var h=min/60; return h>=1 ? h.toFixed(1)+" h" : Math.round(min)+" min"; }
 
-/* ---- delta helper ---- */
-function delta(cur, prev, invert, fmt){
-  if(prev===undefined||prev===null) return '<span class="delta flat">\u2014</span>';
-  const d=cur-prev; if(Math.abs(d)<1e-9) return '<span class="delta flat">no change</span>';
-  const better = invert ? d<0 : d>0;
-  const f = fmt||nf;
-  return '<span class="delta '+(better?"up":"down")+'">'+(d>0?"\u25B2 +":"\u25BC ")+f(Math.abs(d))+'</span>';
-}
-const esc = s => String(s).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-
-/* ============================================================
-   RENDER
-   ============================================================ */
-const deck = document.getElementById("deck");
-let curIdx = 0, slides = [], curWeek = CUR;
-
-function buildSlides(wk){
-  const prev = weekStart(addD(wk,-1));
-  const W = agg(weekRows(wk,"ALL")), P = agg(weekRows(prev,"ALL"));
-  const WO = agg(weekRows(wk,"OHA")), WN = agg(weekRows(wk,"NON-OHA"));
-  const bdW = bdWeek(wk,"ALL"), bdP = bdWeek(prev,"ALL");
-  const rrW = refundRows(bdW), rrP = refundRows(bdP);
-  const amtW = refundSum(bdW), amtP = refundSum(bdP);
-  const boW = boWeek(wk), boP = boWeek(prev);
-  const boWSum = boW.reduce((a,r)=>a+r.min,0), boPSum = boP.reduce((a,r)=>a+r.min,0);
-
-  const kpi = (lbl,val,sub,accent) =>
-    '<div class="kpi'+(accent?" accent":"")+'"><div class="lbl">'+lbl+'</div><div class="val">'+val+'</div>'+(sub?'<div class="sub">'+sub+'</div>':'')+'</div>';
-
-  const barChart = (rows, keyFn, color, n) => {
-    const top = topBy(rows, keyFn, n||6);
-    const max = top.length?top[0][1]:1;
-    return '<div class="bars">'+top.map(([k,v],i)=>
-      '<div class="bar-row"><div class="bar-lbl">'+esc(k)+'</div>'+
-      '<div class="bar-track"><div class="bar-fill" style="width:'+(v/max*100)+'%;background:'+color+'"></div></div>'+
-      '<div class="bar-val">'+nf(v)+'</div></div>').join("")+'</div>';
-  };
-
-  const barChartSum = (rows, keyFn, color, n) => {
-      const top = topBySum(rows, keyFn, n||6);
-      const max = top.length?top[0][1]:1;
-      return '<div class="bars">'+top.map(([k,v],i)=>
-        '<div class="bar-row"><div class="bar-lbl">'+esc(k)+'</div>'+
-        '<div class="bar-track"><div class="bar-fill" style="width:'+(v/max*100)+'%;background:'+color+'"></div></div>'+
-        '<div class="bar-val">'+money(v)+'</div></div>').join("")+'</div>';
-    };
-
-    // Stacked bar: answered + abandoned per branch (keyFn -> branch). Shows both segments.
-    const barStack = (rows, keyFn, n) => {
-      const g = new Map();
-      rows.forEach(r=>{ const k=keyFn(r); if(!g.has(k)) g.set(k,{answered:0,abandoned:0,missed:0,total:0}); const o=g.get(k); o.total+=r.n; if(r.st==="answered")o.answered+=r.n; else if(r.st==="abandoned")o.abandoned+=r.n; else if(r.st==="missed")o.missed+=r.n; });
-      const top = [...g.entries()].sort((a,b)=>b[1].total-a[1].total).slice(0,n||6);
-      const max = top.length?top[0][1].total:1;
-      return '<div class="bars">'+top.map(([k,o])=>{
-        const aW=o.answered/max*100, abW=o.abandoned/max*100;
-        return '<div class="bar-row"><div class="bar-lbl">'+esc(k)+'</div>'+
-          '<div class="bar-track" style="display:flex;overflow:hidden">'+
-          '<div class="bar-fill" style="width:'+aW+'%;background:#E8578E" title="Answered '+nf(o.answered)+'"></div>'+
-          '<div class="bar-fill" style="width:'+abW+'%;background:#B99BDD" title="Abandoned '+nf(o.abandoned)+'"></div>'+
-          '</div>'+
-          '<div class="bar-val" style="width:auto;min-width:64px;font-size:10.5px;line-height:1.3">'+nf(o.answered)+'<br><span style="color:#7A5A8A;font-weight:700">'+nf(o.abandoned)+'</span></div></div>';
-      }).join("")+'</div>';
-        };
-
-        const donut = (rows, keyFn, colorFn, n) => {
-    const top = topBy(rows, keyFn, n||5);
-    const total = top.reduce((a,[,v])=>a+v,0);
-    let accA=0; const segs = top.map(([k,v],i)=>{ const start=accA/total*360; accA+=v; return {k,v,start,end:accA/total*360,c:colorFn(i)}; });
-    const circ = 2*Math.PI*54;
-    const arcs = segs.map(s=>{ const len=(s.end-s.start)/360*circ; return '<circle r="54" cx="60" cy="60" fill="none" stroke="'+s.c+'" stroke-width="20" stroke-dasharray="'+len+' '+(circ-len)+'" stroke-dashoffset="'+(-s.start/360*circ)+'"></circle>'; }).join("");
-    return '<div class="donut-wrap"><div class="donut"><svg viewBox="0 0 120 120">'+arcs+'</svg>'+
-      '<div class="center"><div class="v">'+nf(total)+'</div><div class="l">calls</div></div></div>'+
-      '<div class="legend">'+segs.map(s=>'<div class="li"><span class="sw" style="background:'+s.c+'"></span><span class="nm">'+esc(s.k)+'</span><span class="pc">'+pct(s.v,total).toFixed(0)+'%</span></div>').join("")+'</div></div>';
-  };
-
-  const slides = [];
-
-  /* ---- Slide 1: Overview ---- */
-    slides.push(`
-      <div class="shead"><div class="snum">1</div>
-        <div><div class="stitle">Weekly Call Team Overview</div><div class="ssub">Overall performance at a glance</div></div>
-        <div class="spacer"></div><div class="weekbadge">${fmtWeekY(wk)}</div></div>
-      <div class="sbody">
-        <div class="kpis">
-          ${kpi("Total Calls", nf(W.total), delta(W.total,P.total))}
-          ${kpi("Total Tickets", nf(bdW.length), delta(bdW.length,bdP.length))}
-          ${kpi("Refund Tickets", nf(rrW.length), delta(rrW.length,rrP.length,true))}
-          ${kpi("Total Refunded", money(amtW), delta(amtW,amtP,money))}
-          ${kpi("Answer Rate", pct(W.answered,W.csrBase).toFixed(1)+"%", delta(W.answerRate,P.answerRate,false, x=>x.toFixed(1)+"pp"))}
-          ${kpi("Missed Rate", pct(W.missed,W.csrBase).toFixed(1)+"%", delta(W.missRate,P.missRate,true, x=>x.toFixed(1)+"pp"))}
-        </div>
-        <div class="cols">
-          <div class="col">
-            <h3><span class="dot" style="background:var(--pink)"></span>OHA vs Non-OHA</h3>
-            ${donut(weekRows(wk,"ALL"), r=>r.ch, i=>PAL[i], 2)}
-          </div>
-          <div class="col">
-            <h3><span class="dot" style="background:var(--mint)"></span>Key Highlights</h3>
-            <div class="hl-card star" style="flex:1">
-              <ul>
-                <li><span class="ic">\u2605</span><span><b>${nf(W.total)}</b> total calls this week</span></li>
-                <li><span class="ic">\u2605</span><span><b>${nf(rrW.length)}</b> refund tickets \u00b7 <b>${money(amtW)}</b> refunded</span></li>
-                <li><span class="ic">\u2605</span><span>Answer rate <b>${pct(W.answered,W.csrBase).toFixed(1)}%</b>, missed <b>${pct(W.missed,W.csrBase).toFixed(1)}%</b></span></li>
-                <li><span class="ic">\u2605</span><span>OHA <b>${nf(WO.total)}</b> vs Non-OHA <b>${nf(WN.total)}</b> calls</span></li>
-                </ul>
-            </div>
-          </div>
-        </div>
-      </div>`);
-
-  /* ---- Slide 2: OHA IVR ---- */
-  const ohaRows = weekRows(wk,"OHA");
-  slides.push(`
-    <div class="shead"><div class="snum">2</div>
-      <div><div class="stitle">OHA IVR Branch Performance</div><div class="ssub">Which branches handled the most calls</div></div>
-      <div class="spacer"></div><div class="weekbadge">${fmtWeekY(wk)}</div></div>
-    <div class="sbody">
-      <div class="kpis">
-        ${kpi("OHA Calls", nf(WO.total), delta(WO.total, agg(weekRows(prev,"OHA")).total))}
-        ${kpi("Answered", nf(WO.answered), delta(WO.answered, agg(weekRows(prev,"OHA")).answered))}
-        ${kpi("Missed", nf(WO.missed), delta(WO.missed, agg(weekRows(prev,"OHA")).missed))}
-        ${kpi("AHT", (WO.aht/60).toFixed(1)+"m", delta(WO.aht, agg(weekRows(prev,"OHA")).aht, true, x=>(x/60).toFixed(1)+"m"))}
-      </div>
-      <div class="cols">
-        <div class="col"><h3><span class="dot" style="background:var(--pink)"></span>Answered vs Abandoned by IVR Branch</h3>
-          <div class="legend" style="flex-direction:row;gap:14px;margin-bottom:4px"><span class="li"><span class="sw" style="background:#E8578E"></span>Answered</span><span class="li"><span class="sw" style="background:#B99BDD"></span>Abandoned</span></div>
-          ${barStack(ohaRows, r=>r.ivr, 6)}</div>
-        <div class="col"><h3><span class="dot" style="background:var(--lav)"></span>Branch Share</h3>${donut(ohaRows, r=>r.ivr, i=>PAL[i], 5)}</div>
-      </div>
-    </div>`);
-
-  /* ---- Slide 3: Non-OHA IVR ---- */
-  const nonRows = weekRows(wk,"NON-OHA");
-  slides.push(`
-    <div class="shead"><div class="snum">3</div>
-      <div><div class="stitle">Non-OHA IVR Branch Performance</div><div class="ssub">Which branches handled the most calls</div></div>
-      <div class="spacer"></div><div class="weekbadge">${fmtWeekY(wk)}</div></div>
-    <div class="sbody">
-      <div class="kpis">
-        ${kpi("Non-OHA Calls", nf(WN.total), delta(WN.total, agg(weekRows(prev,"NON-OHA")).total))}
-        ${kpi("Answered", nf(WN.answered), delta(WN.answered, agg(weekRows(prev,"NON-OHA")).answered))}
-        ${kpi("Missed", nf(WN.missed), delta(WN.missed, agg(weekRows(prev,"NON-OHA")).missed))}
-        ${kpi("AHT", (WN.aht/60).toFixed(1)+"m", delta(WN.aht, agg(weekRows(prev,"NON-OHA")).aht, true, x=>(x/60).toFixed(1)+"m"))}
-      </div>
-      <div class="cols">
-        <div class="col"><h3><span class="dot" style="background:var(--blue)"></span>Answered vs Abandoned by IVR Branch</h3>
-          <div class="legend" style="flex-direction:row;gap:14px;margin-bottom:4px"><span class="li"><span class="sw" style="background:#E8578E"></span>Answered</span><span class="li"><span class="sw" style="background:#B99BDD"></span>Abandoned</span></div>
-          ${barStack(nonRows, r=>r.ivr, 6)}</div>
-        <div class="col"><h3><span class="dot" style="background:var(--mint)"></span>Branch Share</h3>${donut(nonRows, r=>r.ivr, i=>PAL[i], 5)}</div>
-      </div>
-    </div>`);
-
-  /* ---- Slide 4: Call Breakdown ---- */
-    const bdWO = bdWeek(wk,"OHA"), bdWN = bdWeek(wk,"NON-OHA");
-    slides.push(`
-      <div class="shead"><div class="snum">4</div>
-        <div><div class="stitle">Call Breakdown</div><div class="ssub">Why customers contacted us this week</div></div>
-        <div class="spacer"></div><div class="weekbadge">${fmtWeekY(wk)}</div></div>
-      <div class="sbody">
-        <div class="kpis">
-          ${kpi("Total Tickets", nf(bdW.length), delta(bdW.length,bdP.length))}
-          ${kpi("OHA Tickets", nf(bdWO.length), pct(bdWO.length,bdW.length).toFixed(0)+"% of total")}
-          ${kpi("Non-OHA Tickets", nf(bdWN.length), pct(bdWN.length,bdW.length).toFixed(0)+"% of total")}
-          ${kpi("Refund Tickets", nf(rrW.length), delta(rrW.length,rrP.length,true))}
-        </div>
-        <div class="cols">
-                  <div class="col"><h3><span class="dot" style="background:var(--pink)"></span>OHA Top Call Drivers</h3>${barChart(bdWO, r=>r.cat, "#E8578E", 6)}</div>
-                  <div class="col"><h3><span class="dot" style="background:var(--blue)"></span>Non-OHA Top Call Drivers</h3>${barChart(bdWN, r=>r.cat, "#7FB8E6", 6)}</div>
-                          </div>    </div>  </div>
-                        </div>`);
-
-  /* ---- Slide 5: Refund Overview ---- */
-    const rrWO = refundRows(bdWO), rrWN = refundRows(bdWN);
-    const amtWO = refundSum(bdWO), amtWN = refundSum(bdWN);
-    slides.push(`
-      <div class="shead"><div class="snum">5</div>
-        <div><div class="stitle">Refund Overview</div><div class="ssub">Refund tickets, amounts &amp; top reasons</div></div>
-        <div class="spacer"></div><div class="weekbadge">${fmtWeekY(wk)}</div></div>
-      <div class="sbody">
-        <div class="kpis">
-                  ${kpi("Total Tickets", nf(bdW.length), "")}
-                  ${kpi("Refund Tickets", nf(rrW.length), pct(rrW.length,bdW.length).toFixed(1)+"% of tickets")}
-                  ${kpi("Total Refunded", money(amtW), delta(amtW,amtP,money))}
-                  ${kpi("OHA Refunded", money(amtWO), nf(rrWO.length)+" tickets")}
-                  ${kpi("Non-OHA Refunded", money(amtWN), nf(rrWN.length)+" tickets")}
-                </div>
-        <div class="cols">
-          <div class="col"><h3><span class="dot" style="background:var(--pink)"></span>OHA Top Refund Reasons</h3>${barChart(rrWO, r=>r.sub, "#E8578E", 5)}</div>
-                    <div class="col"><h3><span class="dot" style="background:var(--blue)"></span>Non-OHA Top Refund Reasons</h3>${barChart(rrWN, r=>r.sub, "#7FB8E6", 5)}</div>
-        </div>
-      </div>`);
-
-  /* ---- Slide 6: WoW Refund Trends ---- */
-    const bdPO = bdWeek(prev,"OHA"), bdPN = bdWeek(prev,"NON-OHA");
-    const rrPO = refundRows(bdPO), rrPN = refundRows(bdPN);
-    const amtPO = refundSum(bdPO), amtPN = refundSum(bdPN);
-    slides.push(`
-      <div class="shead"><div class="snum">6</div>
-        <div><div class="stitle">Week-over-Week Refund Trends</div><div class="ssub">${fmtWeekY(prev)} vs ${fmtWeekY(wk)}</div></div>
-        <div class="spacer"></div><div class="weekbadge">${fmtWeekY(wk)}</div></div>
-      <div class="sbody">
-        <div class="kpis">
-          ${kpi("Prev Week Refunded", money(amtP), fmtWeek(prev))}
-          ${kpi("This Week Refunded", money(amtW), fmtWeek(wk))}
-          ${kpi("Change in Amount", money(amtW-amtP), delta(amtW,amtP,money))}
-          ${kpi("Change in Volume", (rrW.length-rrP.length>0?"+":"")+(rrW.length-rrP.length), delta(rrW.length,rrP.length))}
-        </div>
-        <div class="cols">
-          <div class="col">
-            <h3><span class="dot" style="background:var(--pink)"></span>OHA Refunded Amount</h3>
-            <div class="bars">
-              <div class="bar-row"><div class="bar-lbl">Prev Week</div><div class="bar-track"><div class="bar-fill" style="width:${amtPO&&amtWO?amtPO/amtWO*100:100}%;background:#B99BDD"><span>${money(amtPO)}</span></div></div><div class="bar-val">${money(amtPO)}</div></div>
-              <div class="bar-row"><div class="bar-lbl">This Week</div><div class="bar-track"><div class="bar-fill" style="width:100%;background:#E8578E"><span>${money(amtWO)}</span></div></div><div class="bar-val">${money(amtWO)}</div></div>
-            </div>
-          </div>
-          <div class="col">
-            <h3><span class="dot" style="background:var(--blue)"></span>Non-OHA Refunded Amount</h3>
-            <div class="bars">
-              <div class="bar-row"><div class="bar-lbl">Prev Week</div><div class="bar-track"><div class="bar-fill" style="width:${amtPN&&amtWN?amtPN/amtWN*100:100}%;background:#B99BDD"><span>${money(amtPN)}</span></div></div><div class="bar-val">${money(amtPN)}</div></div>
-              <div class="bar-row"><div class="bar-lbl">This Week</div><div class="bar-track"><div class="bar-fill" style="width:100%;background:#7FB8E6"><span>${money(amtWN)}</span></div></div><div class="bar-val">${money(amtWN)}</div></div>
-            </div>
-          </div>
-        </div>
-      </div>`);
-
-  /* ---- Slide 7: Back Office Hours ---- */
-  const boAgents = boByAgent(boW);
-    const boMax = boAgents.length?boAgents[0][1]:1;
-    slides.push(`
-      <div class="shead"><div class="snum">7</div>
-        <div><div class="stitle">Back Office Hours Overview</div><div class="ssub">Total back-office time by agent</div></div>
-        <div class="spacer"></div><div class="weekbadge">${fmtWeekY(wk)}</div></div>
-      <div class="sbody">
-        <div class="kpis">
-          ${kpi("Total Back-Office", fmtHrs(boWSum), delta(boWSum,boPSum,true,fmtHrs))}
-          ${kpi("Agents", nf(boAgents.length), "")}
-          ${kpi("Top Agent", esc(boAgents[0]?.[0]||"\u2014"), boAgents[0]?fmtHrs(boAgents[0][1]):"")}
-        </div>
-        <div class="cols">
-          <div class="col">
-            <h3><span class="dot" style="background:var(--pink)"></span>Back-Office Hours by Agent</h3>
-            <div class="team-bars">
-              ${boAgents.length?boAgents.map(([k,v])=>
-                '<div class="team-row"><div class="team-lbl">'+esc(k)+'</div><div class="team-track"><div class="team-fill" style="width:'+(v/boMax*100)+'%;background:#E8578E"><span>'+fmtHrs(v)+'</span></div></div><div class="team-val">'+fmtHrs(v)+'</div></div>').join("")
-                :'<div class="hl-card idea" style="flex:1"><ul><li><span class="ic">\u2139</span><span>No back-office status data for this week.</span></li></ul></div>'}
-            </div>
-          </div>
-        <div class="col">
-          <h3><span class="dot" style="background:var(--mint)"></span>Week-over-Week</h3>
-          <div class="bars">
-            <div class="bar-row"><div class="bar-lbl">Prev Week</div><div class="bar-track"><div class="bar-fill" style="width:${boPSum&&boWSum?boPSum/boWSum*100:0}%;background:#B99BDD"><span>${fmtHrs(boPSum)}</span></div></div><div class="bar-val">${fmtHrs(boPSum)}</div></div>
-            <div class="bar-row"><div class="bar-lbl">This Week</div><div class="bar-track"><div class="bar-fill" style="width:100%;background:#E8578E"><span>${fmtHrs(boWSum)}</span></div></div><div class="bar-val">${fmtHrs(boWSum)}</div></div>
-          </div>
-        </div>
-      </div>
-    </div>`);
-
-  /* ---- Slide 8: Weekly Highlights ---- */
-  const upList=[], downList=[], starList=[], ideaList=[], attnList=[];
-  if(W.total>P.total) upList.push("Total calls up <b>"+nf(W.total-P.total)+"</b> to <b>"+nf(W.total)+"</b>");
-  else if(W.total<P.total) downList.push("Total calls down <b>"+nf(P.total-W.total)+"</b> to <b>"+nf(W.total)+"</b>");
-  if(amtW>amtP) upList.push("Refunded amount up <b>"+money(amtW-amtP)+"</b> to <b>"+money(amtW)+"</b>");
-  else if(amtW<amtP) downList.push("Refunded amount down <b>"+money(amtP-amtW)+"</b> to <b>"+money(amtW)+"</b>");
-  if(rrW.length>rrP.length) upList.push("Refund tickets up <b>"+nf(rrW.length-rrP.length)+"</b> to <b>"+nf(rrW.length)+"</b>");
-  else if(rrW.length<rrP.length) downList.push("Refund tickets down <b>"+nf(rrP.length-rrW.length)+"</b> to <b>"+nf(rrW.length)+"</b>");
-  if(W.answerRate>P.answerRate) upList.push("Answer rate up <b>"+(W.answerRate-P.answerRate).toFixed(1)+"pp</b> to <b>"+W.answerRate.toFixed(1)+"%</b>");
-  else if(W.answerRate<P.answerRate) downList.push("Answer rate down <b>"+(P.answerRate-W.answerRate).toFixed(1)+"pp</b> to <b>"+W.answerRate.toFixed(1)+"%</b>");
-  if(boWSum>boPSum) upList.push("Back-office hours up <b>"+fmtHrs(boWSum-boPSum)+"</b> to <b>"+fmtHrs(boWSum)+"</b>");
-  else if(boWSum<boPSum) downList.push("Back-office hours down <b>"+fmtHrs(boPSum-boWSum)+"</b> to <b>"+fmtHrs(boWSum)+"</b>");
-  const topCat = topBy(bdW,r=>r.cat,1)[0]; if(topCat) starList.push("Top call driver: <b>"+esc(topCat[0])+"</b> ("+nf(topCat[1])+" tickets)");
-  const topSub = topBy(bdW,r=>r.sub,1)[0]; if(topSub) starList.push("Top reason: <b>"+esc(topSub[0])+"</b> ("+nf(topSub[1])+")");
-  const topRef = topBy(rrW,r=>r.sub,1)[0]; if(topRef) starList.push("Top refund reason: <b>"+esc(topRef[0])+"</b> ("+nf(topRef[1])+" tickets)");
-  const topBr = topBy(weekRows(wk,"ALL"),r=>r.ivr,1)[0]; if(topBr) starList.push("Busiest IVR branch: <b>"+esc(topBr[0])+"</b> ("+nf(topBr[1])+" calls)");
-  if(W.missRate>P.missRate) attnList.push("Missed rate rose to <b>"+W.missRate.toFixed(1)+"%</b> \u2014 worth watching next week");
-  if(amtW>amtP) attnList.push("Refunded amount increased \u2014 review top refund reasons");
-  if(boWSum>boPSum) attnList.push("Back-office load increased \u2014 check staffing balance");
-  if(!attnList.length) attnList.push("No major red flags this week \u2014 steady performance");
-  ideaList.push("Continue monitoring <b>"+esc(topCat?.[0]||"top driver")+"</b> as the leading contact reason");
-  ideaList.push("Keep an eye on <b>"+esc(topRef?.[0]||"refund reasons")+"</b> for recurring refund patterns");
-  const hl = (cls,ic,title,items)=>'<div class="hl-card '+cls+'"><h4><span>'+ic+'</span>'+title+'</h4><ul>'+items.map(i=>'<li><span class="ic">\u2022</span><span>'+i+'</span></li>').join("")+'</ul></div>';
-  slides.push(`
-    <div class="shead"><div class="snum">8</div>
-      <div><div class="stitle">Weekly Highlights</div><div class="ssub">Summary &amp; focus for next week</div></div>
-      <div class="spacer"></div><div class="weekbadge">${fmtWeekY(wk)}</div></div>
-    <div class="sbody">
-      <div class="hl-grid">
-        ${hl("up","\u25B2","Notable Increases",upList.length?upList:["No notable increases this week"])}
-        ${hl("down","\u25BC","Notable Decreases",downList.length?downList:["No notable decreases this week"])}
-        ${hl("star","\u2605","Key Performance Highlights",starList.length?starList:["No highlights recorded"])}
-        ${hl("idea","\u2139","Observations &amp; Next-Week Focus",ideaList)}
-      </div>
-    </div>`);
-
-  return slides;
+/* ---- delta ---- */
+function delta(cur, prevVal, opts){
+  opts = opts||{};
+  var d = (cur==null?0:cur) - (prevVal==null?0:prevVal);
+  var cls = d===0 ? 'flat' : ((d>0) ? (opts.invert?'down':'up') : (opts.invert?'up':'down'));
+  var arrow = d>0 ? '▲' : (d<0 ? '▼' : '•');
+  var f = opts.fmt ? opts.fmt(d) : moneyS(d);
+  return '<span class="delta '+cls+'">'+arrow+' '+f+'</span>';
 }
 
-/* ============================================================
-   NAVIGATION
-   ============================================================ */
+/* ---- components ---- */
+function kpi(lbl, val, sub, cls){
+  return '<div class="kpi '+(cls||'')+'"><div class="lbl">'+esc(lbl)+'</div>'+
+         '<div class="val">'+val+'</div>'+(sub?'<div class="sub">'+sub+'</div>':'')+'</div>';
+}
+function bars(rows, color, valFmt){
+  if(!rows || !rows.length) return '<div class="small" style="padding:10px">No data for this week.</div>';
+  var max = Math.max.apply(null, rows.map(function(r){ return r.v||0; }));
+  var out = '<div class="bars">';
+  rows.forEach(function(r){
+    var w = max>0 ? Math.max(4, (r.v/max)*100) : 0;
+    var vs = r.vs||'';
+    out += '<div class="bar-row"><div class="bar-lbl" title="'+esc(r.l)+'">'+esc(r.l)+'</div>'+
+      '<div class="bar-track"><div class="bar-fill" style="width:'+w+'%;background:'+color+'"></div></div>'+
+      '<div class="bar-val">'+value(r.v,valFmt)+' <span class="small">'+vs+'</span></div></div>';
+  });
+  return out + '</div>';
+}
+function vBars(rows, color, valFmt){
+  if(!rows || !rows.length) return '<div class="small" style="padding:10px">No data for this week.</div>';
+  var max = Math.max.apply(null, rows.map(function(r){ return r.v||0; }));
+  var out = '<div class="vbars">';
+  rows.forEach(function(r){
+    var h = max>0 ? Math.max(6, (r.v/max)*100) : 0;
+    out += '<div class="vbar"><div class="vbar-val">'+value(r.v,valFmt)+'</div>'+
+      '<div class="vbar-track"><div class="vbar-fill" style="height:'+h+'%;background:'+color+'"></div></div>'+
+      '<div class="vbar-lbl" title="'+esc(r.l)+'">'+esc(r.l)+'</div></div>';
+  });
+  return out + '</div>';
+}
+function stackedBars(rows, colorA, colorB){
+  if(!rows || !rows.length) return '<div class="small" style="padding:10px">No data.</div>';
+  var max = Math.max.apply(null, rows.map(function(r){ return (r.a||0)+(r.b||0); }));
+  var out = '<div class="bars">';
+  rows.forEach(function(r){
+    var tot=(r.a||0)+(r.b||0);
+    var wa=max>0?(r.a||0)/max*100:0, wb=max>0?(r.b||0)/max*100:0;
+    out += '<div class="bar-row"><div class="bar-lbl" title="'+esc(r.l)+'">'+esc(r.l)+'</div>'+
+      '<div class="bar-track" style="display:flex">'+
+        '<div class="bar-fill" style="width:'+wa+'%;background:'+colorA+';border-radius:8px 0 0 8px"></div>'+
+        '<div class="bar-fill" style="width:'+wb+'%;background:'+colorB+';border-radius:0 8px 8px 0"></div>'+
+      '</div><div class="bar-val"><b>'+nf(tot)+'</b></div></div>';
+  });
+  return out + '</div>';
+}
+function donut(parts, colors){
+  if(!parts || !parts.length) return '<div class="small" style="padding:10px">No data.</div>';
+  var total = parts.reduce(function(a,b){return a+(b.v||0);},0);
+  var R=42, C=2*Math.PI*R, acc=0;
+  var segs = parts.map(function(p,i){
+    var frac = total>0 ? (p.v||0)/total : 0;
+    var dash=frac*C, gap=C-dash, off=-acc*C; acc+=frac;
+    return '<circle r="'+R+'" cx="50" cy="50" fill="none" stroke="'+(colors[i%colors.length])+'" stroke-width="16" stroke-dasharray="'+dash+' '+gap+'" stroke-dashoffset="'+off+'"/>';
+  }).join('');
+  var legend = parts.map(function(p,i){
+    var pc = total>0 ? ((p.v||0)/total*100).toFixed(0) : 0;
+    return '<div class="li"><span class="sw" style="background:'+(colors[i%colors.length])+'"></span><span class="nm">'+esc(p.l)+'</span><span class="pc">'+pc+'%</span></div>';
+  }).join('');
+  return '<div class="donut-wrap"><div class="donut"><svg viewBox="0 0 100 100">'+segs+'</svg><div class="center"><div class="v">'+nf(total)+'</div><div class="l">calls</div></div></div><div class="legend">'+legend+'</div></div>';
+}
+function value(v,fmt){ return fmt?fmt(v):nf(v); }
+function slide(num, title, sub, bodyHtml, note){
+  var wb = sel ? '<span class="weekbadge">'+esc(weeks[sel].label)+'</span>' : '';
+  return '<section class="slide"><div class="shead">'+
+    '<div class="snum">'+num+'</div><div><div class="stitle">'+esc(title)+'</div>'+
+    '<div class="ssub">'+esc(sub||'')+'</div></div>'+wb+'</div>'+
+    '<div class="sbody">'+bodyHtml+'</div>'+
+    (note?'<div class="snote">'+note+'</div>':'')+
+    '<div class="foot"><div class="small">Danielle Ann Mari Crizaldo Weekly report</div>'+
+    '<div class="nvg"><span class="dots" id="dots"></span></div></div></section>';
+}
+
+/* ================= SLIDE 1 — IVR Branch Performance ================= */
+function s1(){
+  function ivrBlock(ch){
+    var rows = weekRows(sel, ch);
+    var g = new Map();
+    rows.forEach(function(r){ if(!g.has(r.ivr)) g.set(r.ivr,{answered:0,abandoned:0,total:0}); var o=g.get(r.ivr); o.total+=r.n; if(r.st==="answered")o.answered+=r.n; else if(r.st==="abandoned")o.abandoned+=r.n; });
+    var top = [...g.entries()].sort(function(a,b){return b[1].total-a[1].total;}).slice(0,5);
+    var stacked = top.map(function(x){ return {l:x[0], a:x[1].answered, b:x[1].abandoned}; });
+    var share = top.map(function(x){ return {l:x[0], v:x[1].total}; });
+    return '<div class="col"><h3>'+esc(ch)+' IVR — Top 5</h3>'+
+      '<div class="small" style="flex:none">Answered vs Abandoned by IVR Branch</div>'+
+      '<div class="legend-inline"><span class="li"><span class="sw" style="background:#E8578E"></span>Answered</span><span class="li"><span class="sw" style="background:#B99BDD"></span>Abandoned</span></div>'+
+      stackedBars(stacked,'#E8578E','#B99BDD')+
+      '<div class="small" style="flex:none">Branch Share</div>'+donut(share,['#E8578E','#B99BDD','#4E9BE5','#7FCBA6','#F0A579'])+'</div>';
+  }
+  return slide(1,'IVR Branch Performance','Top 5 IVR branches — answered vs abandoned & share',
+    '<div class="cols">'+ivrBlock('OHA')+ivrBlock('NON-OHA')+'</div>');
+}
+
+/* ================= SLIDE 2 — Call Breakdown ================= */
+function s2(){
+  var bd = bdWeek(sel,"ALL"), pbd = bdWeek(prev,"ALL");
+  var oha = bdWeek(sel,"OHA"), nonoha = bdWeek(sel,"NON-OHA");
+  var ohaDrivers = topBy(oha, function(r){return r.cat;}, 6).map(function(x){ return {l:x[0], v:x[1]}; });
+  var nonohaDrivers = topBy(nonoha, function(r){return r.cat;}, 6).map(function(x){ return {l:x[0], v:x[1]}; });
+  var krow = '<div class="kpis">'+
+    kpi('Total Tickets', nf(bd.length), pbd?delta(bd.length,pbd.length,{fmt:function(d){return (d>0?'+':'-')+nf(Math.abs(d));},invert:false}):'')+
+    kpi('OHA Tickets', nf(oha.length), bd.length? Math.round(oha.length/bd.length*100)+'% of total':'')+
+    kpi('Non-OHA Tickets', nf(nonoha.length), bd.length? Math.round(nonoha.length/bd.length*100)+'% of total':'')+
+    kpi('Refund Tickets', nf(refundRows(bd).length), pbd?delta(refundRows(bd).length,refundRows(pbd).length,{fmt:function(d){return (d>0?'+':'-')+nf(Math.abs(d));},invert:true}):'')+'</div>';
+  var body = krow + '<div class="cols">'+
+    '<div class="col"><h3><span class="dot" style="background:#E8578E"></span>OHA Top Call Drivers</h3>'+bars(ohaDrivers,'#E8578E',nf)+'</div>'+
+    '<div class="col"><h3><span class="dot" style="background:#4E9BE5"></span>Non-OHA Top Call Drivers</h3>'+bars(nonohaDrivers,'#4E9BE5',nf)+'</div></div>';
+  return slide(2,'Call Breakdown','Why customers contacted us this week', body);
+}
+
+/* ================= SLIDE 3 — Refund Overview ================= */
+function s3(){
+  var bd = bdWeek(sel,"ALL"), pbd = bdWeek(prev,"ALL");
+  var oha = bdWeek(sel,"OHA"), nonoha = bdWeek(sel,"NON-OHA");
+  var poha = bdWeek(prev,"OHA"), pnon = bdWeek(prev,"NON-OHA");
+  var ohaReasons = topBySum(oha, function(r){return r.sub;}, 4).map(function(x){ return {l:x[0], v:x[1], vs:nf(refundRows(oha).filter(function(r){return r.sub===x[0];}).length)+' tk'}; });
+  var nonohaReasons = topBySum(nonoha, function(r){return r.sub;}, 4).map(function(x){ return {l:x[0], v:x[1], vs:nf(refundRows(nonoha).filter(function(r){return r.sub===x[0];}).length)+' tk'}; });
+  var krow = '<div class="kpis">'+
+    kpi('OHA Tickets', nf(oha.length), '', 'tot')+
+    kpi('OHA Refund Tickets', nf(refundRows(oha).length), '', 'tot')+
+    kpi('Non-OHA Tickets', nf(nonoha.length), '', 'blue')+
+    kpi('Non-OHA Refund Tickets', nf(refundRows(nonoha).length), '', 'blue')+
+    kpi('OHA Refunded', money(refundSum(oha)), poha?delta(refundSum(oha),refundSum(poha),{fmt:moneyS,invert:true}):'', 'tot')+
+    kpi('Non-OHA Refunded', money(refundSum(nonoha)), pnon?delta(refundSum(nonoha),refundSum(pnon),{fmt:moneyS,invert:true}):'', 'blue')+'</div>';
+  var body = krow + '<div class="cols">'+
+    '<div class="col"><h3><span class="dot" style="background:#E8578E"></span>OHA Top Refund Reasons</h3>'+bars(ohaReasons,'#E8578E',money)+'</div>'+
+    '<div class="col"><h3><span class="dot" style="background:#4E9BE5"></span>Non-OHA Top Refund Reasons</h3>'+bars(nonohaReasons,'#4E9BE5',money)+'</div></div>'+
+    '<div class="col" style="flex:1"><h3>🏷 Top Refund Reason per Brand</h3>'+
+    '<div class="scrollbox"><table><thead><tr><th>Brand</th><th>Refunded</th><th>Tickets</th><th>Top Reason</th></tr></thead><tbody>'+
+    byBrandRows(bd)+
+    '</tbody></table></div></div>';
+  return slide(3,'Refund Overview','Refund tickets, amounts & top reasons per channel', body);
+}
+function byBrandRows(bd){
+  var m=new Map();
+  bd.forEach(function(r){ if(r.refund>0){ if(!m.has(r.brand)) m.set(r.brand,{refund:0,tickets:0,reasons:new Map()}); var o=m.get(r.brand); o.refund+=r.refund; o.tickets++; o.reasons.set(r.sub,(o.reasons.get(r.sub)||0)+1); } });
+  var arr=[...m.entries()].sort(function(a,b){return b[1].refund-a[1].refund;});
+  return arr.map(function(x){ var top=[...x[1].reasons.entries()].sort(function(a,b){return b[1]-a[1];})[0]; return '<tr><td>'+esc(x[0])+'</td><td>'+money(x[1].refund)+'</td><td>'+nf(x[1].tickets)+'</td><td>'+esc(top?top[0]:'—')+'</td></tr>'; }).join('') || '<tr><td colspan="4" class="small">No refund data.</td></tr>';
+}
+
+/* ================= SLIDE 4 — Week-over-Week Refund Trends ================= */
+function s4(){
+  var bd = bdWeek(sel,"ALL"), pbd = bdWeek(prev,"ALL");
+  var curAmt = refundSum(bd), prevAmt = refundSum(pbd);
+  var tr = refund_series(4);
+  var rows = '<div class="kpis">'+
+    kpi('Refund $ — now', money(curAmt), prevAmt!=null? 'vs '+money(prevAmt):'','accent')+
+    kpi('Refund Tickets', nf(refundRows(bd).length), pbd?'vs '+nf(refundRows(pbd).length):'')+
+    kpi('WoW Change', prevAmt!=null? moneyS(curAmt-prevAmt):'—', prevAmt? pctS((curAmt-prevAmt)/prevAmt*100):'')+'</div>';
+  var body = rows + '<div class="col" style="flex:1"><h3>📈 Refund Trend — refunded amount, last '+tr.length+' weeks</h3>'+vBars(tr,'#D9455F',money)+'</div>';
+  return slide(4,'Week-over-Week Refund Trends','Refunded amount across recent weeks', body);
+}
+function refund_series(n){
+  var arr = [];
+  var startIdx = WEEKS.indexOf(sel); if(startIdx<0) startIdx=WEEKS.length-1;
+  for(var i=startIdx;i>=0 && arr.length<n;i--){
+    var wk = WEEKS[i];
+    arr.unshift({l:fmtWeek(wk), v:refundSum(bdWeek(wk,"ALL"))});
+  }
+  return arr;
+}
+
+/* ================= SLIDE 5 — Back Office Hours ================= */
+function s5(){
+  var bo = boByAgent(boWeek(sel));
+  var total = bo.reduce(function(a,b){return a+b[1];},0);
+  var rows = bo.map(function(b){ return {l:b[0], v:b[1]/60}; });
+  var krow = '<div class="kpis">'+
+    kpi('Agents (back office)', nf(bo.length), 'this week')+
+    kpi('Total Back-Office Hours', nf(Math.round(total/60*10)/10)+' h', 'all agents','accent')+
+    kpi('Avg per Agent', bo.length? (Math.round(total/bo.length/60*10)/10)+' h':'0 h', 'active this week')+'</div>';
+  var body = krow + '<div class="col" style="flex:1"><h3>🕐 Back-Office Hours by Agent</h3>'+
+    (rows.length?'':'<div class="small" style="padding:12px">No back-office activity recorded this week.</div>')+
+    bars(rows,'#B99BDD',function(v){return v+' h';})+'</div>';
+  return slide(5,'Back Office Hours','Individual agent back-office time','<div style="display:flex;flex-direction:column;gap:16px;min-height:0;flex:1">'+body+'</div>');
+}
+
+var SLIDES = [s1,s2,s3,s4,s5];
+var sel = CUR, si = 0;
+var weeks = {}; WEEKS.forEach(function(w){ weeks[w]={label:fmtWeekY(w)}; });
+
+/* ---------- nav ---------- */
 function render(){
-  const wk = curWeek;
-  slides = buildSlides(wk);
-  deck.innerHTML = slides.map((s,i)=>'<div class="slide'+(i===curIdx?" active":"")+'" data-i="'+i+'">'+s+
-    '<div class="foot"><div>Weekly Call Team Report \u00b7 '+fmtWeekY(wk)+'</div>'+
-    '<div class="nav"><div class="dots">'+slides.map((_,i)=>'<span class="dot'+(i===curIdx?" on":"")+'" data-dot="'+i+'"></span>').join("")+'</div>'+
-    '<button class="btn" data-prev>\u2190 Prev</button><button class="btn" data-next>Next \u2192</button></div></div></div>').join("");
-  // week selector
-  const wb = document.createElement("div");
-  wb.className="weekbar";
-  wb.innerHTML='<select id="weekSel">'+WEEKS.map(w=>'<option value="'+w+'"'+(w===wk?" selected":"")+'>'+fmtWeekY(w)+'</option>').join("")+'</select>'+
-    '<span class="hint">\u2190 \u2192 to navigate slides \u00b7 Print / Ctrl+P to export PDF</span>';
-  deck.insertBefore(wb, deck.firstChild);
-  bind();
+  if(!sel){ document.getElementById('deck').innerHTML='<div class="small" style="padding:40px">No report data loaded.</div>'; return; }
+  si = Math.max(0, Math.min(si, SLIDES.length-1));
+  var holder = document.getElementById('deck');
+  holder.innerHTML = SLIDES[si]();
+  var act = holder.querySelector('.slide'); if(act) act.classList.add('active');
+  var dots = document.getElementById('dots');
+  if(dots){
+    dots.innerHTML = SLIDES.map(function(f,i){
+      return '<span class="dot'+(i===si?' on':'')+'" data-i="'+i+'" title="Slide '+(i+1)+'"></span>';
+    }).join('');
+    dots.querySelectorAll('.dot').forEach(function(d){ d.onclick=function(){ si=+d.getAttribute('data-i'); render(); }; });
+  }
 }
-function bind(){
-  document.querySelectorAll("[data-dot]").forEach(d=>d.onclick=()=>go(+d.dataset.dot));
-  document.querySelector("[data-prev]").onclick=()=>go(curIdx-1);
-  document.querySelector("[data-next]").onclick=()=>go(curIdx+1);
-  document.getElementById("weekSel").onchange=()=>{ curIdx=0; curWeek=document.getElementById("weekSel").value; render(); };
-}
-function go(i){
-  if(i<0||i>=slides.length) return;
-  const els=deck.querySelectorAll(".slide");
-  els[curIdx]&&els[curIdx].classList.remove("active");
-  els[curIdx]&&els[curIdx].classList.add("prev");
-  curIdx=i;
-  els[curIdx].classList.add("active");
-  els[curIdx].classList.remove("prev");
-  document.querySelectorAll(".foot .dot").forEach((d,j)=>d.classList.toggle("on",j===curIdx));
-  const p=document.getElementById("navPrev"), n=document.getElementById("navNext");
-  if(p) p.disabled = (curIdx===0);
-  if(n) n.disabled = (curIdx===slides.length-1);
-}
-document.addEventListener("keydown",e=>{
-  if(e.key==="ArrowRight"||e.key==="PageDown"||e.key===" "){e.preventDefault();go(curIdx+1);}
-  if(e.key==="ArrowLeft"||e.key==="PageUp"){e.preventDefault();go(curIdx-1);}
-  if(e.key==="Home"){e.preventDefault();go(0);}
-  if(e.key==="End"){e.preventDefault();go(slides.length-1);}
-});
-document.getElementById("navPrev").onclick=()=>go(curIdx-1);
-document.getElementById("navNext").onclick=()=>go(curIdx+1);
+function goTo(i){ si = Math.max(0, Math.min(SLIDES.length-1, i)); render(); }
+window.__goTo = goTo;
+window.__slideCount = function(){ return SLIDES.length; };
+function next(){ goTo(si+1); }
+function prev(){ goTo(si-1); }
 
-render();
+/* ---------- wire ---------- */
+window.addEventListener('DOMContentLoaded', function(){
+  var selEl = document.getElementById('weekSel');
+  selEl.innerHTML = WEEKS.slice().reverse().map(function(w){
+    return '<option value="'+w+'"'+(w===sel?' selected':'')+'>'+fmtWeekY(w)+'</option>';
+  }).join('');
+  selEl.onchange = function(){ sel = selEl.value; si=0; render(); };
+  document.getElementById('btnPrint').onclick = function(){ window.print(); };
+  document.getElementById('btnFull').onclick = function(){
+    if(document.fullscreenElement){ document.exitFullscreen(); } else { document.documentElement.requestFullscreen && document.documentElement.requestFullscreen().catch(function(){}); }
+  };
+  var bp=document.getElementById('btnPrev'), bn=document.getElementById('btnNext');
+  if(bp) bp.onclick = prev;
+  if(bn) bn.onclick = next;
+  document.addEventListener('keydown', function(e){
+    if(e.target && e.target.tagName==='SELECT') return;
+    if(e.key==='ArrowRight'||e.key==='PageDown'){ next(); }
+    else if(e.key==='ArrowLeft'||e.key==='PageUp'){ prev(); }
+    else if(e.key==='Home'){ goTo(0); }
+    else if(e.key==='End'){ goTo(SLIDES.length-1); }
+  });
+  document.getElementById('deck').addEventListener('click', function(e){
+    if(e.target.closest('.dot') || e.target.closest('.foot') || e.target.closest('table') || e.target.closest('.scrollbox')) return;
+    var r = document.getElementById('deck').getBoundingClientRect();
+    if(e.clientX > r.left + r.width*0.55){ next(); } else { prev(); }
+  });
+  render();
+});
+
+})();
 </script>
 </body>
 </html>
