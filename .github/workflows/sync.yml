@@ -4,7 +4,7 @@ name: Sync dashboard data
 # Uses GitHub's built-in GITHUB_TOKEN — no personal token, no local Git Bash.
 on:
   schedule:
-    - cron: "7 * * * *"          # every hour at 7 minutes past
+      - cron: "*/15 * * * *"        # every 15 minutes
   workflow_dispatch: {}           # also runnable manually from the Actions tab
 
 permissions:
