@@ -201,12 +201,7 @@ function wire(){
     if ($("bkConcern")) $("bkConcern").value="ALL";
     bkFillSelects(); bkRender();
   };
-  // Refresh Data button: hard-reload to pull the latest synced data.js
-  $("btnRefresh").onclick = () => {
-    const b = $("btnRefresh"); b.disabled = true; b.textContent = "↻ Refreshing…";
-    setTimeout(() => location.reload(true), 150);
-  };
-  $("btnReset").onclick = () => {
+    $("btnReset").onclick = () => {
     F.chan="ALL"; F.gran="daily"; F.picks.clear();
     F.agGran="weekly"; F.agPeriod=null;
     [...$("chanPills").children].forEach((x,i)=>x.classList.toggle("on", i===0));

@@ -29,18 +29,26 @@ h1,h2,h3{margin:0;font-weight:700;letter-spacing:-.01em}
 
 /* header */
 header.hero{background:linear-gradient(120deg,#E8578E 0%,#C93B72 45%,#8E5CA8 100%);
-  border-radius:24px;padding:26px 30px;color:#fff;box-shadow:var(--sh2);position:relative;overflow:hidden}
+  border-radius:24px;padding:26px 30px 20px;color:#fff;box-shadow:var(--sh2);position:relative;overflow:hidden}
 header.hero:after{content:"";position:absolute;right:-60px;top:-70px;width:260px;height:260px;
   border-radius:50%;background:rgba(255,255,255,.12)}
-header.hero h1{font-size:22px}
-header.hero p{margin:5px 0 0;opacity:.9;font-size:13px}
-.hero-meta{position:absolute;right:30px;top:24px;text-align:right;font-size:12px;opacity:.92;z-index:2;max-width:46%}
-.btn.refresh{margin-top:12px;background:rgba(255,255,255,.92);color:#C2185B;
-  border:1px solid rgba(255,255,255,.7);box-shadow:0 2px 8px rgba(120,20,80,.18);font-weight:600;
-  padding:8px 14px;border-radius:11px;cursor:pointer;font-size:12.5px;
-  display:inline-flex;align-items:center;gap:7px;z-index:3}
-.btn.refresh:hover{background:#fff;transform:translateY(-1px)}
-.btn.refresh:disabled{opacity:.7;cursor:progress}
+.hero-top{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;position:relative;z-index:2}
+.hero-brand{display:flex;align-items:center;gap:14px}
+.hero-logo{font-size:30px;line-height:1;filter:drop-shadow(0 3px 8px rgba(120,20,80,.35))}
+header.hero h1{font-size:24px;font-weight:800;letter-spacing:-.2px;margin:0}
+header.hero p{margin:4px 0 0;opacity:.92;font-size:13.5px;font-weight:500;letter-spacing:.02em}
+.hero-meta{text-align:right;font-size:12px;opacity:.92;z-index:2;max-width:46%;line-height:1.5}
+/* SPA page navigation — integrated into the header, professional tab bar */
+.topnav{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px;position:relative;z-index:2}
+.navbtn{border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.14);backdrop-filter:blur(4px);
+  color:#fff;border-radius:999px;padding:9px 18px;font:700 13px inherit;
+  letter-spacing:.01em;cursor:pointer;transition:.18s;white-space:nowrap}
+.navbtn:hover{transform:translateY(-2px);background:rgba(255,255,255,.28);border-color:rgba(255,255,255,.6)}
+.navbtn:active{transform:translateY(0)}
+.navbtn.on{background:#fff;color:#C2185B;border-color:#fff;
+  font-weight:800;box-shadow:0 6px 18px rgba(120,20,80,.35)}
+.pagehint{margin:14px 2px 0;font-size:11.5px;color:var(--ink2);background:var(--blush);
+  border:1px solid var(--line);border-radius:12px;padding:10px 14px}
 
 /* Call Breakdown: compact one-line filter bar */
 .break-controls{display:flex;flex-wrap:wrap;gap:14px;align-items:center;margin:16px 0 4px;
@@ -74,15 +82,6 @@ header.hero p{margin:5px 0 0;opacity:.9;font-size:13px}
 /* SPA page navigation */
 .page{display:block}
 .page[hidden]{display:none!important}
-.topnav{display:flex;flex-wrap:wrap;gap:9px;margin:16px 0 4px}
-.navbtn{border:2px solid var(--rose);background:#fff;
-  color:var(--rose-d);border-radius:999px;padding:11px 22px;font:800 13.5px inherit;
-  letter-spacing:.01em;cursor:pointer;transition:.18s;white-space:nowrap;box-shadow:0 3px 10px rgba(201,59,114,.12)}
-.navbtn:hover{transform:translateY(-2px);border-color:var(--rose-d);
-  background:linear-gradient(135deg,#FFF0F6,#FCE0EC);color:var(--rose-d);box-shadow:0 8px 22px rgba(201,59,114,.22)}
-.navbtn:active{transform:translateY(0)}
-.navbtn.on{background:linear-gradient(135deg,var(--rose),var(--rose-d));color:#fff;border-color:transparent;
-  font-weight:900;box-shadow:0 7px 22px rgba(201,59,114,.5)}
 .pagehint{margin:14px 2px 0;font-size:11.5px;color:var(--ink2);background:var(--blush);
   border:1px solid var(--line);border-radius:12px;padding:10px 14px}
 

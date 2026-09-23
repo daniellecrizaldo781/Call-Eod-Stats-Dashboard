@@ -1,24 +1,29 @@
 <!DOCTYPE html><html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Call EOD Stats Dashboard</title><link rel="icon" type="image/svg+xml" href="favicon.svg"><link rel="stylesheet" href="styles.css?v=20260923-43a4e8db0c"></head>
+<title>Call Team Dashboard</title><link rel="icon" type="image/svg+xml" href="favicon.svg"><link rel="stylesheet" href="styles.css?v=20260923-43a4e8db0c"></head>
 <body><div class="wrap">
 
 <header class="hero">
-  <h1>&#128151; CALL EOD STATS DASHBOARD</h1>
-  <p>OHA &amp; Non-OHA Inbound Call Performance &mdash; Team Lead Command Center</p>
-  <div class="hero-meta"><div id="metaRange">&mdash;</div><div id="metaGen" style="opacity:.75"></div>
-    <button class="btn ghost refresh" id="btnRefresh" title="Reload the latest synced data from Google Sheets">&#8635; Refresh Data</button></div>
-</header>
-
-<!-- page navigation (SPA) -->
-<nav class="topnav">
-  <button class="navbtn on" id="navMain" data-page="main">&#127968; Main Dashboard</button>
-  <button class="navbtn" id="navIvr" data-page="ivr">&#128241; IVR Branch Performance</button>
-  <button class="navbtn" id="navBreak" data-page="break">&#128202; Call Breakdown</button>
-  <button class="navbtn" id="navAgent" data-page="agent">&#128100; Agent Performance</button>
-  <button class="navbtn" id="navForecast" data-page="forecast">&#128202; Call Forecast &amp; Staffing</button>
+  <div class="hero-top">
+    <div class="hero-brand">
+      <span class="hero-logo">&#128151;</span>
+      <div>
+        <h1>Call Team Dashboard</h1>
+        <p>Call Team Command Center</p>
+      </div>
+    </div>
+    <div class="hero-meta"><div id="metaRange">&mdash;</div><div id="metaGen" style="opacity:.75"></div></div>
+  </div>
+  <!-- page navigation (SPA) -->
+  <nav class="topnav">
+    <button class="navbtn on" id="navMain" data-page="main">&#127968; Main Dashboard</button>
+    <button class="navbtn" id="navIvr" data-page="ivr">&#128241; IVR Branch Performance</button>
+    <button class="navbtn" id="navBreak" data-page="break">&#128202; Call Breakdown</button>
+    <button class="navbtn" id="navAgent" data-page="agent">&#128100; Agent Performance</button>
+    <button class="navbtn" id="navForecast" data-page="forecast">&#128202; Call Forecast &amp; Staffing</button>
     <button class="navbtn" id="navReport" data-page="report">&#128202; Weekly Report</button>
-    </nav>
+  </nav>
+</header>
 
 <div class="filters">
   <div class="fgroup"><span class="flabel">Main Channel</span>
