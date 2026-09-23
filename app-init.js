@@ -1,31 +1,33 @@
 /* ---------- wiring + init ---------- */
 // Top-most period quick-navigators: WEEK + MONTH (mutually exclusive). Both set F.from/F.to.
 function buildPeriodNav(){
-  const wk = listWeeks();
+  const wk = listWeeks();                    // oldest -> newest
+  const wkRev = [...wk].reverse();           // latest -> oldest (dropdown order)
+  const curWeek = wk[wk.length-1];           // latest week with data
   $("fWeek").innerHTML = ['<option value="ALL">All weeks</option>']
-    .concat(wk.map(s => '<option value="'+s+'">'+fmtWeek(s)+'</option>')).join("");
-  $("fWeek").value = "ALL";
+    .concat(wkRev.map(s => '<option value="'+s+'">'+fmtWeek(s)+'</option>')).join("");
+  $("fWeek").value = curWeek;                // default to the current week
+  applyWeek(curWeek);                        // set F.from/F.to to the current week
   const mo = listMonths();
   $("fMonth").innerHTML = ['<option value="ALL">All months</option>']
     .concat(mo.map(s => '<option value="'+s+'">'+fmtMonth(s)+'</option>')).join("");
   $("fMonth").value = "ALL";
   // weekly scope for the daily breakdown chart under "Volume & Mix"
-  const dw = listWeeks();
+  const dw = [...wk].reverse();
   $("fDayWeek").innerHTML = ['<option value="ALL">All weeks (whole range)</option>']
     .concat(dw.map(s => '<option value="'+s+'">'+fmtWeek(s)+'</option>')).join("");
-  $("fDayWeek").value = "ALL";
+  $("fDayWeek").value = curWeek;             // mirror the current week
   // monthly scope for the daily breakdown chart
   const dm = listMonths();
   $("fDayMonth").innerHTML = ['<option value="ALL">All months (whole range)</option>']
     .concat(dm.map(s => '<option value="'+s+'">'+fmtMonth(s)+'</option>')).join("");
   $("fDayMonth").value = "ALL";
   // Agent Status History week toggle (filters status rows directly)
-  const sw = listWeeks();
   const stw = $("stWeek");
   if (stw){
     stw.innerHTML = ['<option value="ALL">All weeks</option>']
-      .concat(sw.map(s => '<option value="'+s+'">'+fmtWeek(s)+'</option>')).join("");
-    stw.value = "ALL";
+      .concat(dw.map(s => '<option value="'+s+'">'+fmtWeek(s)+'</option>')).join("");
+    stw.value = curWeek;
   }
 }
 function deselectPeriod(id){
