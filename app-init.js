@@ -23,14 +23,15 @@ function buildPeriodNav(){
     .concat(dm.map(s => '<option value="'+s+'">'+fmtMonth(s)+'</option>')).join("");
   $("fDayMonth").value = "ALL";
   // Agent Status History week toggle (filters status rows directly)
-  const stw = $("stWeek");
-  if (stw){
-    stw.innerHTML = ['<option value="ALL">All weeks</option>']
-      .concat(dw.map(s => '<option value="'+s+'">'+fmtWeek(s)+'</option>')).join("");
-    stw.value = curWeek;
-  }
-}
-function deselectPeriod(id){
+    const stw = $("stWeek");
+    if (stw){
+      stw.innerHTML = ['<option value="ALL">All weeks</option>']
+        .concat(dw.map(s => '<option value="'+s+'">'+fmtWeek(s)+'</option>')).join("");
+      stw.value = curWeek;
+            F.stWeek = curWeek;   // default the status tables to the current week too
+          }
+        }
+      function deselectPeriod(id){
   // when one period navigator is used, reset the other to "All" so they don't fight
   const other = id === "fWeek" ? "fMonth" : "fWeek";
   const el = $(other); if (el && el.value !== "ALL"){ el.value = "ALL"; }

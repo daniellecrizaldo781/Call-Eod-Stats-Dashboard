@@ -1,6 +1,6 @@
 <!DOCTYPE html><html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Call EOD Stats Dashboard</title><link rel="stylesheet" href="styles.css?v=20260923-93eddf805d"></head>
+<title>Call EOD Stats Dashboard</title><link rel="icon" type="image/svg+xml" href="favicon.svg"><link rel="stylesheet" href="styles.css?v=20260923-93eddf805d"></head>
 <body><div class="wrap">
 
 <header class="hero">
@@ -17,9 +17,8 @@
   <button class="navbtn" id="navBreak" data-page="break">&#128202; Call Breakdown</button>
   <button class="navbtn" id="navAgent" data-page="agent">&#128100; Agent Performance</button>
   <button class="navbtn" id="navForecast" data-page="forecast">&#128202; Call Forecast &amp; Staffing</button>
-  <button class="navbtn" id="navSched" data-page="sched">&#128197; Call Schedule</button>
-  <button class="navbtn" id="navReport" data-page="report">&#128202; Weekly Report</button>
-</nav>
+    <button class="navbtn" id="navReport" data-page="report">&#128202; Weekly Report</button>
+    </nav>
 
 <div class="filters">
   <div class="fgroup"><span class="flabel">Main Channel</span>
@@ -275,11 +274,6 @@
   <div id="forecastRoot"></div>
 </section>
 
-<!-- ============================ PAGE: CALL SCHEDULE ============================ -->
-<section class="page" id="pageSched" hidden>
-  <div id="schedRoot"></div>
-</section>
-
 <!-- ============================ PAGE: WEEKLY REPORT ============================ -->
 <section class="page" id="pageReport" hidden>
   <div class="pagehint">&#128202; Weekly Call Team Report &mdash; present with &#8592;/&#8594; arrow keys, or Print / Ctrl+P to export a PDF. Auto-updates with the latest synced data.
@@ -299,7 +293,6 @@
 <script src="app-render3.js?v=20260923-93eddf805d"></script>
 <script src="app-breakdown.js?v=20260923-93eddf805d"></script>
 <script src="app-forecast.js?v=20260923-93eddf805d"></script>
-<script src="app-schedule.js?v=20260923-93eddf805d"></script>
 <script src="app-status.js?v=20260923-93eddf805d"></script>
 <script src="app-init.js?v=20260923-93eddf805d"></script>
 </body></html>
