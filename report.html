@@ -106,6 +106,9 @@ body{
 .bar-lbl{width:150px; font-size:12px; font-weight:700; color:var(--ink); text-align:right; flex:none; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
 .bar-track{flex:1; height:20px; background:#F7F0F4; border-radius:8px; overflow:hidden;}
 .bar-fill{height:100%; border-radius:8px; min-width:0;}
+.bar-fill .seg-count{display:inline-block; font-size:10px; font-weight:800; color:#fff; padding:0 5px; line-height:20px; white-space:nowrap; text-shadow:0 1px 2px rgba(0,0,0,.25);}
+.bar-val.hl{font-weight:800; color:#D9455F;}
+.bar-val.hl .small{font-weight:600; color:var(--muted);}
 .bar-val{width:88px; font-size:11.5px; font-weight:700; color:var(--muted); flex:none; text-align:left; white-space:nowrap;}
 .bar-val b{color:var(--ink);}
 
@@ -135,6 +138,25 @@ tr td:first-child{font-weight:700;}
 .legend .sw{width:11px;height:11px;border-radius:4px;flex:none;}
 .legend .nm{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .legend .pc{font-weight:700;color:var(--ink);}
+/* compact IVR slide (slide 2) */
+.cols.ivr .bars{gap:5px;}
+.cols.ivr .bar-track{height:18px;}
+.cols.ivr .bar-lbl{font-size:11px;}
+.cols.ivr .donut{width:96px;height:96px;}
+.cols.ivr .donut .center .v{font-size:15px;}
+.cols.ivr .donut .center .l{font-size:8px;}
+.cols.ivr .legend{font-size:11px;gap:4px;}
+.cols.ivr .legend .sw{width:9px;height:9px;}
+.cols.ivr .small{font-size:10px;}
+/* combo chart (slide 5) */
+.combo{width:100%;}
+.combo svg{display:block;}
+.cl-lbl{font-size:11px; fill:var(--muted); font-weight:600;}
+.cl-val{font-size:12px; fill:var(--ink); font-weight:800;}
+.cl-delta{font-size:11px; font-weight:800;}
+.cl-delta.up{fill:#2E9E6B;}
+.cl-delta.down{fill:#D9455F;}
+.cl-delta.flat{fill:var(--muted);}
 .small{font-size:11px; color:var(--muted);}
 .bigv{font-size:46px; font-weight:800; letter-spacing:-1px; line-height:1;}
 .bigv small{font-size:18px; font-weight:700; color:var(--muted); letter-spacing:0;}
@@ -191,7 +213,7 @@ tr td:first-child{font-weight:700;}
 </div>
 
 <div id="deck">
-  <!-- slides injected here -->
+  <!-- slides injected here by deck.js -->
 </div>
 <button class="navarrow left" id="btnPrev" title="Previous slide">◀</button>
 <button class="navarrow right" id="btnNext" title="Next slide">▶</button>
@@ -199,9 +221,11 @@ tr td:first-child{font-weight:700;}
 <!--
   This report reuses the weeklyreport dashboard's shared deck.js + report-data.js
   (loaded from weeklyreport.daniellecrizaldo.com) so that any layout change to a
-  slide there is reflected here automatically. We only render slides 2-6
-  (skip slide 1 = Sales, skip the last 2 = Team Weekly Performance + Scorecard
-  Record) by setting window.__REPORT_SLIDES before deck.js loads.
+  slide there — including highlights and text colors — is reflected here exactly.
+  We only render slides 2-6 (skip slide 1 = Sales, skip the last 2 = Team Weekly
+  Performance + Scorecard Record) by setting window.__REPORT_SLIDES before deck.js
+  loads. The CSS below is copied verbatim from the weeklyreport dashboard's
+  index.html so the format, highlights and text colors match pixel-for-pixel.
 -->
 <script>window.__REPORT_SLIDES = [2,3,4,5,6];</script>
 <script src="https://weeklyreport.daniellecrizaldo.com/report-data.js"></script>
