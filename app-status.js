@@ -188,14 +188,14 @@ function renderStatus(){
       $("chStatusBO").innerHTML = '<div class="empty">No back-office hours for this selection.</div>';
     }
 
-    // DND (Do Not Disturb) bar chart -- show HOURS (value is minutes in data).
-    const dnd = agents.filter(a => a.dnd_min > 0).slice(0, boTop);
-    if (dnd.length){
-      hBars("chStatusDND", dnd.map(a => ({label:a.name, value:a.dnd_min/60,
-        note: fmtHrs(a.dnd_min) + " DND"})), {unit:"h", labelW:160, color:"#4E9BE5"});
-    } else {
-      $("chStatusDND").innerHTML = '<div class="empty">No DND hours for this selection.</div>';
-    }
+    // DND (Do Not Disturb) bar chart -- always show TOP 5, highest → lowest.
+          const dnd = agents.filter(a => a.dnd_min > 0).sort((x,y) => y.dnd_min - x.dnd_min).slice(0, 5);
+      if (dnd.length){
+        hBars("chStatusDND", dnd.map(a => ({label:a.name, value:a.dnd_min/60,
+          note: fmtHrs(a.dnd_min) + " DND"})), {unit:"h", labelW:160, color:"#4E9BE5"});
+      } else {
+        $("chStatusDND").innerHTML = '<div class="empty">No DND hours for this selection.</div>';
+      }
 
   // Aux-jumping table  -- with a "What Causes It" column explaining the away-aux flicker
   const flagged = jumpers.slice().sort((x,y) => y.jumps - x.jumps);
