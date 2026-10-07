@@ -84,19 +84,20 @@ function renderStatus(){
   const JUMP_WINDOW = 10; // minutes: away flicker must resolve this fast before going online
 
   // aggregate per agent
-  const A = {};   // agent -> {team, team_key, min, bo_min, auxes, statusMin}
-  // per-agent per-day timeline (event clock = cumulative minutes from day start)
-  const TL = {};  // agent -> { date -> {last, ev:[{state, off}]} }
-  filt.forEach(r => {
-    const a = A[r.agent] || (A[r.agent] = {team:r.team, team_key:r.team_key, min:0, bo_min:0,
-      auxes:{}, statusMin:{}});
-    const m = +r.min || 0;
-    a.min += m;
-    if (isBack(r.status)) a.bo_min += m;
-    const ns = normStatus(r.status);
-    if (ns) a.auxes[ns] = (a.auxes[ns]||0) + m;
-    if (r.status) a.statusMin[r.status] = (a.statusMin[r.status]||0) + m;
-    // timeline
+  const A = {};   // agent -> {team, team_key, min, bo_min, dnd_min, auxes, statusMin}
+    // per-agent per-day timeline (event clock = cumulative minutes from day start)
+    const TL = {};  // agent -> { date -> {last, ev:[{state, off}]} }
+    filt.forEach(r => {
+      const a = A[r.agent] || (A[r.agent] = {team:r.team, team_key:r.team_key, min:0, bo_min:0,
+        dnd_min:0, auxes:{}, statusMin:{}});
+      const m = +r.min || 0;
+      a.min += m;
+      if (isBack(r.status)) a.bo_min += m;
+      if ((r.status||"").toLowerCase().replace(/ /g,"_") === "do_not_disturb") a.dnd_min += m;
+      const ns = normStatus(r.status);
+      if (ns) a.auxes[ns] = (a.auxes[ns]||0) + m;
+      if (r.status) a.statusMin[r.status] = (a.statusMin[r.status]||0) + m;
+      // timeline
     TL[r.agent] = TL[r.agent] || {};
     const day = TL[r.agent][r.d] || (TL[r.agent][r.d] = {last:0, ev:[]});
     day.ev.push({state:(r.status||"").toLowerCase(), off:day.last});
@@ -146,8 +147,8 @@ function renderStatus(){
     let jumps = 0;
     const days = TL[n] || {};
     Object.keys(days).forEach(d => { jumps += computeJumps(days[d].ev, cause); });
-    return {name:n, team:a.team, team_key:a.team_key, min:a.min, bo_min:a.bo_min,
-            jumps, cause, distinct_aux:Object.keys(a.auxes).length, auxes:a.auxes, statusMin:a.statusMin};
+    return {name:n, team:a.team, team_key:a.team_key, min:a.min, bo_min:a.bo_min, dnd_min:a.dnd_min,
+                jumps, cause, distinct_aux:Object.keys(a.auxes).length, auxes:a.auxes, statusMin:a.statusMin};
   });
 
   const s = ($("stSort") ? $("stSort").value : "bo_desc");
@@ -164,23 +165,37 @@ function renderStatus(){
   const topBO   = agents.length ? agents[0] : null;
 
   // KPIs
-  wrap.innerHTML =
-      kpi("Back-Office Hours", fmtHrs(totalBO), teamLabel + (wk!=="ALL" ? " · " + fmtWeek(wk) : " · total"), "alt")
-    + kpi("Agents Tracked", nf(agents.length), teamLabel, "big")
-    + kpi("Aux-Jumping Agents", nf(jumpers.length), "away-aux flicker before online", jumpers.length ? "bad" : "good")
-    + kpi("Top Back-Office", topBO ? esc(topBO.name) : "—",
-          topBO ? fmtHrs(topBO.bo_min) : "", "warn");
+    const totalDND = agents.reduce((s, a) => s + a.dnd_min, 0);
+    const topDND  = agents.length ? agents.slice().sort((x,y)=>y.dnd_min-x.dnd_min)[0] : null;
+    wrap.innerHTML =
+        kpi("Back-Office Hours", fmtHrs(totalBO), teamLabel + (wk!=="ALL" ? " · " + fmtWeek(wk) : " · total"), "alt")
+      + kpi("Agents Tracked", nf(agents.length), teamLabel, "big")
+      + kpi("Aux-Jumping Agents", nf(jumpers.length), "away-aux flicker before online", jumpers.length ? "bad" : "good")
+      + kpi("Top Back-Office", topBO ? esc(topBO.name) : "—",
+            topBO ? fmtHrs(topBO.bo_min) : "", "warn")
+      + kpi("DND Hours", fmtHrs(totalDND), teamLabel + (wk!=="ALL" ? " · " + fmtWeek(wk) : " · total"), "alt")
+      + kpi("Top DND", topDND && topDND.dnd_min>0 ? esc(topDND.name) : "—",
+            topDND && topDND.dnd_min>0 ? fmtHrs(topDND.dnd_min) : "", "warn");
 
   // Back-office bar chart -- show HOURS (value is minutes in data).
-  // Entire Call Team: top 5 only; individual teams: top 20.
-  const boTop = (team === "all") ? 5 : 20;
-  const bo = agents.filter(a => a.bo_min > 0).slice(0, boTop);
-  if (bo.length){
-    hBars("chStatusBO", bo.map(a => ({label:a.name, value:a.bo_min/60,
-      note: fmtHrs(a.bo_min) + " back-office"})), {unit:"h", labelW:160, color:"#B99BDD"});
-  } else {
-    $("chStatusBO").innerHTML = '<div class="empty">No back-office hours for this selection.</div>';
-  }
+    // Entire Call Team: top 5 only; individual teams: top 20.
+    const boTop = (team === "all") ? 5 : 20;
+    const bo = agents.filter(a => a.bo_min > 0).slice(0, boTop);
+    if (bo.length){
+      hBars("chStatusBO", bo.map(a => ({label:a.name, value:a.bo_min/60,
+        note: fmtHrs(a.bo_min) + " back-office"})), {unit:"h", labelW:160, color:"#B99BDD"});
+    } else {
+      $("chStatusBO").innerHTML = '<div class="empty">No back-office hours for this selection.</div>';
+    }
+
+    // DND (Do Not Disturb) bar chart -- show HOURS (value is minutes in data).
+    const dnd = agents.filter(a => a.dnd_min > 0).slice(0, boTop);
+    if (dnd.length){
+      hBars("chStatusDND", dnd.map(a => ({label:a.name, value:a.dnd_min/60,
+        note: fmtHrs(a.dnd_min) + " DND"})), {unit:"h", labelW:160, color:"#4E9BE5"});
+    } else {
+      $("chStatusDND").innerHTML = '<div class="empty">No DND hours for this selection.</div>';
+    }
 
   // Aux-jumping table  -- with a "What Causes It" column explaining the away-aux flicker
   const flagged = jumpers.slice().sort((x,y) => y.jumps - x.jumps);
