@@ -267,12 +267,18 @@
     <div class="scroll"><table id="tStatusJump"></table></div></div>
 
   <div class="card emphasis" style="margin-top:16px"><div class="card-hd"><h3>Time in Status per Status &mdash; per Agent</h3>
-    <span class="sub">hours in each aux/status, per agent (for the selected team &amp; week)</span></div>
-    <div class="scroll"><table id="tStatusPerAgent"></table></div>
-    <div id="stStatusLegend" class="legend"></div></div>
+      <span class="sub">hours in each aux/status, per agent (for the selected team &amp; week)</span></div>
+      <div class="scroll"><table id="tStatusPerAgent"></table></div>
+      <div id="stStatusLegend" class="legend"></div></div>
 
-  <div class="card bo-daily" style="margin-top:16px"><div class="card-hd"><h3>Daily Back-Office Hours per Agent</h3>
-    <span class="sub">per-day back-office hrs (doing_back_office) per agent &mdash; wide pivot (one column per date in the week)</span></div>
+    <div class="card status-daily" style="margin-top:16px"><div class="card-hd"><h3>Daily Status Hours per Agent</h3>
+      <span class="sub">per-day hours for a selected status, per agent &mdash; wide pivot (one column per date in the week)</span></div>
+      <div class="chipbox" style="margin-bottom:8px"><label class="flabel" style="margin-right:6px">Status</label>
+        <select id="stDailyStatusSel" class="pillsel" style="min-width:200px"></select></div>
+      <div class="scroll"><table id="tStatusDailyStatus"></table></div></div>
+
+    <div class="card bo-daily" style="margin-top:16px"><div class="card-hd"><h3>Daily Back-Office Hours per Agent</h3>
+        <span class="sub">per-day back-office hrs (doing_back_office) per agent &mdash; wide pivot (one column per date in the week)</span></div>
     <div id="stDailyBOChips" class="chipbox"></div>
     <div class="scroll"><table id="tStatusDailyBO"></table></div></div>
   </div><!-- /.status-wrap -->

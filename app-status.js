@@ -245,13 +245,69 @@ function renderStatus(){
     perRows.length ? perRows :
       [{a:'<div class="empty" style="padding:14px">No status data for this selection.</div>', t:"", tot:"", bo:""}]);
   // legend mapping abbreviations -> full status names
-  const leg = $("stStatusLegend");
-  if (leg){
-    leg.innerHTML = "<b>Status key:</b> " + allSt.map(s =>
-      '<span class="lg"><b>'+(STATUS_ABBR[s]||s)+'</b> = '+esc(s)+'</span>').join(" &middot; ");
-  }
+    const leg = $("stStatusLegend");
+    if (leg){
+      leg.innerHTML = "<b>Status key:</b> " + allSt.map(s =>
+        '<span class="lg"><b>'+(STATUS_ABBR[s]||s)+'</b> = '+esc(s)+'</span>').join(" &middot; ");
+    }
 
-  // Daily back-office hours per agent -- wide pivot (Agent | Team | Total | <date>...)
+    // Daily status hours per agent -- wide pivot (Agent | Team | Total | <date>...)
+    // for a status chosen from the dropdown. Re-renders on dropdown change.
+    (function(){
+      const selEl = $("stDailyStatusSel");
+      const tEl   = $("tStatusDailyStatus");
+      if (!selEl || !tEl) return;
+
+      // remember the user's chosen status across re-renders (default: first status)
+      if (typeof window.__stDailySel === "undefined") window.__stDailySel = allSt[0] || "";
+      const cur = window.__stDailySel;
+
+      // populate dropdown (statuses present in this selection)
+      selEl.innerHTML = allSt.map(s =>
+        '<option value="'+esc(s)+'"'+(s===cur?' selected':'')+'>'+esc(STATUS_ABBR[s]||s)+' &mdash; '+esc(s)+'</option>').join("");
+
+      function renderDaily(){
+        const st = selEl.value;
+        window.__stDailySel = st;
+        const byAD = {};    // "agent|date" -> {agent, team, d, min}
+        const dates = new Set();
+        filt.forEach(r => {
+          if ((r.status||"") !== st) return;
+          dates.add(r.d);
+          const key = r.agent + "|" + r.d;
+          const o = byAD[key] || (byAD[key] = {agent:r.agent, team:r.team, team_key:r.team_key, d:r.d, min:0});
+          o.min += +r.min || 0;
+        });
+        const dateCols = [...dates].sort();
+        const byA = {};   // agent -> {agent, team, total, byDate}
+        Object.keys(byAD).forEach(k => {
+          const o = byAD[k];
+          const a = byA[o.agent] || (byA[o.agent] = {agent:o.agent, team:o.team, team_key:o.team_key, total:0, byDate:{}});
+          a.total += o.min;
+          a.byDate[o.d] = (a.byDate[o.d] || 0) + o.min;
+        });
+        let rows = Object.keys(byA).map(ag => {
+          const a = byA[ag];
+          return {ag, t:'<span class="tag lav">'+esc(a.team)+'</span>', tot:a.total,
+                  _rows: Object.keys(a.byDate).map(d => ({d, m:a.byDate[d], _fmt:fmtHrs(a.byDate[d])}))};
+        });
+        rows.sort((x,y) => y.tot - x.tot);
+        const flatRows = rows.map(r => {
+          const out = {ag:esc(r.ag), team:r.t, tot:fmtHrs(r.tot), _tot:r.tot};
+          dateCols.forEach(d => { out["_"+d] = r._rows.find(x => x.d===d) ? r._rows.find(x=>x.d===d)._fmt : ""; });
+          return out;
+        });
+        const cols = [{t:"Agent",k:"ag"},{t:"Team",k:"team"},{t:"Total "+esc(STATUS_ABBR[st]||st)+" Hrs",k:"tot",n:1}];
+        dateCols.forEach(d => cols.push({t:fmtDY(d),k:"_"+d}));
+        tbl(tEl, cols,
+          flatRows.length ? flatRows :
+            [{ag:'<div class="empty" style="padding:14px">No '+esc(st)+' hours for this selection.</div>', team:"", tot:"", _tot:0}]);
+      }
+      selEl.onchange = renderDaily;
+      renderDaily();
+    })();
+
+    // Daily back-office hours per agent -- wide pivot (Agent | Team | Total | | <date>...)
   // Plus chips: highest-ever single-day BO, lowest active single-day BO, and target.
   (function(){
     const byAD = {};    // "agent|date" -> {agent, team, d, bo_min}
