@@ -63,7 +63,7 @@ function renderStatus(){
     wrap.innerHTML = '<div class="empty" style="padding:18px">No Agent Status History data. '
       + 'Add the <b>STATUS_SHEET</b> repo secret (SHEET_ID|GID_BRAI|GID_DANIELLE|GID_CESS) and '
       + 'make the sheet public ("Anyone with the link can view"). The hourly sync will populate this section.</div>';
-    ["chStatusBO","tStatusJump","tStatusPerAgent","tStatusDailyBO"].forEach(id => { const e=$(id); if (e) e.innerHTML=""; });
+    ["chStatusBO","tStatusJump","tStatusPerAgent","tStatusDailyStatus"].forEach(id => { const e=$(id); if (e) e.innerHTML=""; });
     return;
   }
 
@@ -306,73 +306,4 @@ function renderStatus(){
       selEl.onchange = renderDaily;
       renderDaily();
     })();
-
-    // Daily back-office hours per agent -- wide pivot (Agent | Team | Total | | <date>...)
-  // Plus chips: highest-ever single-day BO, lowest active single-day BO, and target.
-  (function(){
-    const byAD = {};    // "agent|date" -> {agent, team, d, bo_min}
-    const dates = new Set();
-    filt.forEach(r => {
-      if (!isBack(r.status)) return;
-      dates.add(r.d);
-      const key = r.agent + "|" + r.d;
-      const o = byAD[key] || (byAD[key] = {agent:r.agent, team:r.team, team_key:r.team_key, d:r.d, bo_min:0});
-      o.bo_min += +r.min || 0;
-    });
-
-    // distinct dates (Mon->Sun as they appear), then sorted for column headers
-    const dateCols = [...dates].sort();
-
-    // aggregate per agent across all days in the selection
-    const byA = {};   // agent -> {agent, team, team_key, total:0, byDate:{date:min}}
-    Object.keys(byAD).forEach(k => {
-      const o = byAD[k];
-      const a = byA[o.agent] || (byA[o.agent] = {agent:o.agent, team:o.team, team_key:o.team_key, total:0, byDate:{}});
-      a.total += o.bo_min;
-      a.byDate[o.d] = (a.byDate[o.d] || 0) + o.bo_min;
-    });
-
-    let rows = Object.keys(byA).map(ag => {
-      const a = byA[ag];
-      return {ag, t:'<span class="tag lav">'+esc(a.team)+'</span>', tot:a.total,
-              _rows: Object.keys(a.byDate).map(d => ({d, m:a.byDate[d], _fmt:fmtHrs(a.byDate[d])}))};
-    });
-    rows.sort((x,y) => y.tot - x.tot);
-
-    // flatten to a table-friendly shape: one column per date
-    const flatRows = rows.map(r => {
-      const out = {ag:esc(r.ag), team:r.t, tot:fmtHrs(r.tot), _tot:r.tot};
-      dateCols.forEach(d => { out["_"+d] = r._rows.find(x => x.d===d) ? r._rows.find(x=>x.d===d)._fmt : ""; });
-      return out;
-    });
-
-    // chips: highest single-day BO, lowest non-zero single-day BO, target
-    let hi = {agent:"", team:"", d:"", min:0}, lo = null, dayTotals = [];
-    Object.keys(byAD).forEach(k => {
-      const o = byAD[k];
-      dayTotals.push(o);
-      if (o.bo_min > hi.min){ hi = {agent:o.agent, team:o.team, d:o.d, min:o.bo_min}; }
-      if (o.bo_min > 0 && (!lo || o.bo_min < lo.min)){ lo = {agent:o.agent, team:o.team, d:o.d, min:o.bo_min}; }
-    });
-    const dayVals = dayTotals.map(o => o.bo_min);
-    const target = dayVals.length ? fmtHrs(dayVals.reduce((s,v)=>s+v,0)/dayVals.length) : "—";
-
-    // build columns: Agent | Team | Total BO | <each date>
-    const cols = [{t:"Agent",k:"ag"},{t:"Team",k:"team"},{t:"Total BO",k:"tot",n:1}];
-    dateCols.forEach(d => cols.push({t:fmtDY(d),k:"_"+d}));
-
-    const t = $("tStatusDailyBO");
-    if (t){
-      tbl(t, cols,
-        flatRows.length ? flatRows :
-          [{ag:'<div class="empty" style="padding:14px">No back-office hours for this selection.</div>', team:"", tot:"", _tot:0}]);
-      // chips
-      const ch = $("stDailyBOChips");
-      if (ch){
-        ch.innerHTML = '<span class="chip g">Highest: '+esc(hi.agent)+' ('+(hi.team||'?')+') on '+fmtDY(hi.d)+' — '+fmtHrs(hi.min)+'</span>'
-          + (lo ? '<span class="chip y">Lowest: '+esc(lo.agent)+' ('+(lo.team||'?')+') on '+fmtDY(lo.d)+' — '+fmtHrs(lo.min)+'</span>' : '')
-          + '<span class="chip b">Daily avg (target): '+esc(target)+'</span>';
-      }
-    }
-  })();
 }
