@@ -24,7 +24,19 @@ function renderIvr(rows, M, gran){
     + kpi("Busiest Branch", list.length?esc(list[0][0]):"&mdash;", list.length? nf(list[0][1].total)+" calls":"", "alt big");
 
   groupedHBars("chIvrBar", list.slice(0,12).map(([k,m])=>({label:k,
-    vals:{answered:m.answered, abandoned:m.abandoned, missed:m.missed}})), ["answered","abandoned","missed"]);
+      vals:{answered:m.answered, abandoned:m.abandoned, missed:m.missed}})), ["answered","abandoned","missed"]);
+
+    // click a branch label in the Answered-vs-Abandoned chart -> lightbox with a
+    // daily x hourly call-count table for that branch (within the current scope).
+    const ivrBarEl = $("chIvrBar");
+    if (ivrBarEl){
+      ivrBarEl.querySelectorAll("text[data-t]").forEach(tx => {
+        tx.style.cursor = "pointer";
+        tx.addEventListener("click", function(){
+          openIvrLightbox(tx.getAttribute("data-t"));
+        });
+      });
+    }
 
   const ab = list.filter(x=>x[1].abandoned>0).sort((a,b)=>b[1].abandoned-a[1].abandoned).slice(0,12);
   hBars("chIvrAband", ab.map(([k,m])=>({label:k, value:m.abandoned,
@@ -231,5 +243,57 @@ function renderAgents(){
     [{t:"#",k:"i",n:1},{t:"Agent",k:"a"},{t:"Branch",k:"c"},{t:"Calls Handled",k:"n",n:1},
      {t:"AHT",k:"aht",n:1},{t:"Answered",k:"an",n:1},{t:"Missed",k:"m",n:1},{t:"Talk Time",k:"tt",n:1}],
     list.map((r,i)=>({i:i+1, a:esc(r.ag), c:'<span class="tag'+(chOf(r)==="OHA"?"":" lav")+'">'+chOf(r)+'</span>',
-      n:barCell(r.answered,mx), aht:mmss(r.aht), an:nf(r.answered), m:nf(r.missed), tt:mmss(r.sec)})));
-}
+          n:barCell(r.answered,mx), aht:mmss(r.aht), an:nf(r.answered), m:nf(r.missed), tt:mmss(r.sec)})));
+    }
+
+    /* Lightbox: daily x hourly call-count table for one IVR branch, within the
+       current channel/date scope. The IVR cube has no agent dimension, so seated
+       agents per branch are not available in the data. */
+    function openIvrLightbox(branch){
+      const scope = sliceAllIvr().filter(r => r.ivr === branch);
+      const days = [...new Set(scope.map(r=>r.d))].sort();
+      const hours = [...new Set(scope.map(r=>r.h))].sort((a,b)=>a-b);
+      // per day x hour -> {total, answered, abandoned, missed}
+      const cell = {};
+      scope.forEach(r => {
+        const k = r.d + "|" + r.h;
+        const c = cell[k] || (cell[k] = {total:0, answered:0, abandoned:0, missed:0});
+        c.total += r.n;
+        c[r.st] = (c[r.st]||0) + r.n;
+      });
+      const totalCalls = scope.reduce((s,r)=>s+r.n,0);
+      const dayTotals = days.map(d => scope.filter(r=>r.d===d).reduce((s,r)=>s+r.n,0));
+
+      // header: Date | <hour>... | Total
+      let head = '<tr><th>Date</th>' + hours.map(h=>'<th>'+esc(hourLbl(h))+'</th>').join("") + '<th>Total</th></tr>';
+      let body = days.map((d,i) => {
+        let row = '<tr><td>'+esc(fmtDY(d))+'</td>';
+        hours.forEach(h => {
+          const c = cell[d+"|"+h];
+          row += '<td class="n">'+(c?nf(c.total):"&middot;")+'</td>';
+        });
+        row += '<td class="n"><b>'+nf(dayTotals[i])+'</b></td></tr>';
+        return row;
+      }).join("");
+      // totals row
+      let totRow = '<tr><td><b>Total</b></td>' + hours.map(h => {
+        const t = days.reduce((s,d)=>s+((cell[d+"|"+h]||{}).total||0),0);
+        return '<td class="n"><b>'+nf(t)+'</b></td>';
+      }).join("") + '<td class="n"><b>'+nf(totalCalls)+'</b></td></tr>';
+
+      const ov = document.createElement("div");
+      ov.className = "lb-overlay";
+      ov.innerHTML =
+        '<div class="lb-box"><div class="lb-hd"><div><h3>'+esc(branch)+' &mdash; Calls by Day &amp; Hour</h3>'+
+        '<div class="lb-sub">'+nf(totalCalls)+' calls &middot; '+esc(F.chan==="ALL"?"OHA + Non-OHA":F.chan)+' &middot; '+esc(fmtDY(F.from))+' &rarr; '+esc(fmtDY(F.to))+'</div></div>'+
+        '<button class="lb-close" aria-label="Close">&times;</button></div>'+
+        '<div class="lb-body"><div class="tscroll"><table><thead>'+head+'</thead><tbody>'+body+totRow+'</tbody></table></div>'+
+        '<p style="margin:10px 0 0;color:var(--ink2);font-size:11.5px">Hourly call volume received under this IVR branch. '+
+        'Seated agents per branch are not available in the source data (the IVR cube has no agent dimension).</p></div></div>';
+      function close(){ ov.remove(); document.removeEventListener("keydown", onKey); }
+      function onKey(e){ if(e.key === "Escape") close(); }
+      ov.querySelector(".lb-close").onclick = close;
+      ov.addEventListener("click", function(e){ if(e.target === ov) close(); });
+      document.addEventListener("keydown", onKey);
+            document.body.appendChild(ov);
+          }
