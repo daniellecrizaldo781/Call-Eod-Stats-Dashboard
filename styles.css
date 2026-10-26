@@ -524,7 +524,7 @@ footer{margin-top:36px;text-align:center;font-size:11.5px;color:var(--mauve)}
 .lb-overlay{position:fixed;inset:0;background:rgba(58,34,51,.45);z-index:200;display:flex;
   align-items:center;justify-content:center;padding:20px}
 .lb-box{background:var(--white);border:1px solid var(--line);border-radius:var(--r);
-  box-shadow:var(--sh2);max-width:560px;width:100%;max-height:82vh;display:flex;flex-direction:column;overflow:hidden}
+  box-shadow:var(--sh2);max-width:96vw;width:100%;max-height:92vh;display:flex;flex-direction:column;overflow:hidden}
 .lb-hd{display:flex;align-items:center;justify-content:space-between;gap:12px;
   padding:14px 18px;border-bottom:1px solid var(--line);background:var(--blush)}
 .lb-hd h3{margin:0;font-size:14px;color:var(--ink)}
