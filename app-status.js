@@ -47,6 +47,11 @@ function fmtHrs(min){
   if (h >= 10)  return h.toFixed(1) + " h";
   return h.toFixed(2) + " h";
 }
+// format an integer hour (0-23) as a clock time, e.g. 9 -> "9:00", 14 -> "14:00"
+function fmtH(h){
+  h = +h || 0;
+  return h + ":00";
+}
 function inWeek(d, wk){
   if (!wk || wk === "ALL") return true;
   return weekStart(d) === wk;
@@ -267,43 +272,76 @@ function renderStatus(){
         '<option value="'+esc(s)+'"'+(s===cur?' selected':'')+'>'+esc(STATUS_ABBR[s]||s)+' &mdash; '+esc(s)+'</option>').join("");
 
       function renderDaily(){
-        const st = selEl.value;
-        window.__stDailySel = st;
-        const byAD = {};    // "agent|date" -> {agent, team, d, min}
-        const dates = new Set();
-        filt.forEach(r => {
-          if ((r.status||"") !== st) return;
-          dates.add(r.d);
-          const key = r.agent + "|" + r.d;
-          const o = byAD[key] || (byAD[key] = {agent:r.agent, team:r.team, team_key:r.team_key, d:r.d, min:0});
-          o.min += +r.min || 0;
-        });
-        const dateCols = [...dates].sort();
-        const byA = {};   // agent -> {agent, team, total, byDate}
-        Object.keys(byAD).forEach(k => {
-          const o = byAD[k];
-          const a = byA[o.agent] || (byA[o.agent] = {agent:o.agent, team:o.team, team_key:o.team_key, total:0, byDate:{}});
-          a.total += o.min;
-          a.byDate[o.d] = (a.byDate[o.d] || 0) + o.min;
-        });
-        let rows = Object.keys(byA).map(ag => {
-          const a = byA[ag];
-          return {ag, t:'<span class="tag lav">'+esc(a.team)+'</span>', tot:a.total,
-                  _rows: Object.keys(a.byDate).map(d => ({d, m:a.byDate[d], _fmt:fmtHrs(a.byDate[d])}))};
-        });
-        rows.sort((x,y) => y.tot - x.tot);
-        const flatRows = rows.map(r => {
-          const out = {ag:esc(r.ag), team:r.t, tot:fmtHrs(r.tot), _tot:r.tot};
-          dateCols.forEach(d => { out["_"+d] = r._rows.find(x => x.d===d) ? r._rows.find(x=>x.d===d)._fmt : ""; });
-          return out;
-        });
-        const cols = [{t:"Agent",k:"ag"},{t:"Team",k:"team"},{t:"Total "+esc(STATUS_ABBR[st]||st)+" Hrs",k:"tot",n:1}];
-        dateCols.forEach(d => cols.push({t:fmtDY(d),k:"_"+d}));
-        tbl(tEl, cols,
-          flatRows.length ? flatRows :
-            [{ag:'<div class="empty" style="padding:14px">No '+esc(st)+' hours for this selection.</div>', team:"", tot:"", _tot:0}]);
+              const st = selEl.value;
+              window.__stDailySel = st;
+              const byAD = {};    // "agent|date" -> {agent, team, d, min}
+              const dates = new Set();
+              filt.forEach(r => {
+                if ((r.status||"") !== st) return;
+                dates.add(r.d);
+                const key = r.agent + "|" + r.d;
+                const o = byAD[key] || (byAD[key] = {agent:r.agent, team:r.team, team_key:r.team_key, d:r.d, min:0});
+                o.min += +r.min || 0;
+              });
+              const dateCols = [...dates].sort();
+              const byA = {};   // agent -> {agent, team, total, byDate}
+              Object.keys(byAD).forEach(k => {
+                const o = byAD[k];
+                const a = byA[o.agent] || (byA[o.agent] = {agent:o.agent, team:o.team, team_key:o.team_key, total:0, byDate:{}});
+                a.total += o.min;
+                a.byDate[o.d] = (a.byDate[o.d] || 0) + o.min;
+              });
+              let rows = Object.keys(byA).map(ag => {
+                const a = byA[ag];
+                return {ag, t:'<span class="tag lav">'+esc(a.team)+'</span>', tot:a.total,
+                        _rows: Object.keys(a.byDate).map(d => ({d, m:a.byDate[d], _fmt:fmtHrs(a.byDate[d])}))};
+              });
+              rows.sort((x,y) => y.tot - x.tot);
+              const flatRows = rows.map(r => {
+                const out = {ag:'<span class="agent-link" data-agent="'+esc(r.ag)+'">'+esc(r.ag)+'</span>', team:r.t, tot:fmtHrs(r.tot), _tot:r.tot};
+                dateCols.forEach(d => { out["_"+d] = r._rows.find(x => x.d===d) ? r._rows.find(x=>x.d===d)._fmt : ""; });
+                return out;
+              });
+              const cols = [{t:"Agent",k:"ag"},{t:"Team",k:"team"},{t:"Total "+esc(STATUS_ABBR[st]||st)+" Hrs",k:"tot",n:1}];
+              dateCols.forEach(d => cols.push({t:fmtDY(d),k:"_"+d}));
+              tbl(tEl, cols,
+                flatRows.length ? flatRows :
+                  [{ag:'<div class="empty" style="padding:14px">No '+esc(st)+' hours for this selection.</div>', team:"", tot:"", _tot:0}]);
+              // wire up agent-name clicks -> lightbox of that agent's status events
+              tEl.querySelectorAll(".agent-link").forEach(el => {
+                el.onclick = function(ev){
+                  ev.stopPropagation();
+                  openStatusLightbox(el.getAttribute("data-agent"), st);
+                };
+              });
+            }
+            selEl.onchange = renderDaily;
+            renderDaily();
+          })();
+
+        // Lightbox: list the individual status events (date + hour + duration) for an
+        // agent + selected status, within the current team/week filter.
+        function openStatusLightbox(agent, st){
+          const evs = filt.filter(r => r.agent === agent && (r.status||"") === st)
+            .map(r => ({d:r.d, t:r.t, min:+r.min||0}))
+            .sort((a,b) => a.d.localeCompare(b.d) || (+a.t) - (+b.t));
+          const total = evs.reduce((s,e)=>s+e.min,0);
+          const rowsHtml = evs.length ? evs.map(e =>
+            '<tr><td>'+esc(fmtDY(e.d))+'</td><td>'+esc(fmtH(e.t))+'</td><td class="n">'+esc(fmtHrs(e.min))+'</td></tr>').join("")
+            : '<tr><td colspan="3" class="lb-empty">No '+esc(st)+' events for '+esc(agent)+' in this selection.</td></tr>';
+          const ov = document.createElement("div");
+          ov.className = "lb-overlay";
+          ov.innerHTML =
+            '<div class="lb-box"><div class="lb-hd"><div><h3>'+esc(agent)+' &mdash; '+esc(STATUS_ABBR[st]||st)+'</h3>'+
+            '<div class="lb-sub">'+esc(evs.length)+' event'+(evs.length===1?"":"s")+' &middot; total '+esc(fmtHrs(total))+'</div></div>'+
+            '<button class="lb-close" aria-label="Close">&times;</button></div>'+
+            '<div class="lb-body"><table><thead><tr><th>Date</th><th>Hour</th><th>Duration</th></tr></thead>'+
+            '<tbody>'+rowsHtml+'</tbody></table></div></div>';
+          function close(){ ov.remove(); document.removeEventListener("keydown", onKey); }
+          function onKey(e){ if(e.key === "Escape") close(); }
+          ov.querySelector(".lb-close").onclick = close;
+          ov.addEventListener("click", function(e){ if(e.target === ov) close(); });
+          document.addEventListener("keydown", onKey);
+                    document.body.appendChild(ov);
+        }
       }
-      selEl.onchange = renderDaily;
-      renderDaily();
-    })();
-}
