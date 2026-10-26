@@ -333,7 +333,7 @@ function renderStatus(){
             .sort((a,b) => a.d.localeCompare(b.d) || (+a.t) - (+b.t));
           const total = evs.reduce((s,e)=>s+e.min,0);
           const rowsHtml = evs.length ? evs.map(e =>
-            '<tr><td>'+esc(fmtDY(e.d))+'</td><td>'+esc(fmtH(e.t))+'</td><td class="n">'+esc(fmtHMS(e.min))+'</td></tr>').join("")
+            '<tr><td>'+esc(fmtDY(e.d))+'</td><td>'+esc(hourLbl(e.t))+'</td><td class="n">'+esc(fmtHMS(e.min))+'</td></tr>').join("")
             : '<tr><td colspan="3" class="lb-empty">No '+esc(st)+' events for '+esc(agent)+' in this selection.</td></tr>';
           const ov = document.createElement("div");
           ov.className = "lb-overlay";
