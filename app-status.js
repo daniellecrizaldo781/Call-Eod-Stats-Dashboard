@@ -52,6 +52,12 @@ function fmtH(h){
   h = +h || 0;
   return h + ":00";
 }
+// format minutes as H:MM:SS, e.g. 0.04 -> "0:00:02", 42.5 -> "0:42:30", 90 -> "1:30:00"
+function fmtHMS(min){
+  const s = Math.round((+min || 0) * 60);
+  const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60;
+  return h + ":" + String(m).padStart(2,"0") + ":" + String(sec).padStart(2,"0");
+}
 function inWeek(d, wk){
   if (!wk || wk === "ALL") return true;
   return weekStart(d) === wk;
@@ -327,7 +333,7 @@ function renderStatus(){
             .sort((a,b) => a.d.localeCompare(b.d) || (+a.t) - (+b.t));
           const total = evs.reduce((s,e)=>s+e.min,0);
           const rowsHtml = evs.length ? evs.map(e =>
-            '<tr><td>'+esc(fmtDY(e.d))+'</td><td>'+esc(fmtH(e.t))+'</td><td class="n">'+esc(fmtHrs(e.min))+'</td></tr>').join("")
+            '<tr><td>'+esc(fmtDY(e.d))+'</td><td>'+esc(fmtH(e.t))+'</td><td class="n">'+esc(fmtHMS(e.min))+'</td></tr>').join("")
             : '<tr><td colspan="3" class="lb-empty">No '+esc(st)+' events for '+esc(agent)+' in this selection.</td></tr>';
           const ov = document.createElement("div");
           ov.className = "lb-overlay";
