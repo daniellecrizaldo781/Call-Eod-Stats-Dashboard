@@ -539,6 +539,9 @@ footer{margin-top:36px;text-align:center;font-size:11.5px;color:var(--mauve)}
 .lb-body td{padding:6px 8px;border-bottom:1px solid var(--line);font-size:12.5px;color:var(--ink)}
 .lb-body td.n{text-align:right;font-variant-numeric:tabular-nums}
 .lb-body tr:hover td{background:var(--blush)}
+.lb-body tr.lb-busy td{background:var(--blush2);font-weight:700}
+.lb-body tr.lb-busy td:first-child{color:var(--rose-d)}
+.lb-busy-tag{display:inline-block;margin-left:6px;font-size:9.5px;font-weight:800;color:#fff;background:var(--rose-d);border-radius:8px;padding:1px 6px;vertical-align:middle}
 .lb-empty{padding:18px;text-align:center;color:var(--ink2);font-size:12.5px}
 .agent-link{cursor:pointer;color:var(--rose-d);font-weight:700;text-decoration:underline;text-underline-offset:2px}
 .agent-link:hover{color:var(--rose)}

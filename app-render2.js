@@ -262,20 +262,24 @@ function renderAgents(){
         c[r.st] = (c[r.st]||0) + r.n;
       });
       const totalCalls = scope.reduce((s,r)=>s+r.n,0);
-      const dayTotals = days.map(d => scope.filter(r=>r.d===d).reduce((s,r)=>s+r.n,0));
+            const dayTotals = days.map(d => scope.filter(r=>r.d===d).reduce((s,r)=>s+r.n,0));
+            // per-hour totals, to find the busiest hour (highest total)
+            const hourTotals = hours.map(h => days.reduce((s,d)=>s+((cell[d+"|"+h]||{}).total||0),0));
+            const maxHourTot = Math.max(0, ...hourTotals);
+            const busiestHour = maxHourTot>0 ? hours[hourTotals.indexOf(maxHourTot)] : null;
 
-      // header: Hour | <date>... | Total
-            let head = '<tr><th>Hour</th>' + days.map(d=>'<th>'+esc(fmtDY(d))+'</th>').join("") + '<th>Total</th></tr>';
-            let body = hours.map(h => {
-              let row = '<tr><td>'+esc(hourLbl(h))+'</td>';
-              days.forEach(d => {
-                const c = cell[d+"|"+h];
-                row += '<td class="n">'+(c?nf(c.total):"&middot;")+'</td>';
-              });
-              const hTot = days.reduce((s,d)=>s+((cell[d+"|"+h]||{}).total||0),0);
-              row += '<td class="n"><b>'+nf(hTot)+'</b></td></tr>';
-              return row;
-            }).join("");
+            // header: Hour | <date>... | Total
+                  let head = '<tr><th>Hour</th>' + days.map(d=>'<th>'+esc(fmtDY(d))+'</th>').join("") + '<th>Total</th></tr>';
+                  let body = hours.map((h,hi) => {
+                    const isBusy = (h === busiestHour);
+                    let row = '<tr class="'+(isBusy?'lb-busy':'')+'"><td>'+esc(hourLbl(h))+(isBusy?' <span class="lb-busy-tag">peak</span>':'')+'</td>';
+                    days.forEach(d => {
+                      const c = cell[d+"|"+h];
+                      row += '<td class="n">'+(c?nf(c.total):"&middot;")+'</td>';
+                    });
+                    row += '<td class="n"><b>'+nf(hourTotals[hi])+'</b></td></tr>';
+                                        return row;
+                                      }).join("");
             // totals row
             let totRow = '<tr><td><b>Total</b></td>' + days.map((d,i) =>
               '<td class="n"><b>'+nf(dayTotals[i])+'</b></td>').join("") + '<td class="n"><b>'+nf(totalCalls)+'</b></td></tr>';
