@@ -31,11 +31,11 @@ function renderIvr(rows, M, gran){
     const ivrBarEl = $("chIvrBar");
     if (ivrBarEl){
       ivrBarEl.querySelectorAll("text[data-t]").forEach(tx => {
-        tx.style.cursor = "pointer";
-        tx.addEventListener("click", function(){
-          openIvrLightbox(tx.getAttribute("data-t"));
-        });
-      });
+              tx.classList.add("ivr-branch-link");
+              tx.addEventListener("click", function(){
+                openIvrLightbox(tx.getAttribute("data-t"));
+              });
+            });
     }
 
   const ab = list.filter(x=>x[1].abandoned>0).sort((a,b)=>b[1].abandoned-a[1].abandoned).slice(0,12);
@@ -264,22 +264,21 @@ function renderAgents(){
       const totalCalls = scope.reduce((s,r)=>s+r.n,0);
       const dayTotals = days.map(d => scope.filter(r=>r.d===d).reduce((s,r)=>s+r.n,0));
 
-      // header: Date | <hour>... | Total
-      let head = '<tr><th>Date</th>' + hours.map(h=>'<th>'+esc(hourLbl(h))+'</th>').join("") + '<th>Total</th></tr>';
-      let body = days.map((d,i) => {
-        let row = '<tr><td>'+esc(fmtDY(d))+'</td>';
-        hours.forEach(h => {
-          const c = cell[d+"|"+h];
-          row += '<td class="n">'+(c?nf(c.total):"&middot;")+'</td>';
-        });
-        row += '<td class="n"><b>'+nf(dayTotals[i])+'</b></td></tr>';
-        return row;
-      }).join("");
-      // totals row
-      let totRow = '<tr><td><b>Total</b></td>' + hours.map(h => {
-        const t = days.reduce((s,d)=>s+((cell[d+"|"+h]||{}).total||0),0);
-        return '<td class="n"><b>'+nf(t)+'</b></td>';
-      }).join("") + '<td class="n"><b>'+nf(totalCalls)+'</b></td></tr>';
+      // header: Hour | <date>... | Total
+            let head = '<tr><th>Hour</th>' + days.map(d=>'<th>'+esc(fmtDY(d))+'</th>').join("") + '<th>Total</th></tr>';
+            let body = hours.map(h => {
+              let row = '<tr><td>'+esc(hourLbl(h))+'</td>';
+              days.forEach(d => {
+                const c = cell[d+"|"+h];
+                row += '<td class="n">'+(c?nf(c.total):"&middot;")+'</td>';
+              });
+              const hTot = days.reduce((s,d)=>s+((cell[d+"|"+h]||{}).total||0),0);
+              row += '<td class="n"><b>'+nf(hTot)+'</b></td></tr>';
+              return row;
+            }).join("");
+            // totals row
+            let totRow = '<tr><td><b>Total</b></td>' + days.map((d,i) =>
+              '<td class="n"><b>'+nf(dayTotals[i])+'</b></td>').join("") + '<td class="n"><b>'+nf(totalCalls)+'</b></td></tr>';
 
       const ov = document.createElement("div");
       ov.className = "lb-overlay";

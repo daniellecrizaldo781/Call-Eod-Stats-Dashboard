@@ -240,6 +240,8 @@ svg{display:block;width:100%;overflow:visible}
 #chIvrAband svg{max-height:480px}
 #chIvrBar .atxt{font-size:12px;font-weight:700;fill:var(--ink)}
 #chIvrBar .vtxt{font-size:11.5px;font-weight:800;fill:var(--ink)}
+#chIvrBar .atxt.ivr-branch-link{fill:var(--rose-d);cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+#chIvrBar .atxt.ivr-branch-link:hover{fill:var(--rose)}
 #chIvrAband .atxt{font-size:12px;font-weight:700;fill:var(--ink)}
 #chIvrAband .vtxt{font-size:11.5px;font-weight:800;fill:var(--ink)}
 .axis{stroke:#F0DCE6;stroke-width:1}
