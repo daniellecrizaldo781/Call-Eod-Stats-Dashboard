@@ -171,14 +171,9 @@ const AGENT_TEAM = (function(){ const m={};
 function renderAgents(){
   const kmgr = $("agKpis");
   if (!kmgr || F.page !== "agent") return;
-  const selWeek = $("agWeek");
-  if (selWeek){
-    if (!F.agWeek || ![...selWeek.options].some(o=>o.value===F.agWeek)) {
-      F.agWeek = selWeek.value || (selWeek.options[selWeek.options.length-1] ? selWeek.options[selWeek.options.length-1].value : null);
-    }
-  }
-  // week date range
-  const from = F.agWeek || MIN_D;
+  // use the week selected in the top-of-page Week toggle (F.from is that week's Monday)
+  const wk  = (F.from && F.from !== MIN_D) ? weekStart(F.from) : weekStart(MAX_D);
+  const from = wk;
   const to = addD(from, 6) > MAX_D ? MAX_D : addD(from, 6);
   // week label at top of page
   const lbl = $("agWeekLabel");

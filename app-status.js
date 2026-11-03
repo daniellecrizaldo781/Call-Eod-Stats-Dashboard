@@ -79,8 +79,10 @@ function renderStatus(){
   }
 
   const team = F.stTeam || "all";
-  const wk   = F.stWeek || "ALL";
+  // use the week selected in the top-of-page Week toggle (F.from is that week's Monday)
+  const wk = (F.from && F.from !== MIN_D) ? weekStart(F.from) : "ALL";
   const teamLabel = (ST_TEAMS.find(t => t.key === team) || {}).label || "Entire Call Team";
+  const weekLabel = wk === "ALL" ? "all weeks" : fmtWeek(wk);
 
   // filter rows by team + week
   const filt = rows.filter(r =>

@@ -22,21 +22,6 @@ function buildPeriodNav(){
   $("fDayMonth").innerHTML = ['<option value="ALL">All months (whole range)</option>']
     .concat(dm.map(s => '<option value="'+s+'">'+fmtMonth(s)+'</option>')).join("");
   $("fDayMonth").value = "ALL";
-  // Agent Status History week toggle (filters status rows directly)
-    const stw = $("stWeek");
-    if (stw){
-      stw.innerHTML = ['<option value="ALL">All weeks</option>']
-        .concat(dw.map(s => '<option value="'+s+'">'+fmtWeek(s)+'</option>')).join("");
-      stw.value = curWeek;
-            F.stWeek = curWeek;   // default the status tables to the current week too
-          }
-    // Agent Performance page week toggle (same week list as status history)
-    const agw = $("agWeek");
-    if (agw){
-      agw.innerHTML = dw.map(s => '<option value="'+s+'">'+fmtWeek(s)+'</option>').join("");
-      agw.value = curWeek;
-      F.agWeek = curWeek;
-    }
         }
       function deselectPeriod(id){
   // when one period navigator is used, reset the other to "All" so they don't fight
@@ -81,15 +66,12 @@ function wire(){
     [...$("agTeamPills").children].forEach(x=>x.classList.remove("on"));
     b.classList.add("on"); F.agTeam = b.dataset.v; renderAgents();
   });
-  $("agWeek").onchange = () => { F.agWeek = $("agWeek").value; renderAgents(); };
-  // Agent Status History: team pills + sort select
   $("stTeamPills").addEventListener("click", e=>{
     const b = e.target.closest(".pill"); if(!b) return;
     [...$("stTeamPills").children].forEach(x=>x.classList.remove("on"));
     b.classList.add("on"); F.stTeam = b.dataset.v; renderStatus();
   });
   $("stSort").onchange = () => renderStatus();
-  $("stWeek").onchange = () => { F.stWeek = $("stWeek").value; renderStatus(); };
   $("chanPills").addEventListener("click", e=>{
     const b = e.target.closest(".pill"); if(!b) return;
     [...$("chanPills").children].forEach(x=>x.classList.remove("on"));
@@ -209,7 +191,7 @@ function wire(){
   };
     $("btnReset").onclick = () => {
     F.chan="ALL"; F.gran="daily"; F.picks.clear();
-    F.agTeam="all"; F.agWeek = $("agWeek") ? $("agWeek").value : null;
+    F.agTeam="all";
     [...$("chanPills").children].forEach((x,i)=>x.classList.toggle("on", i===0));
     [...$("agTeamPills").children].forEach((x,i)=>x.classList.toggle("on", i===0));
     [...$("granPills").children].forEach(x=>x.classList.toggle("on", x.dataset.v==="daily"));

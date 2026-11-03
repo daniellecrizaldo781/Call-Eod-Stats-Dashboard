@@ -93,7 +93,7 @@ function syncDateInputs(){
   if (document.getElementById("fTo"))   document.getElementById("fTo").value   = F.to;
 }
 const F = {chan:"ALL", ivr:"ALL", gran:"daily", ivrGran:"daily", from:MIN_D, to:MAX_D, picks:new Set(),
-  page:"main", dayScope:"ALL", stTeam:"all", stWeek:"ALL", agTeam:"all", agWeek:null};
+  page:"main", dayScope:"ALL", stTeam:"all", agTeam:"all"};
 
 /* ---- filtering ---- */
 function pass(r, opt){
