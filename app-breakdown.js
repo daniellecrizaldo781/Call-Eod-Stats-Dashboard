@@ -105,18 +105,54 @@ function bkFillSelects(){
   const concerns = [...new Set(bkAll().map(r=>r.concern))].sort((a,b)=>a.localeCompare(b));
   $("bkConcern").innerHTML = '<option value="ALL">All Concerns</option>' +
     concerns.map(c=>'<option value="'+esc(c)+'">'+esc(c)+'</option>').join("");
-  // category pills (drivers + refund) — same category list, independent selection
+  // category searchable dropdowns (drivers + refund) — same category list, independent selection
   const cats = [...new Set(bkAll().map(r=>r.cat))].sort((a,b)=>a.localeCompare(b));
-  ["bkCatPills","bkRefCatPills"].forEach(id => {
-    const el = $(id); if (!el) return;
-    el.innerHTML = '<button class="pill on" data-v="ALL">All Categories</button>' +
-      cats.map(c=>'<button class="pill" data-v="'+esc(c)+'">'+esc(c.replace(/_/g," "))+'</button>').join("");
-    el.onclick = null;
-  });
-  wireBkCatPills();
+  buildCatPicker("bkCatPick",  cats, BK.catDrill || "ALL", function(c){ BK.catDrill = c; renderBkCatDrill(c); });
+  buildCatPicker("bkRefCatPick", cats, BK.refCat || "ALL", function(c){ BK.refCat = c; renderBkRefDetail(c); });
 }
-// Build a compact brand picker: a single trigger pill + a dropdown (checkbox list + Select All).
-function buildBrandPicker(id, set, brands){
+// Build a searchable single-select dropdown listing the categories.
+// id: container el; cats: array (raw cat keys); cur: current selection; onChange(v)
+function buildCatPicker(id, cats, cur, onChange){
+  const el = $(id); if (!el) return;
+  const label = c => c === "ALL" ? "All Categories" : c.replace(/_/g, " ");
+  let h = '<div class="bk-cat-trigger" data-pick="'+id+'"><span class="bk-cat-label">'+esc(label(cur))+'</span> <span class="bk-caret">▾</span></div>'+
+          '<div class="bk-cat-menu" data-pick="'+id+'">'+
+            '<div class="bk-cat-search"><input type="text" placeholder="Search category…" data-pick="'+id+'"></div>'+
+            '<div class="bk-cat-list" data-pick="'+id+'">'+
+              '<div class="bk-cat-opt'+(cur==="ALL"?" on":"")+'" data-pick="'+id+'" data-v="ALL">All Categories</div>'+
+              cats.map(c=>'<div class="bk-cat-opt'+(c===cur?" on":"")+'" data-pick="'+id+'" data-v="'+esc(c)+'">'+esc(label(c))+'</div>').join("")+
+            '</div></div>';
+  el.innerHTML = h;
+  // open/close
+  const trig = el.querySelector(".bk-cat-trigger");
+  trig.onclick = function(e){
+    e.stopPropagation();
+    const menu = el.querySelector(".bk-cat-menu");
+    const openIt = menu.classList.toggle("on");
+    if (openIt){ const inp = el.querySelector(".bk-cat-search input"); if (inp) inp.focus(); }
+    rebindCatSearch(el, cats, onChange);
+  };
+  el.querySelector(".bk-cat-menu").onclick = function(e){
+    const opt = e.target.closest(".bk-cat-opt"); if (!opt) return;
+    [...el.querySelectorAll(".bk-cat-opt")].forEach(x=>x.classList.remove("on"));
+    opt.classList.add("on");
+    el.querySelector(".bk-cat-menu").classList.remove("on");
+    el.querySelector(".bk-cat-label").textContent = label(opt.dataset.v);
+    onChange(opt.dataset.v);
+  };
+}
+// live-filter the option list as the user types in the search box
+function rebindCatSearch(el, cats, onChange){
+  const inp = el.querySelector(".bk-cat-search input"); if (!inp) return;
+  const list = el.querySelector(".bk-cat-list");
+  inp.oninput = function(){
+    const q = inp.value.trim().toLowerCase();
+    [...list.children].forEach(opt=>{
+      const ok = opt.dataset.v === "ALL" || opt.textContent.toLowerCase().indexOf(q) >= 0;
+      opt.style.display = ok ? "" : "none";
+    });
+  };
+}
   const el = $(id);
   const cur = bkSelLabel(set, brands);
   let html = '<button type="button" class="bk-trigger" id="'+id+'Trig" data-set="'+id+'">'+esc(cur)+'</button>' +
@@ -248,24 +284,11 @@ function bkRenderWeekCmp(){
      }
 
      /* ================= Per-category drill (interactive) ================= */
-     function wireBkCatPills(){
-     ["bkCatPills","bkRefCatPills"].forEach(id => {
-     const el = $(id); if (!el) return;
-     el.addEventListener("click", e=>{
-       const b = e.target.closest(".pill"); if(!b) return;
-       [...el.children].forEach(x=>x.classList.remove("on"));
-       b.classList.add("on");
-       if (id === "bkCatPills"){ BK.catDrill = b.dataset.v; renderBkCatDrill(BK.catDrill); }
-       else { BK.refCat = b.dataset.v; renderBkRefDetail(BK.refCat); }
-     });
-     });
-     }
-     // classify a row's resolution into a readable bucket (from the coarse `res` field)
      function bkResBucket(r){
        const res = (r.res||"").toLowerCase();
-       if ((r.refund||0) > 0 || /refund|refunded|cancelled/.test(res)) return "Refunded";
+       if ((r.refund||0) > 0 || /refund|refunded|full-refund|cancelled|discounts/.test(res)) return "Refunded";
        if (/reshipp/.test(res)) return "Reshipped";
-       return "Non-Refund";
+       return "NonRefund";   // displayed as "Resolved / Non-Refund"
      }
      // generic small lightbox (reuses the shared .lb-* CSS)
      function bkLightbox(title, sub, headHtml, bodyRows, footHtml){
@@ -288,7 +311,7 @@ function bkRenderWeekCmp(){
      const buckets = {Refunded:0,Reshipped:0,NonRefund:0};
      scope.forEach(r=>{ buckets[bkResBucket(r)]++; });
      const total = scope.length;
-     bkLightbox(sub, total+" tickets · "+nf(buckets.NonRefund)+" non-refund, "+nf(buckets.Reshipped)+" reshipped, "+nf(buckets.Refunded)+" refunded",
+     bkLightbox(sub, total+" tickets · "+nf(buckets.NonRefund)+" resolved/non-refund, "+nf(buckets.Reshipped)+" reshipped, "+nf(buckets.Refunded)+" refunded",
      '<tr><th>Date</th><th>Tickets</th></tr>',
      days.map(d=>'<tr><td>'+esc(fmtDY(d))+'</td><td class="n">'+nf(scope.filter(r=>r.d===d).length)+'</td></tr>'),
      '<tr class="tot"><td><b>Total</b></td><td class="n"><b>'+nf(total)+'</b></td></tr>');
@@ -325,7 +348,7 @@ function bkRenderWeekCmp(){
      resMap[r.sub][b]=(resMap[r.sub][b]||0)+1; resMap[r.sub].Tickets++;
      });
      const head = '<tr><th>Subcategory</th>' + days.map(d=>'<th>'+esc(fmtD(d))+'</th>').join("") +
-     '<th>Total</th><th>Non-Refund</th><th>Reshipped</th><th>Refunded</th></tr>';
+     '<th>Total</th><th>Resolved / Non-Refund</th><th>Reshipped</th><th>Refunded</th></tr>';
      const body = subs.map(sub=>{
      const r = resMap[sub]||{Refunded:0,Reshipped:0,NonRefund:0,Tickets:0};
      let td = '<td><a class="bk-sub-link" data-sub="'+esc(sub)+'">'+esc(sub)+'</a></td>';
