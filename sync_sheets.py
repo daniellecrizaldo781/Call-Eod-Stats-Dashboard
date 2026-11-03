@@ -201,6 +201,7 @@ def build_breakdown():
             out.append({
                 "d": d,                                   # ISO date
                 "brand": brand,
+                "url": (str(g("url/ticket number/email address") or "")).strip(),  # ticket url/number/email
                 "channel": (str(g("channel") or "ALL")).strip() or "ALL",
                 "concern": (str(g("concern type") or "Unknown")).strip() or "Unknown",
                 "cat": (str(g("category") or "Unknown")).strip() or "Unknown",     # = branch

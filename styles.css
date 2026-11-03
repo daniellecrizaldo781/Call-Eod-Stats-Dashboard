@@ -564,3 +564,7 @@ th.lb-nonrefund[class], td.lb-nonrefund{background:#EFE6F8;color:#7A4BA8}
 /* clickable day-count cells (open that day's ticket lightbox) */
 .bk-day-link{cursor:pointer;color:var(--rose-d);font-weight:700;text-decoration:underline;text-underline-offset:2px;font-variant-numeric:tabular-nums}
 .bk-day-link:hover{color:var(--rose)}
+/* ticket url/number in the day-ticket lightbox */
+.bk-url{color:var(--rose-d);font-weight:600}
+a.bk-url{text-decoration:underline;text-underline-offset:2px}
+a.bk-url:hover{color:var(--rose)}
