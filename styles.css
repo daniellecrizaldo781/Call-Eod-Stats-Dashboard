@@ -561,3 +561,6 @@ th.lb-refunded[class], td.lb-refunded{background:#FBE4EC;color:#D33A68}
 th.lb-reshipped[class], td.lb-reshipped{background:#E3F0FB;color:#2C6FBF}
 th.lb-nonrefund[class], td.lb-nonrefund{background:#EFE6F8;color:#7A4BA8}
 .bk-drill th.lb-refunded,.bk-drill th.lb-reshipped,.bk-drill th.lb-nonrefund{font-size:10px;letter-spacing:.2px}
+/* clickable day-count cells (open that day's ticket lightbox) */
+.bk-day-link{cursor:pointer;color:var(--rose-d);font-weight:700;text-decoration:underline;text-underline-offset:2px;font-variant-numeric:tabular-nums}
+.bk-day-link:hover{color:var(--rose)}

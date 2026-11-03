@@ -328,7 +328,7 @@ function bkRenderWeekCmp(){
      let td = '<td><a class="bk-sub-link" data-sub="'+esc(sub)+'">'+esc(sub)+'</a></td>';
      if (showCat) td += '<td><span class="tag lav">'+esc(r.cat.replace(/_/g," "))+'</span></td>';
      let tot = 0;
-     days.forEach(dd=>{ const v=cell[sub+"|"+dd]||0; tot+=v; td += '<td class="n">'+(v?nf(v):"&middot;")+'</td>'; });
+     days.forEach(dd=>{ const v=cell[sub+"|"+dd]||0; tot+=v; td += '<td class="n">'+(v?'<a class="bk-day-link" data-sub="'+esc(sub)+'" data-day="'+esc(dd)+'">'+nf(v)+'</a>':"&middot;")+'</td>'; });
      td += '<td class="n"><b>'+nf(tot)+'</b></td>';
      td += '<td class="n lb-tier lb-nonrefund">'+nf(r.NonRefund)+'</td><td class="n lb-tier lb-reshipped">'+nf(r.Reshipped)+'</td><td class="n lb-tier lb-refunded">'+nf(r.Refunded)+'</td>';
      return '<tr>'+td+'</tr>';
@@ -348,7 +348,22 @@ function bkRenderWeekCmp(){
      d.querySelectorAll(".bk-sub-link").forEach(a=>{
        a.onclick = e=>{ e.preventDefault(); bkDailyLightbox(a.dataset.sub, catRows); };
      });
+     d.querySelectorAll(".bk-day-link").forEach(a=>{
+       a.onclick = e=>{ e.preventDefault(); bkDayLightbox(a.dataset.sub, a.dataset.day, catRows); };
+     });
      }
+     }
+
+     // lightbox listing that day's tickets for one subcategory
+     function bkDayLightbox(sub, day, rows){
+      const scope = rows.filter(r=>r.sub===sub && r.d===day);
+      const buckets = {Refunded:0,Reshipped:0,NonRefund:0};
+      scope.forEach(r=>{ buckets[bkResBucket(r)]++; });
+      const total = scope.length;
+      bkLightbox(sub+" — "+fmtDY(day), total+" tickets · "+nf(buckets.Refunded)+" refunded, "+nf(buckets.Reshipped)+" reshipped, "+nf(buckets.NonRefund)+" resolved/non-refund",
+      '<tr><th>Brand</th><th>Category</th><th>Resolution</th><th>Refunded $</th></tr>',
+      scope.map(r=>'<tr><td>'+esc(r.brand)+'</td><td>'+esc(r.cat.replace(/_/g," "))+'</td><td>'+esc(r.res||"—")+'</td><td class="n">'+(r.refund>0?'$'+nf(Math.round(r.refund)):"&middot;")+'</td></tr>'),
+      '<tr class="tot"><td colspan="3"><b>Total</b></td><td class="n"><b>'+nf(scope.filter(r=>r.refund>0).length)+' refunded</b></td></tr>');
      }
 
      function renderBkRefDetail(cat){
