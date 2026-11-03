@@ -161,90 +161,107 @@ function renderIvr(rows, M, gran){
 }
 
 
-/* ---------- Agents (shared) ---------- */
-function agentRowsInScope(){
-  // channel + date range only — agents carry no IVR/line dimension
-  return AROWS.filter(r => r.d>=F.from && r.d<=F.to && (F.chan==="ALL"||r.ch===F.chan));
-}
+/* ---------- Agent page: weekly daily answered/missed/AHT pivot ---------- */
+// agent -> team_key map, built from the status rows (the agent call cube has no team dim)
+const AGENT_TEAM = (function(){ const m={};
+  const sr = (D.status && D.status.rows) || [];
+  sr.forEach(r => { if (r.agent && r.team_key && !(r.agent in m)) m[r.agent] = r.team_key; });
+  return m; })();
 
-/* ---------- Agent page: dynamic Daily / Weekly / Monthly insights ---------- */
-function renderAgentInsights(){
-  const g = F.agGran;
-  const scope = agentRowsInScope();
-  const keys = [...new Set(scope.map(r=>periodKey(r.d, g)))].sort();
-  if (!keys.length){
-    $("agPeriod").innerHTML = '<option value="">No data</option>';
-    $("agKpis").innerHTML = kpi("No Data", "\u2014", "no agent calls in the current filters", "warn");
-    $("chAgentCalls").innerHTML = '<div class="empty">No agent data for the current filters.</div>';
-    $("agRank").innerHTML = '<div class="empty">No agent data for the current filters.</div>';
-    return;
-  }
-  if (!F.agPeriod || !keys.includes(F.agPeriod)) F.agPeriod = keys[keys.length-1];  // latest
-  const sel = $("agPeriod");
-  sel.innerHTML = keys.map(k=>'<option value="'+k+'">'+esc(periodLabel(k,g))+'</option>').join("");
-  sel.value = F.agPeriod;
-
-  const [a,b] = periodBounds(F.agPeriod, g);
-  const rows = scope.filter(r=>r.d>=a && r.d<=b);
-  const byA = new Map();
-  rows.forEach(r=>{ if(!byA.has(r.ag)) byA.set(r.ag,{calls:0,total:0}); const o=byA.get(r.ag);
-    o.total+=r.n; if(r.st==="answered") o.calls+=r.n; });
-  const list = [...byA.entries()].map(([k,o])=>({ag:k, ...o})).sort((x,y)=>y.calls-x.calls);
-  const totalCalls = list.reduce((s,x)=>s+x.calls,0);
-  const active = list.filter(x=>x.calls>0).length;
-  const busiest = list[0];
-  const label = g==="daily"?"Day":g==="weekly"?"Week":"Month";
-
-  $("agChartTitle").textContent = "Calls Handled by Agent \u2014 "+(g==="daily"?"Daily":g==="weekly"?"Weekly":"Monthly");
-  hBars("chAgentCalls", list.map(x=>({label:x.ag, value:x.calls,
-    note: nf(x.calls)+" calls handled"+(x.total!==x.calls? " of "+nf(x.total)+" total":"")})),
-    {unit:"calls", labelW:150, color:"#E8578E"});
-
-  $("agKpis").innerHTML =
-      kpi("Total Calls Handled", nf(totalCalls), periodLabel(F.agPeriod,g), "good")
-    + kpi("Active Agents", nf(active), "handling calls in period", "alt")
-    + kpi("Busiest Agent", busiest?esc(busiest.ag):"\u2014", busiest? nf(busiest.calls)+" calls":"", "alt")
-    + kpi("Avg per Agent", active? nf(Math.round(totalCalls/active)):"0", "calls handled, this period", "");
-
-  const top = list.slice(0,6);
-  $("agRank").innerHTML = '<div class="ranklist">' + top.map((x,i)=>{
-      const w = totalCalls? x.calls/totalCalls*100 : 0;
-      return '<div class="rankrow"><span class="rn">#'+(i+1)+'</span>'
-        + '<span class="ra">'+esc(x.ag)+'</span>'
-        + '<span class="rc">'+nf(x.calls)+'</span>'
-        + '<span class="rp">'+w.toFixed(1)+'%</span></div>';
-    }).join("") + '</div>'
-    + '<p style="margin:12px 0 0;color:var(--ink2);font-size:11.5px">Top '+top.length+' of '+list.length
-    + ' agents by calls handled for '+esc(periodLabel(F.agPeriod,g))+'. Switch the View toggle to compare '
-    + 'daily, weekly or monthly performance.</p>';
-}
-
-/* ---------- Agents (table) ---------- */
 function renderAgents(){
-  const ar = sliceAgents();
-  const byA = new Map();
-  ar.forEach(r=>{
-    if(!byA.has(r.ag)) byA.set(r.ag, {calls:0,answered:0,missed:0,abandoned:0,sec:0,oha:{n:0,s:0},non:{n:0,s:0}});
-    const a=byA.get(r.ag); a.calls+=r.n;
-    if (r.st==="answered"){ a.answered+=r.n; a.sec+=r.sec;
-      const t = r.ch==="OHA"?a.oha:a.non; t.n+=r.n; t.s+=r.sec; }
-    else if (r.st==="missed") a.missed+=r.n; else if (r.st==="abandoned") a.abandoned+=r.n;
-  });
-  let list = [...byA.entries()].map(([k,a])=>({ag:k, ...a, aht: a.answered? a.sec/a.answered : 0}));
-  const s = $("fAgentSort").value;
-  const cmp = {calls_desc:(a,b)=>b.answered-a.answered, calls_asc:(a,b)=>a.answered-b.answered,
-    aht_asc:(a,b)=>(a.aht||1e9)-(b.aht||1e9), aht_desc:(a,b)=>b.aht-a.aht, name:(a,b)=>a.ag.localeCompare(b.ag)}[s];
-  list.sort(cmp);
-
-  // channel tag per agent
-  const chOf = a => a.oha.n && a.non.n ? "Both" : a.oha.n ? "OHA" : a.non.n ? "Non-OHA" : "\u2014";
-  const mx = Math.max(1,...list.map(x=>x.answered));
-  tbl($("tAgent"),
-    [{t:"#",k:"i",n:1},{t:"Agent",k:"a"},{t:"Branch",k:"c"},{t:"Calls Handled",k:"n",n:1},
-     {t:"AHT",k:"aht",n:1},{t:"Answered",k:"an",n:1},{t:"Missed",k:"m",n:1},{t:"Talk Time",k:"tt",n:1}],
-    list.map((r,i)=>({i:i+1, a:esc(r.ag), c:'<span class="tag'+(chOf(r)==="OHA"?"":" lav")+'">'+chOf(r)+'</span>',
-          n:barCell(r.answered,mx), aht:mmss(r.aht), an:nf(r.answered), m:nf(r.missed), tt:mmss(r.sec)})));
+  const kmgr = $("agKpis");
+  if (!kmgr || F.page !== "agent") return;
+  const selWeek = $("agWeek");
+  if (selWeek){
+    if (!F.agWeek || ![...selWeek.options].some(o=>o.value===F.agWeek)) {
+      F.agWeek = selWeek.value || (selWeek.options[selWeek.options.length-1] ? selWeek.options[selWeek.options.length-1].value : null);
     }
+  }
+  // week date range
+  const from = F.agWeek || MIN_D;
+  const to = addD(from, 6) > MAX_D ? MAX_D : addD(from, 6);
+  // week label at top of page
+  const lbl = $("agWeekLabel");
+  if (lbl) lbl.textContent = fmtWeek(from);
+
+  // agents in this week's range + channel, optionally filtered by team
+  const ar = AROWS.filter(r => r.d>=from && r.d<=to && (F.chan==="ALL"||r.ch===F.chan)
+    && (F.agTeam==="all" || AGENT_TEAM[r.ag]===F.agTeam));
+
+  // per agent per day: answered, missed, aht-secs (sum of seconds / answered count)
+  const byAD = {};   // "agent|date" -> {d, answered, missed, sec}
+  const dates = new Set();
+  ar.forEach(r => {
+    dates.add(r.d);
+    const k = r.ag + "|" + r.d;
+    const o = byAD[k] || (byAD[k] = {d:r.d, answered:0, missed:0, sec:0});
+    o.sec += r.sec || 0;
+    if (r.st === "answered") o.answered += r.n;
+    else if (r.st === "missed") o.missed += r.n;
+  });
+  const dateCols = [...dates].sort();
+
+  // aggregate per agent
+  const byA = {};
+  Object.keys(byAD).forEach(k => {
+    const o = byAD[k], ag = k.split("|")[0];
+    const a = byA[ag] || (byA[ag] = {answered:0, missed:0, sec:0, byDate:{}});
+    a.answered += o.answered; a.missed += o.missed; a.sec += o.sec;
+    a.byDate[o.d] = (a.byDate[o.d] || {answered:0, missed:0, sec:0});
+    const b = a.byDate[o.d]; b.answered = (b.answered||0)+o.answered; b.missed=(b.missed||0)+o.missed; b.sec+=o.sec;
+  });
+
+  const rows = Object.keys(byA).map(ag => {
+    const a = byA[ag];
+    return {ag, team: AGENT_TEAM[ag]||"", answered:a.answered, missed:a.missed,
+            aht: a.answered? a.sec/a.answered : 0, byDate:a.byDate};
+  }).sort((x,y) => y.answered - x.answered || y.missed - x.missed);
+
+  const totAns = rows.reduce((s,r)=>s+r.answered,0);
+  const totMis = rows.reduce((s,r)=>s+r.missed,0);
+  const totSec = rows.reduce((s,r)=>s+r.sec,0);
+  const active = rows.filter(r=>r.answered>0).length;
+
+  kmgr.innerHTML =
+      kpi("Total Answered", nf(totAns), active+" active agents", "good")
+    + kpi("Total Missed", nf(totMis), active? pf(totMis/(totAns+totMis))+" of agent calls":"", "bad")
+    + kpi("Avg AHT", totAns? mmss(totSec/totAns) : "—", "across "+nf(totAns)+" answered calls", "alt")
+    + kpi("Answered / Missed", nf(totAns)+" / "+nf(totMis), "dead rate", "");
+
+  // columns: Agent | Team | Ans | Miss | AHT | <each date: Ans/Miss + AHT>
+  const cols = [{t:"Agent",k:"ag"},{t:"Team",k:"team"}];
+  const flatRows = rows.map(r => {
+    const out = {ag:esc(r.ag),
+                 team:'<span class="tag'+(r.team?" lav":"")+'">'+esc(r.team||"—")+'</span>',
+                 ans:nf(r.answered), mis:nf(r.missed), aht:mmss(r.aht), _ans:r.answered, _mis:r.missed};
+    dateCols.forEach(d => {
+      const b = r.byDate[d];
+      out["_"+d] = b && (b.answered||b.missed)
+        ? '<div class="a-cell"><b>'+nf(b.answered)+'</b> / '+nf(b.missed)
+          + (b.answered? '<span class="small"> · '+mmss(b.sec/b.answered)+'</span>':'')+'</div>'
+        : "";
+    });
+    return out;
+  });
+  // header: first row agent/team/ans/mis/aht with titles
+  cols.push({t:"Answered",k:"ans",n:1},{t:"Missed",k:"mis",n:1},{t:"Avg AHT",k:"aht",n:1});
+  dateCols.forEach(d => cols.push({t:fmtDY(d),k:"_"+d}));
+
+  tbl($("tAgent"), cols, flatRows.length ? flatRows :
+    [{ag:'<div class="empty" style="padding:14px">No agent calls in this week/team.</div>', team:"", ans:"", mis:"", aht:""}]);
+
+  // totals row
+  const tEl = $("tAgent");
+  const tr = document.createElement("tr"); tr.className="tot";
+  let html = '<td><b>Total</b></td><td></td><td class="n"><b>'+nf(totAns)+'</b></td><td class="n"><b>'+nf(totMis)+'</b></td><td class="n"><b>'+mmss(totSec/(totAns||1))+'</b></td>';
+  dateCols.forEach(d => {
+    const t = rows.reduce((s,r)=> s + ((r.byDate[d]||{}).answered||0), 0);
+    const tm = rows.reduce((s,r)=> s + ((r.byDate[d]||{}).missed||0), 0);
+    html += '<td class="n"><b>'+nf(t)+'</b> / '+nf(tm)+'</td>';
+  });
+  html += '</tr>';
+  tEl.insertAdjacentHTML("beforeend", html);
+}
 
     /* Lightbox: daily x hourly call-count table for one IVR branch, within the
        current channel/date scope. The IVR cube has no agent dimension, so seated

@@ -199,34 +199,25 @@
 
 <!-- ============================ PAGE 3: AGENT PERFORMANCE ============================ -->
 <section class="page" id="pageAgent" hidden>
-<div class="sect"><h2>Agent Performance</h2><div class="line"></div></div>
+<div class="sect"><h2>Agent Performance</h2>
+  <span class="chip" id="agWeekLabel">—</span><div class="line"></div></div>
 
-<div class="agent-controls">
-  <div class="fgroup"><span class="flabel">View</span>
-    <div class="pills" id="agGranPills">
-      <button class="pill" data-v="daily">Daily</button>
-      <button class="pill on" data-v="weekly">Weekly</button>
-      <button class="pill" data-v="monthly">Monthly</button>
+<div class="status-wrap">
+  <div class="fgroup"><span class="flabel">Team</span>
+    <div class="pills" id="agTeamPills">
+      <button class="pill on" data-v="all">Entire Call Team</button>
+      <button class="pill" data-v="danielle">Team Danielle</button>
+      <button class="pill" data-v="brai">Team Brai</button>
+      <button class="pill" data-v="cess">Team Cess</button>
     </div></div>
-  <div class="fgroup"><span class="flabel">Period</span><select id="agPeriod" style="min-width:180px"></select></div>
+  <div class="fgroup"><span class="flabel">Week</span>
+    <select id="agWeek" class="pillsel"></select></div>
 </div>
 
 <div class="kpis" id="agKpis" style="margin-top:16px"></div>
 
-<div class="grid g2" style="margin-top:16px">
-  <div class="card"><div class="card-hd"><h3 id="agChartTitle">Calls Handled by Agent</h3>
-    <span class="sub">answered calls per agent &middot; sorted high &rarr; low</span></div>
-    <div id="chAgentCalls" class="chart-cap"></div></div>
-  <div class="card"><div class="card-hd"><h3>Top Performing Agents</h3>
-    <span class="sub">by calls handled in the selected period</span></div>
-    <div id="agRank" class="ranklist-wrap"></div></div>
-</div>
-
-<div class="card" style="margin-top:16px"><div class="card-hd"><h3>Agent Table</h3>
-    <select id="fAgentSort" style="min-width:170px">
-      <option value="calls_desc">Highest Calls</option><option value="calls_asc">Lowest Calls</option>
-      <option value="aht_asc">Best AHT</option><option value="aht_desc">Highest AHT</option>
-      <option value="name">Name (A&ndash;Z)</option></select></div>
+<div class="card" style="margin-top:16px"><div class="card-hd"><h3>Daily Answered / Missed / AHT per Agent</h3>
+  <span class="sub">answered &amp; missed calls + average handle time, per day, for the selected week &amp; team &middot; sorted by total answered</span></div>
   <div class="scroll"><table id="tAgent"></table></div></div>
 
   <!-- Agent Status History -->
