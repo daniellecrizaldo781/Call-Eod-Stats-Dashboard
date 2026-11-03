@@ -153,6 +153,8 @@ function rebindCatSearch(el, cats, onChange){
     });
   };
 }
+// Build a compact brand picker: a single trigger pill + a dropdown (checkbox list + Select All).
+function buildBrandPicker(id, set, brands){
   const el = $(id);
   const cur = bkSelLabel(set, brands);
   let html = '<button type="button" class="bk-trigger" id="'+id+'Trig" data-set="'+id+'">'+esc(cur)+'</button>' +
