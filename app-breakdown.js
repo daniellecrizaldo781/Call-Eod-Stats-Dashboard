@@ -307,23 +307,15 @@ function bkRenderWeekCmp(){
 
      function renderBkCatDrill(cat){
      const rows = bkFiltered();
+     const d = $("bkCatDetail");
      if (cat === "ALL"){
+     // no chart — just show a hint to pick a category
      const byCat = new Map(); rows.forEach(r=>byCat.set(r.cat,(byCat.get(r.cat)||0)+1));
-     const drill = [...byCat.entries()].sort((a,b)=>b[1]-a[1]).slice(0,10)
-       .map(([k,v])=>({label:k, value:v}));
-     hBars("chBkBranchDrill", drill, {color:"#C76BA0", labelW:190,
-       suffix:"", note:"select a category pill to see its subcategories"});
-     const d = $("bkCatDetail"); if (d) d.innerHTML = "";
+     const topCats = [...byCat.entries()].sort((a,b)=>b[1]-a[1]).slice(0,6).map(([k])=>k.replace(/_/g," ")).join(", ");
+     if (d) d.innerHTML = '<div class="sub" style="padding:14px">Pick a category above to see its subcategories, daily counts, and resolution breakdown.</div>';
      return;
      }
-     // subcategory totals for this category
-     const subMap = new Map();
-     rows.filter(r=>r.cat===cat).forEach(r=>subMap.set(r.sub,(subMap.get(r.sub)||0)+1));
-     const drill = [...subMap.entries()].sort((a,b)=>b[1]-a[1]).slice(0,15)
-     .map(([k,v])=>({label:k, value:v}));
-     hBars("chBkBranchDrill", drill, {color:"#E8578E", labelW:230, note:cat+" — click a subcategory to see its daily tickets"});
-
-     // daily table: rows = subcategories, cols = dates, cell = tickets; + resolution columns
+     // daily table: rows = subcategories, cols = dates, cell = tickets; + standout resolution columns
      const catRows = rows.filter(r=>r.cat===cat);
      const subs = [...new Set(catRows.map(r=>r.sub))];
      const days = [...new Set(catRows.map(r=>r.d))].sort();
@@ -335,21 +327,20 @@ function bkRenderWeekCmp(){
      resMap[r.sub] = resMap[r.sub] || {Refunded:0,Reshipped:0,NonRefund:0,Tickets:0};
      resMap[r.sub][b]=(resMap[r.sub][b]||0)+1; resMap[r.sub].Tickets++;
      });
-     const head = '<tr><th>Subcategory</th>' + days.map(d=>'<th>'+esc(fmtD(d))+'</th>').join("") +
-     '<th>Total</th><th>Resolved / Non-Refund</th><th>Reshipped</th><th>Refunded</th></tr>';
+     const head = '<tr><th>Subcategory</th>' + days.map(dd=>'<th>'+esc(fmtD(dd))+'</th>').join("") +
+     '<th>Total</th><th class="lb-tier lb-nonrefund">Resolved / Non-Refund</th><th class="lb-tier lb-reshipped">Reshipped</th><th class="lb-tier lb-refunded">Refunded</th></tr>';
      const body = subs.map(sub=>{
      const r = resMap[sub]||{Refunded:0,Reshipped:0,NonRefund:0,Tickets:0};
      let td = '<td><a class="bk-sub-link" data-sub="'+esc(sub)+'">'+esc(sub)+'</a></td>';
      let tot = 0;
-     days.forEach(d=>{ const v=cell[sub+"|"+d]||0; tot+=v; td += '<td class="n">'+(v?nf(v):"&middot;")+'</td>'; });
+     days.forEach(dd=>{ const v=cell[sub+"|"+dd]||0; tot+=v; td += '<td class="n">'+(v?nf(v):"&middot;")+'</td>'; });
      td += '<td class="n"><b>'+nf(tot)+'</b></td>';
-     td += '<td class="n">'+nf(r.NonRefund)+'</td><td class="n">'+nf(r.Reshipped)+'</td><td class="n">'+nf(r.Refunded)+'</td>';
+     td += '<td class="n lb-tier lb-nonrefund">'+nf(r.NonRefund)+'</td><td class="n lb-tier lb-reshipped">'+nf(r.Reshipped)+'</td><td class="n lb-tier lb-refunded">'+nf(r.Refunded)+'</td>';
      return '<tr>'+td+'</tr>';
      }).join("");
-     const $detail = $("bkCatDetail");
-     if ($detail){
-     $detail.innerHTML = '<div class="scroll"><table class="bk-drill">'+head+'<tbody>'+body+'</tbody></table></div>';
-     $detail.querySelectorAll(".bk-sub-link").forEach(a=>{
+     if (d){
+     d.innerHTML = '<div class="scroll"><table class="bk-drill">'+head+'<tbody>'+body+'</tbody></table></div>';
+     d.querySelectorAll(".bk-sub-link").forEach(a=>{
        a.onclick = e=>{ e.preventDefault(); bkDailyLightbox(a.dataset.sub, catRows); };
      });
      }
