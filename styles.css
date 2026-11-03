@@ -545,3 +545,13 @@ footer{margin-top:36px;text-align:center;font-size:11.5px;color:var(--mauve)}
 .lb-empty{padding:18px;text-align:center;color:var(--ink2);font-size:12.5px}
 .agent-link{cursor:pointer;color:var(--rose-d);font-weight:700;text-decoration:underline;text-underline-offset:2px}
 .agent-link:hover{color:var(--rose)}
+/* Call Breakdown interactive drill */
+.bk-sub-link{cursor:pointer;color:var(--rose-d);font-weight:700;text-decoration:underline;text-underline-offset:2px}
+.bk-sub-link:hover{color:var(--rose)}
+.bk-drill{width:100%;border-collapse:collapse;font-size:12px}
+.bk-drill th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.3px;color:var(--mauve);
+  padding:6px 8px;border-bottom:2px solid var(--line);white-space:nowrap}
+.bk-drill td{padding:6px 8px;border-bottom:1px solid var(--line);color:var(--ink);white-space:nowrap}
+.bk-drill td.n{text-align:right;font-variant-numeric:tabular-nums}
+.bk-drill tr:hover td{background:var(--blush)}
+.bk-drill tr.tot td{background:var(--blush2);font-weight:700;border-top:2px solid var(--line);border-bottom:none}

@@ -105,10 +105,15 @@ function bkFillSelects(){
   const concerns = [...new Set(bkAll().map(r=>r.concern))].sort((a,b)=>a.localeCompare(b));
   $("bkConcern").innerHTML = '<option value="ALL">All Concerns</option>' +
     concerns.map(c=>'<option value="'+esc(c)+'">'+esc(c)+'</option>').join("");
-  // branch picker for drill-in
+  // category pills (drivers + refund) — same category list, independent selection
   const cats = [...new Set(bkAll().map(r=>r.cat))].sort((a,b)=>a.localeCompare(b));
-  $("bkBranchPick").innerHTML = '<option value="ALL">All Branches</option>' +
-    cats.map(c=>'<option value="'+esc(c)+'">'+esc(c)+'</option>').join("");
+  ["bkCatPills","bkRefCatPills"].forEach(id => {
+    const el = $(id); if (!el) return;
+    el.innerHTML = '<button class="pill on" data-v="ALL">All Categories</button>' +
+      cats.map(c=>'<button class="pill" data-v="'+esc(c)+'">'+esc(c.replace(/_/g," "))+'</button>').join("");
+    el.onclick = null;
+  });
+  wireBkCatPills();
 }
 // Build a compact brand picker: a single trigger pill + a dropdown (checkbox list + Select All).
 function buildBrandPicker(id, set, brands){
@@ -168,23 +173,26 @@ function bkRender(){
     .map(([k,v])=>({label:k, value:v}));
   hBars("chBkDrivers", topSubs, {color:"#E8578E", labelW:210,
     note: driversScope==="All Brands" ? "all brands" : driversScope});
-
-  // ---- Per-branch drill ----
-  const pick = $("bkBranchPick").value || "ALL";
-  $("bkBranchScope").textContent = scope;
-  if (pick === "ALL"){
-    const drill = [...byCat.entries()].sort((a,b)=>b[1]-a[1]).slice(0,8)
-      .map(([k,v])=>({label:k, value:v}));
-    hBars("chBkBranchDrill", drill, {color:"#C76BA0", labelW:170,
-      suffix:"", note:"select a branch above to see its drivers"});
-  } else {
-    const subMap = new Map();
-    rows.filter(r=>r.cat===pick).forEach(r=>subMap.set(r.sub,(subMap.get(r.sub)||0)+1));
-    const drill = [...subMap.entries()].sort((a,b)=>b[1]-a[1]).slice(0,15)
-      .map(([k,v])=>({label:k, value:v}));
-    hBars("chBkBranchDrill", drill, {color:"#E8578E", labelW:210,
-      note:pick+" — top call drivers"});
+  // click a driver name -> daily-count lightbox for that subcategory
+  const drvEl = $("chBkDrivers");
+  if (drvEl){
+    drvEl.querySelectorAll("text[data-t]").forEach(tx => {
+      tx.classList.add("bk-sub-link");
+      tx.style.cursor = "pointer";
+      tx.addEventListener("click", function(){
+        bkDailyLightbox(tx.getAttribute("data-t"), driversRows);
+      });
+    });
   }
+  // ALSO: clicking a category label in the per-branch chart is handled elsewhere
+
+  // ---- Per-branch / per-category drill ---- pick by category pills
+  const pick = (BK.catDrill || "ALL");
+  $("bkBranchScope").textContent = scope;
+  renderBkCatDrill(pick);
+
+  // ---- Per-category refund detail ---- pick by refund category pills
+  renderBkRefDetail(BK.refCat || "ALL");
 
   // ---- Top refund reasons (subcategory among refunded) ----
   const rsub = new Map();
@@ -237,4 +245,137 @@ function bkRenderWeekCmp(){
      {m:"Total Tickets", a:nf(A.total), b:nf(B.total), c:chg(A.total, B.total)},
      {m:"Refund Rate", a:pf(bkRefundRatePct(A,B)), b:pf(bkRefundRatePct(B,A)),
       c:chg(bkRefundRatePct(A,B), bkRefundRatePct(B,A))}]);
-}
+     }
+
+     /* ================= Per-category drill (interactive) ================= */
+     function wireBkCatPills(){
+     ["bkCatPills","bkRefCatPills"].forEach(id => {
+     const el = $(id); if (!el) return;
+     el.addEventListener("click", e=>{
+       const b = e.target.closest(".pill"); if(!b) return;
+       [...el.children].forEach(x=>x.classList.remove("on"));
+       b.classList.add("on");
+       if (id === "bkCatPills"){ BK.catDrill = b.dataset.v; renderBkCatDrill(BK.catDrill); }
+       else { BK.refCat = b.dataset.v; renderBkRefDetail(BK.refCat); }
+     });
+     });
+     }
+     // classify a row's resolution into a readable bucket (from the coarse `res` field)
+     function bkResBucket(r){
+       const res = (r.res||"").toLowerCase();
+       if ((r.refund||0) > 0 || /refund|refunded|cancelled/.test(res)) return "Refunded";
+       if (/reshipp/.test(res)) return "Reshipped";
+       return "Non-Refund";
+     }
+     // generic small lightbox (reuses the shared .lb-* CSS)
+     function bkLightbox(title, sub, headHtml, bodyRows, footHtml){
+     const ov = document.createElement("div");
+     ov.className = "lb-overlay";
+     ov.innerHTML = '<div class="lb-box"><div class="lb-hd"><div><h3>'+esc(title)+'</h3>'+
+     '<div class="lb-sub">'+esc(sub)+'</div></div><button class="lb-close">&times;</button></div>'+
+     '<div class="lb-body"><div class="tscroll"><table><thead>'+headHtml+'</thead><tbody>'+bodyRows.join("")+(footHtml||"")+'</tbody></table></div></div>';
+     function close(){ ov.remove(); document.removeEventListener("keydown", onKey); }
+     function onKey(e){ if(e.key==="Escape") close(); }
+     ov.querySelector(".lb-close").onclick = close;
+     ov.addEventListener("click", e=>{ if(e.target===ov) close(); });
+     document.addEventListener("keydown", onKey);
+     document.body.appendChild(ov);
+     }
+     // daily count table for one subcategory (clicking a driver name)
+     function bkDailyLightbox(sub, rows){
+     const scope = rows.filter(r=>r.sub === sub);
+     const days = [...new Set(scope.map(r=>r.d))].sort();
+     const buckets = {Refunded:0,Reshipped:0,NonRefund:0};
+     scope.forEach(r=>{ buckets[bkResBucket(r)]++; });
+     const total = scope.length;
+     bkLightbox(sub, total+" tickets · "+nf(buckets.NonRefund)+" non-refund, "+nf(buckets.Reshipped)+" reshipped, "+nf(buckets.Refunded)+" refunded",
+     '<tr><th>Date</th><th>Tickets</th></tr>',
+     days.map(d=>'<tr><td>'+esc(fmtDY(d))+'</td><td class="n">'+nf(scope.filter(r=>r.d===d).length)+'</td></tr>'),
+     '<tr class="tot"><td><b>Total</b></td><td class="n"><b>'+nf(total)+'</b></td></tr>');
+     }
+
+     function renderBkCatDrill(cat){
+     const rows = bkFiltered();
+     if (cat === "ALL"){
+     const byCat = new Map(); rows.forEach(r=>byCat.set(r.cat,(byCat.get(r.cat)||0)+1));
+     const drill = [...byCat.entries()].sort((a,b)=>b[1]-a[1]).slice(0,10)
+       .map(([k,v])=>({label:k, value:v}));
+     hBars("chBkBranchDrill", drill, {color:"#C76BA0", labelW:190,
+       suffix:"", note:"select a category pill to see its subcategories"});
+     const d = $("bkCatDetail"); if (d) d.innerHTML = "";
+     return;
+     }
+     // subcategory totals for this category
+     const subMap = new Map();
+     rows.filter(r=>r.cat===cat).forEach(r=>subMap.set(r.sub,(subMap.get(r.sub)||0)+1));
+     const drill = [...subMap.entries()].sort((a,b)=>b[1]-a[1]).slice(0,15)
+     .map(([k,v])=>({label:k, value:v}));
+     hBars("chBkBranchDrill", drill, {color:"#E8578E", labelW:230, note:cat+" — click a subcategory to see its daily tickets"});
+
+     // daily table: rows = subcategories, cols = dates, cell = tickets; + resolution columns
+     const catRows = rows.filter(r=>r.cat===cat);
+     const subs = [...new Set(catRows.map(r=>r.sub))];
+     const days = [...new Set(catRows.map(r=>r.d))].sort();
+     const cell = {};
+     catRows.forEach(r=>{ const k=r.sub+"|"+r.d; cell[k]=(cell[k]||0)+1; });
+     const resMap = {};
+     catRows.forEach(r=>{
+     const b = bkResBucket(r);
+     resMap[r.sub] = resMap[r.sub] || {Refunded:0,Reshipped:0,NonRefund:0,Tickets:0};
+     resMap[r.sub][b]=(resMap[r.sub][b]||0)+1; resMap[r.sub].Tickets++;
+     });
+     const head = '<tr><th>Subcategory</th>' + days.map(d=>'<th>'+esc(fmtD(d))+'</th>').join("") +
+     '<th>Total</th><th>Non-Refund</th><th>Reshipped</th><th>Refunded</th></tr>';
+     const body = subs.map(sub=>{
+     const r = resMap[sub]||{Refunded:0,Reshipped:0,NonRefund:0,Tickets:0};
+     let td = '<td><a class="bk-sub-link" data-sub="'+esc(sub)+'">'+esc(sub)+'</a></td>';
+     let tot = 0;
+     days.forEach(d=>{ const v=cell[sub+"|"+d]||0; tot+=v; td += '<td class="n">'+(v?nf(v):"&middot;")+'</td>'; });
+     td += '<td class="n"><b>'+nf(tot)+'</b></td>';
+     td += '<td class="n">'+nf(r.NonRefund)+'</td><td class="n">'+nf(r.Reshipped)+'</td><td class="n">'+nf(r.Refunded)+'</td>';
+     return '<tr>'+td+'</tr>';
+     }).join("");
+     const $detail = $("bkCatDetail");
+     if ($detail){
+     $detail.innerHTML = '<div class="scroll"><table class="bk-drill">'+head+'<tbody>'+body+'</tbody></table></div>';
+     $detail.querySelectorAll(".bk-sub-link").forEach(a=>{
+       a.onclick = e=>{ e.preventDefault(); bkDailyLightbox(a.dataset.sub, catRows); };
+     });
+     }
+     }
+
+     function renderBkRefDetail(cat){
+     const el = $("bkRefDetail"); if (!el) return;
+     const rows = bkFiltered();
+     if (!cat || cat === "ALL"){
+     el.innerHTML = '<div class="sub" style="padding:12px">Select a category above to see per-subcategory refund amounts.</div>';
+     return;
+     }
+     const catRows = rows.filter(r=>r.cat===cat && (r.refund||0)>0);
+     if (!catRows.length){
+     el.innerHTML = '<div class="sub" style="padding:12px">No refunded tickets in this category for the current scope.</div>';
+     return;
+     }
+     const subs = [...new Set(catRows.map(r=>r.sub))];
+     const days = [...new Set(catRows.map(r=>r.d))].sort();
+     const cnt = {}, amt = {};
+     catRows.forEach(r=>{ const k=r.sub+"|"+r.d; cnt[k]=(cnt[k]||0)+1; amt[k]=(amt[k]||0)+(r.refund||0); });
+     const subRefund = {}; catRows.forEach(r=>{ subRefund[r.sub]=(subRefund[r.sub]||0)+(r.refund||0); });
+     const subCount = {}; catRows.forEach(r=>{ subCount[r.sub]=(subCount[r.sub]||0)+1; });
+
+     const head = '<tr><th>Subcategory</th>'+days.map(d=>'<th>'+esc(fmtD(d))+'</th>').join("")+
+     '<th>Tickets</th><th>Refunded $</th></tr>';
+     const body = subs.map(sub=>{
+     let td = '<td>'+esc(sub)+'</td>';
+     days.forEach(d=>{ const v=cnt[sub+"|"+d]||0; td += '<td class="n">'+(v?nf(v):"&middot;")+'</td>'; });
+     td += '<td class="n"><b>'+nf(subCount[sub])+'</b></td><td class="n"><b>$'+nf(Math.round(subRefund[sub]))+'</b></td>';
+     return '<tr>'+td+'</tr>';
+     }).join("");
+     const totCount = catRows.length, totAmt = catRows.reduce((s,r)=>s+r.refund,0);
+     // per-day ticket totals for the footer
+     const dayTot = days.map(d => catRows.filter(r=>r.d===d).length);
+     let foot = '<tr class="tot"><td><b>Total</b></td>';
+     dayTot.forEach(t => foot += '<td class="n"><b>'+nf(t)+'</b></td>');
+     foot += '<td class="n"><b>'+nf(totCount)+'</b></td><td class="n"><b>$'+nf(Math.round(totAmt))+'</b></td></tr>';
+     el.innerHTML = '<div class="scroll"><table class="bk-drill">'+head+'<tbody>'+body+foot+'</tbody></table></div>';
+     }

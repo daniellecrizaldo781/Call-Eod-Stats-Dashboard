@@ -181,7 +181,6 @@ function wire(){
   $("bkBrand").addEventListener("click", bkPickerHandler);
   $("bkDriversBrand").addEventListener("click", bkPickerHandler);
   $("bkConcern").onchange = e => { BK.concern = e.target.value; bkRender(); };
-  $("bkBranchPick").onchange = () => bkRender();
   $("bkCmpA").onchange = () => bkRenderWeekCmp();
   $("bkCmpB").onchange = () => bkRenderWeekCmp();
   $("bkReset").onclick = () => {
