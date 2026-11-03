@@ -321,11 +321,32 @@ function bkRenderWeekCmp(){
      resMap[r.sub] = resMap[r.sub] || {cat:r.cat, Refunded:0,Reshipped:0,NonRefund:0,Tickets:0};
      resMap[r.sub][b]=(resMap[r.sub][b]||0)+1; resMap[r.sub].Tickets++;
      });
+     // previous-week per-subcategory totals (same channel/brand/concern scope)
+     const pw = bkPrevWeekBounds();
+     const pwMap = {};
+     if (pw){
+     catRows.forEach(r=>{
+       if (r.d < pw[0] || r.d > pw[1]) return;
+       const b = bkResBucket(r);
+       pwMap[r.sub] = pwMap[r.sub] || {Refunded:0,Reshipped:0,NonRefund:0,Tickets:0};
+       pwMap[r.sub][b]++; pwMap[r.sub].Tickets++;
+     });
+     }
      const head = '<tr><th>Subcategory</th>'+(showCat?'<th>Category</th>':'') + days.map(dd=>'<th>'+esc(fmtD(dd))+'</th>').join("") +
      '<th>Total</th><th class="lb-tier lb-nonrefund">Resolved / Non-Refund</th><th class="lb-tier lb-reshipped">Reshipped</th><th class="lb-tier lb-refunded">Refunded</th></tr>';
      const body = subs.map(sub=>{
      const r = resMap[sub]||{cat:"",Refunded:0,Reshipped:0,NonRefund:0,Tickets:0};
-     let td = '<td><a class="bk-sub-link" data-sub="'+esc(sub)+'">'+esc(sub)+'</a></td>';
+     // prev-week chip: "PW · 12 tkts · 8R/3Rs/1Rd"
+     let pwChip = "";
+     const p = pwMap[sub];
+     if (pw && p && p.Tickets > 0){
+       pwChip = '<div class="bk-pw-chip" title="Previous week '+fmtDY(pw[0])+' → '+fmtDY(pw[1])+'">'+
+                '<span class="pw-t">PW '+nf(p.Tickets)+'</span>'+
+                '<span class="pw-non">'+nf(p.NonRefund)+'R</span>'+
+                '<span class="pw-rs">'+nf(p.Reshipped)+'Rs</span>'+
+                '<span class="pw-rf">'+nf(p.Refunded)+'Rd</span></div>';
+     }
+     let td = '<td><a class="bk-sub-link" data-sub="'+esc(sub)+'">'+esc(sub)+'</a>'+pwChip+'</td>';
      if (showCat) td += '<td><span class="tag lav">'+esc(r.cat.replace(/_/g," "))+'</span></td>';
      let tot = 0;
      days.forEach(dd=>{ const v=cell[sub+"|"+dd]||0; tot+=v; td += '<td class="n">'+(v?'<a class="bk-day-link" data-sub="'+esc(sub)+'" data-day="'+esc(dd)+'">'+nf(v)+'</a>':"&middot;")+'</td>'; });

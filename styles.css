@@ -568,3 +568,10 @@ th.lb-nonrefund[class], td.lb-nonrefund{background:#EFE6F8;color:#7A4BA8}
 .bk-url{color:var(--rose-d);font-weight:600}
 a.bk-url{text-decoration:underline;text-underline-offset:2px}
 a.bk-url:hover{color:var(--rose)}
+/* previous-week per-subcategory chip */
+.bk-pw-chip{display:flex;flex-wrap:wrap;gap:5px;margin-top:4px;font-size:10px;font-weight:600;align-items:center}
+.bk-pw-chip span{border-radius:8px;padding:1px 6px;line-height:1.5;white-space:nowrap}
+.bk-pw-chip .pw-t{background:var(--blush2);color:var(--ink)}
+.bk-pw-chip .pw-non{background:#EFE6F8;color:#7A4BA8}
+.bk-pw-chip .pw-rs{background:#E3F0FB;color:#2C6FBF}
+.bk-pw-chip .pw-rf{background:#FBE4EC;color:#D33A68}
