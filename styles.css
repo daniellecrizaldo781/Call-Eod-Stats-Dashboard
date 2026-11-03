@@ -555,23 +555,9 @@ footer{margin-top:36px;text-align:center;font-size:11.5px;color:var(--mauve)}
 .bk-drill td.n{text-align:right;font-variant-numeric:tabular-nums}
 .bk-drill tr:hover td{background:var(--blush)}
 .bk-drill tr.tot td{background:var(--blush2);font-weight:700;border-top:2px solid var(--line);border-bottom:none}
-
-/* Searchable category dropdown (Call Breakdown) */
-.bk-catpick{position:relative;min-width:230px;font-size:12.5px}
-.bk-cat-trigger{cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:8px;
-  border:1px solid var(--line);border-radius:var(--r);padding:7px 10px;background:var(--white);
-  color:var(--ink);font-weight:600}
-.bk-cat-trigger:hover{border-color:var(--rose)}
-.bk-caret{color:var(--mauve);font-size:10px}
-.bk-cat-menu{display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;z-index:120;
-  background:var(--white);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh2);overflow:hidden}
-.bk-cat-menu.on{display:block}
-.bk-cat-search{padding:8px;border-bottom:1px solid var(--line)}
-.bk-cat-search input{width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:6px;
-  padding:6px 8px;font-size:12.5px;color:var(--ink)}
-.bk-cat-search input:focus{outline:none;border-color:var(--rose)}
-.bk-cat-list{max-height:240px;overflow:auto}
-.bk-cat-opt{padding:7px 10px;cursor:pointer;color:var(--ink);white-space:nowrap}
-.bk-cat-opt:hover{background:var(--blush)}
-.bk-cat-opt.on{background:var(--blush2);color:var(--rose-d);font-weight:700}
-.bk-cat-opt:first-child{border-bottom:1px solid var(--line);font-weight:700;color:var(--mauve)}
+/* standout resolution-tier columns (Refunded / Reshipped / Resolved+Non-Refund) */
+.lb-tier{text-align:center;font-weight:700}
+th.lb-refunded[class], td.lb-refunded{background:#FBE4EC;color:#D33A68}
+th.lb-reshipped[class], td.lb-reshipped{background:#E3F0FB;color:#2C6FBF}
+th.lb-nonrefund[class], td.lb-nonrefund{background:#EFE6F8;color:#7A4BA8}
+.bk-drill th.lb-refunded,.bk-drill th.lb-reshipped,.bk-drill th.lb-nonrefund{font-size:10px;letter-spacing:.2px}

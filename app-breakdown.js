@@ -105,53 +105,23 @@ function bkFillSelects(){
   const concerns = [...new Set(bkAll().map(r=>r.concern))].sort((a,b)=>a.localeCompare(b));
   $("bkConcern").innerHTML = '<option value="ALL">All Concerns</option>' +
     concerns.map(c=>'<option value="'+esc(c)+'">'+esc(c)+'</option>').join("");
-  // category searchable dropdowns (drivers + refund) — same category list, independent selection
+  // category dropdowns (drivers + refund) — same category list, independent selection
   const cats = [...new Set(bkAll().map(r=>r.cat))].sort((a,b)=>a.localeCompare(b));
-  buildCatPicker("bkCatPick",  cats, BK.catDrill || "ALL", function(c){ BK.catDrill = c; renderBkCatDrill(c); });
-  buildCatPicker("bkRefCatPick", cats, BK.refCat || "ALL", function(c){ BK.refCat = c; renderBkRefDetail(c); });
+  fillCatSelect("bkCatPick", cats, BK.catDrill || "ALL");
+  // refund picker: only categories that actually have refunded tickets
+  const refundCats = [...new Set(bkAll().filter(r=>(r.refund||0)>0).map(r=>r.cat))].sort((a,b)=>a.localeCompare(b));
+  fillCatSelect("bkRefCatPick", refundCats, BK.refCat && refundCats.includes(BK.refCat) ? BK.refCat : "ALL");
 }
-// Build a searchable single-select dropdown listing the categories.
-// id: container el; cats: array (raw cat keys); cur: current selection; onChange(v)
-function buildCatPicker(id, cats, cur, onChange){
+// Populate a native <select> with the categories (value = raw cat key).
+function fillCatSelect(id, cats, cur){
   const el = $(id); if (!el) return;
   const label = c => c === "ALL" ? "All Categories" : c.replace(/_/g, " ");
-  let h = '<div class="bk-cat-trigger" data-pick="'+id+'"><span class="bk-cat-label">'+esc(label(cur))+'</span> <span class="bk-caret">▾</span></div>'+
-          '<div class="bk-cat-menu" data-pick="'+id+'">'+
-            '<div class="bk-cat-search"><input type="text" placeholder="Search category…" data-pick="'+id+'"></div>'+
-            '<div class="bk-cat-list" data-pick="'+id+'">'+
-              '<div class="bk-cat-opt'+(cur==="ALL"?" on":"")+'" data-pick="'+id+'" data-v="ALL">All Categories</div>'+
-              cats.map(c=>'<div class="bk-cat-opt'+(c===cur?" on":"")+'" data-pick="'+id+'" data-v="'+esc(c)+'">'+esc(label(c))+'</div>').join("")+
-            '</div></div>';
-  el.innerHTML = h;
-  // open/close
-  const trig = el.querySelector(".bk-cat-trigger");
-  trig.onclick = function(e){
-    e.stopPropagation();
-    const menu = el.querySelector(".bk-cat-menu");
-    const openIt = menu.classList.toggle("on");
-    if (openIt){ const inp = el.querySelector(".bk-cat-search input"); if (inp) inp.focus(); }
-    rebindCatSearch(el, cats, onChange);
-  };
-  el.querySelector(".bk-cat-menu").onclick = function(e){
-    const opt = e.target.closest(".bk-cat-opt"); if (!opt) return;
-    [...el.querySelectorAll(".bk-cat-opt")].forEach(x=>x.classList.remove("on"));
-    opt.classList.add("on");
-    el.querySelector(".bk-cat-menu").classList.remove("on");
-    el.querySelector(".bk-cat-label").textContent = label(opt.dataset.v);
-    onChange(opt.dataset.v);
-  };
-}
-// live-filter the option list as the user types in the search box
-function rebindCatSearch(el, cats, onChange){
-  const inp = el.querySelector(".bk-cat-search input"); if (!inp) return;
-  const list = el.querySelector(".bk-cat-list");
-  inp.oninput = function(){
-    const q = inp.value.trim().toLowerCase();
-    [...list.children].forEach(opt=>{
-      const ok = opt.dataset.v === "ALL" || opt.textContent.toLowerCase().indexOf(q) >= 0;
-      opt.style.display = ok ? "" : "none";
-    });
-  };
+  el.innerHTML = '<option value="ALL">All Categories</option>' +
+    cats.map(c=>'<option value="'+esc(c)+'"'+(c===cur?" selected":"")+'>'+esc(label(c))+'</option>').join("");
+  el.value = cur;   // ensure selection sticks even if not in fresh list
+  el.onchange = id === "bkCatPick"
+    ? function(){ BK.catDrill = el.value; renderBkCatDrill(el.value); }
+    : function(){ BK.refCat  = el.value; renderBkRefDetail(el.value); };
 }
 // Build a compact brand picker: a single trigger pill + a dropdown (checkbox list + Select All).
 function buildBrandPicker(id, set, brands){
@@ -306,17 +276,33 @@ function bkRenderWeekCmp(){
      document.addEventListener("keydown", onKey);
      document.body.appendChild(ov);
      }
-     // daily count table for one subcategory (clicking a driver name)
+     // daily count table for one subcategory (clicking a driver name).
+     // Each day row shows tickets + a standout Refunded / Reshipped / Resolved+Non-Refund split.
      function bkDailyLightbox(sub, rows){
      const scope = rows.filter(r=>r.sub === sub);
      const days = [...new Set(scope.map(r=>r.d))].sort();
-     const buckets = {Refunded:0,Reshipped:0,NonRefund:0};
-     scope.forEach(r=>{ buckets[bkResBucket(r)]++; });
+     // per day x tier
+     const cell = {};
+     scope.forEach(r=>{ const k=r.d+"|"+bkResBucket(r); cell[k]=(cell[k]||0)+1; });
+     const totals = {Refunded:0,Reshipped:0,NonRefund:0};
+     scope.forEach(r=>{ totals[bkResBucket(r)]++; });
      const total = scope.length;
-     bkLightbox(sub, total+" tickets · "+nf(buckets.NonRefund)+" resolved/non-refund, "+nf(buckets.Reshipped)+" reshipped, "+nf(buckets.Refunded)+" refunded",
-     '<tr><th>Date</th><th>Tickets</th></tr>',
-     days.map(d=>'<tr><td>'+esc(fmtDY(d))+'</td><td class="n">'+nf(scope.filter(r=>r.d===d).length)+'</td></tr>'),
-     '<tr class="tot"><td><b>Total</b></td><td class="n"><b>'+nf(total)+'</b></td></tr>');
+     const tierHead = (lbl,cls)=>'<th class="lb-tier '+cls+'">'+lbl+'</th>';
+     const dayRows = days.map(d=>{
+       const R=cell[d+"|Refunded"]||0, H=cell[d+"|Reshipped"]||0, N=cell[d+"|NonRefund"]||0;
+       const dayTot = R+H+N;
+       return '<tr><td>'+esc(fmtDY(d))+'</td><td class="n"><b>'+nf(dayTot)+'</b></td>'
+         + '<td class="n lb-tier lb-refunded">'+nf(R)+'</td>'
+         + '<td class="n lb-tier lb-reshipped">'+nf(H)+'</td>'
+         + '<td class="n lb-tier lb-nonrefund">'+nf(N)+'</td></tr>';
+     }).join("");
+     bkLightbox(sub, total+" tickets · "+nf(totals.Refunded)+" refunded, "+nf(totals.Reshipped)+" reshipped, "+nf(totals.NonRefund)+" resolved/non-refund",
+       '<tr><th>Date</th>'+tierHead("Tickets","")+tierHead("Refunded","lb-refunded")+tierHead("Reshipped","lb-reshipped")+tierHead("Resolved / Non-Refund","lb-nonrefund")+'</tr>',
+       [dayRows],
+       '<tr class="tot"><td><b>Total</b></td><td class="n"><b>'+nf(total)+'</b></td>'
+         + '<td class="n lb-tier lb-refunded"><b>'+nf(totals.Refunded)+'</b></td>'
+         + '<td class="n lb-tier lb-reshipped"><b>'+nf(totals.Reshipped)+'</b></td>'
+         + '<td class="n lb-tier lb-nonrefund"><b>'+nf(totals.NonRefund)+'</b></td></tr>');
      }
 
      function renderBkCatDrill(cat){
