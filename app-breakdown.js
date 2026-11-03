@@ -308,15 +308,9 @@ function bkRenderWeekCmp(){
      function renderBkCatDrill(cat){
      const rows = bkFiltered();
      const d = $("bkCatDetail");
-     if (cat === "ALL"){
-     // no chart — just show a hint to pick a category
-     const byCat = new Map(); rows.forEach(r=>byCat.set(r.cat,(byCat.get(r.cat)||0)+1));
-     const topCats = [...byCat.entries()].sort((a,b)=>b[1]-a[1]).slice(0,6).map(([k])=>k.replace(/_/g," ")).join(", ");
-     if (d) d.innerHTML = '<div class="sub" style="padding:14px">Pick a category above to see its subcategories, daily counts, and resolution breakdown.</div>';
-     return;
-     }
-     // daily table: rows = subcategories, cols = dates, cell = tickets; + standout resolution columns
-     const catRows = rows.filter(r=>r.cat===cat);
+     // rows to show: all when "ALL", else just the chosen category
+     const catRows = (cat === "ALL") ? rows : rows.filter(r=>r.cat===cat);
+     const showCat = (cat === "ALL");   // add a Category column only in the all view
      const subs = [...new Set(catRows.map(r=>r.sub))];
      const days = [...new Set(catRows.map(r=>r.d))].sort();
      const cell = {};
@@ -324,22 +318,33 @@ function bkRenderWeekCmp(){
      const resMap = {};
      catRows.forEach(r=>{
      const b = bkResBucket(r);
-     resMap[r.sub] = resMap[r.sub] || {Refunded:0,Reshipped:0,NonRefund:0,Tickets:0};
+     resMap[r.sub] = resMap[r.sub] || {cat:r.cat, Refunded:0,Reshipped:0,NonRefund:0,Tickets:0};
      resMap[r.sub][b]=(resMap[r.sub][b]||0)+1; resMap[r.sub].Tickets++;
      });
-     const head = '<tr><th>Subcategory</th>' + days.map(dd=>'<th>'+esc(fmtD(dd))+'</th>').join("") +
+     const head = '<tr><th>Subcategory</th>'+(showCat?'<th>Category</th>':'') + days.map(dd=>'<th>'+esc(fmtD(dd))+'</th>').join("") +
      '<th>Total</th><th class="lb-tier lb-nonrefund">Resolved / Non-Refund</th><th class="lb-tier lb-reshipped">Reshipped</th><th class="lb-tier lb-refunded">Refunded</th></tr>';
      const body = subs.map(sub=>{
-     const r = resMap[sub]||{Refunded:0,Reshipped:0,NonRefund:0,Tickets:0};
+     const r = resMap[sub]||{cat:"",Refunded:0,Reshipped:0,NonRefund:0,Tickets:0};
      let td = '<td><a class="bk-sub-link" data-sub="'+esc(sub)+'">'+esc(sub)+'</a></td>';
+     if (showCat) td += '<td><span class="tag lav">'+esc(r.cat.replace(/_/g," "))+'</span></td>';
      let tot = 0;
      days.forEach(dd=>{ const v=cell[sub+"|"+dd]||0; tot+=v; td += '<td class="n">'+(v?nf(v):"&middot;")+'</td>'; });
      td += '<td class="n"><b>'+nf(tot)+'</b></td>';
      td += '<td class="n lb-tier lb-nonrefund">'+nf(r.NonRefund)+'</td><td class="n lb-tier lb-reshipped">'+nf(r.Reshipped)+'</td><td class="n lb-tier lb-refunded">'+nf(r.Refunded)+'</td>';
      return '<tr>'+td+'</tr>';
      }).join("");
+     // totals row
+     const dayTot = days.map(dd => catRows.filter(r=>r.d===dd).length);
+     const totRef = catRows.filter(r=>bkResBucket(r)==="Refunded").length;
+     const totRes = catRows.filter(r=>bkResBucket(r)==="Reshipped").length;
+     const totNon = catRows.filter(r=>bkResBucket(r)==="NonRefund").length;
+     let foot = '<tr class="tot"><td><b>Total</b></td>';
+     if (showCat) foot += '<td></td>';
+     dayTot.forEach(t => foot += '<td class="n"><b>'+nf(t)+'</b></td>');
+     foot += '<td class="n"><b>'+nf(catRows.length)+'</b></td>';
+     foot += '<td class="n lb-tier lb-nonrefund"><b>'+nf(totNon)+'</b></td><td class="n lb-tier lb-reshipped"><b>'+nf(totRes)+'</b></td><td class="n lb-tier lb-refunded"><b>'+nf(totRef)+'</b></td></tr>';
      if (d){
-     d.innerHTML = '<div class="scroll"><table class="bk-drill">'+head+'<tbody>'+body+'</tbody></table></div>';
+     d.innerHTML = '<div class="scroll"><table class="bk-drill">'+head+'<tbody>'+body+foot+'</tbody></table></div>';
      d.querySelectorAll(".bk-sub-link").forEach(a=>{
        a.onclick = e=>{ e.preventDefault(); bkDailyLightbox(a.dataset.sub, catRows); };
      });
@@ -348,12 +353,9 @@ function bkRenderWeekCmp(){
 
      function renderBkRefDetail(cat){
      const el = $("bkRefDetail"); if (!el) return;
-     const rows = bkFiltered();
-     if (!cat || cat === "ALL"){
-     el.innerHTML = '<div class="sub" style="padding:12px">Select a category above to see per-subcategory refund amounts.</div>';
-     return;
-     }
-     const catRows = rows.filter(r=>r.cat===cat && (r.refund||0)>0);
+     const rows = bkFiltered().filter(r=>(r.refund||0)>0);
+     const catRows = (!cat || cat === "ALL") ? rows : rows.filter(r=>r.cat===cat);
+     const showCat = (!cat || cat === "ALL");
      if (!catRows.length){
      el.innerHTML = '<div class="sub" style="padding:12px">No refunded tickets in this category for the current scope.</div>';
      return;
@@ -364,11 +366,13 @@ function bkRenderWeekCmp(){
      catRows.forEach(r=>{ const k=r.sub+"|"+r.d; cnt[k]=(cnt[k]||0)+1; amt[k]=(amt[k]||0)+(r.refund||0); });
      const subRefund = {}; catRows.forEach(r=>{ subRefund[r.sub]=(subRefund[r.sub]||0)+(r.refund||0); });
      const subCount = {}; catRows.forEach(r=>{ subCount[r.sub]=(subCount[r.sub]||0)+1; });
+     const subCat = {}; catRows.forEach(r=>{ subCat[r.sub]=r.cat; });
 
-     const head = '<tr><th>Subcategory</th>'+days.map(d=>'<th>'+esc(fmtD(d))+'</th>').join("")+
+     const head = '<tr><th>Subcategory</th>'+(showCat?'<th>Category</th>':'')+days.map(d=>'<th>'+esc(fmtD(d))+'</th>').join("")+
      '<th>Tickets</th><th>Refunded $</th></tr>';
      const body = subs.map(sub=>{
      let td = '<td>'+esc(sub)+'</td>';
+     if (showCat) td += '<td><span class="tag lav">'+esc(subCat[sub].replace(/_/g," "))+'</span></td>';
      days.forEach(d=>{ const v=cnt[sub+"|"+d]||0; td += '<td class="n">'+(v?nf(v):"&middot;")+'</td>'; });
      td += '<td class="n"><b>'+nf(subCount[sub])+'</b></td><td class="n"><b>$'+nf(Math.round(subRefund[sub]))+'</b></td>';
      return '<tr>'+td+'</tr>';
@@ -377,6 +381,7 @@ function bkRenderWeekCmp(){
      // per-day ticket totals for the footer
      const dayTot = days.map(d => catRows.filter(r=>r.d===d).length);
      let foot = '<tr class="tot"><td><b>Total</b></td>';
+     if (showCat) foot += '<td></td>';
      dayTot.forEach(t => foot += '<td class="n"><b>'+nf(t)+'</b></td>');
      foot += '<td class="n"><b>'+nf(totCount)+'</b></td><td class="n"><b>$'+nf(Math.round(totAmt))+'</b></td></tr>';
      el.innerHTML = '<div class="scroll"><table class="bk-drill">'+head+'<tbody>'+body+foot+'</tbody></table></div>';
