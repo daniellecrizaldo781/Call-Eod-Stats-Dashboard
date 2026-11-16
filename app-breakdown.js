@@ -257,10 +257,18 @@ function bkRenderWeekCmp(){
 
      /* ================= Per-category drill (interactive) ================= */
      function bkResBucket(r){
-       const res = (r.res||"").toLowerCase();
-       if ((r.refund||0) > 0 || /refund|refunded|full-refund|cancelled|discounts/.test(res)) return "Refunded";
-       if (/reshipp/.test(res)) return "Reshipped";
-       return "NonRefund";   // displayed as "Resolved / Non-Refund"
+       // Refunded: only when the ticket actually carries a refund amount.
+       if ((r.refund||0) > 0) return "Refunded";
+       const rd = (r.rd || r.res || "").toLowerCase();
+       // Reshipped: Resolution Detail says order was reshipped.
+       if (/reshipp/.test(rd)) return "Reshipped";
+       // Resolved / Non-Refund: no refund processed AND detail is Resolved - With Reply
+       // or Directed to Email Support.
+       const d = r.rd ? (r.rd||"").toLowerCase() : rd;
+       if (d === "resolved - with reply" || d === "directed to email support") return "NonRefund";
+       // Anything else (created, escalated, unresolved, e-commerce…) is neither counted
+       // as resolved nor refunded/reshipped — it falls outside the three buckets.
+       return "Other";
      }
      // generic small lightbox (reuses the shared .lb-* CSS)
      function bkLightbox(title, sub, headHtml, bodyRows, footHtml){

@@ -207,6 +207,7 @@ def build_breakdown():
                 "cat": (str(g("category") or "Unknown")).strip() or "Unknown",     # = branch
                 "sub": (str(g("subcategory") or "Unknown")).strip() or "Unknown",  # = call driver
                 "res": (str(g("resolution") or "Unknown")).strip() or "Unknown",
+                "rd": (str(g("resolution detail") or "")).strip(),  # granular resolution detail (Resolved-With Reply, Order Reshipped, refund strings…)
                 "refund": _money(g("total amount refunded")),
             })
             n += 1
