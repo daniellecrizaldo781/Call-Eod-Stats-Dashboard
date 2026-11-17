@@ -150,11 +150,10 @@ function render(){
     {label:"Abandoned", value:M.abandoned, color:COL.abandoned},
     {label:"Out of Business Hours", value:M.ooh, color:COL.ooh}]);
 
-  /* ---- hourly ---- */
+  /* ---- hourly: day × hour matrix (rows=hours, cols=days, 3 stacked bars per cell) ---- */
+  const hv = $("hvHour");
   const byH = groupBy(rows, r=>r.h);
   const hk = [...byH.keys()].sort((a,b)=>a-b);
-  stackedBars("chHour", hk.map(h=>{ const m=byH.get(h);
-    return {label:hourLbl(h), total:m.total, vals:{answered:m.answered,missed:m.missed,abandoned:m.abandoned,ooh:m.ooh}}; }), {h:300});
   const peak = k => { let b=null; byH.forEach((m,h)=>{ if(!b||m[k]>byH.get(b)[k]) b=h; }); return b; };
   const pv=peak("total"), pm=peak("missed"), pa=peak("abandoned");
   let noIvrByHour = new Map();
@@ -163,6 +162,38 @@ function render(){
   $("peakSub").innerHTML = pv===null? "" :
       "Peak volume <b>"+hourLbl(pv)+"</b> \u00b7 peak missed <b>"+hourLbl(pm)+"</b> \u00b7 peak abandoned <b>"+hourLbl(pa)
       +"</b> \u00b7 peak no-IVR abandoned <b>"+(pn===null?"\u2014":hourLbl(pn))+"</b>";
+  if (hv && rows.length){
+    const DAYS = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+    const days = [...new Set(rows.map(r=>r.d))].sort();           // all days in scope
+    const dayLabel = d => DAYS[(new Date(d+"T00:00:00").getDay()+6)%7]+" "+fmtD(d).split(" ")[1];
+    // cell[h][d] = answered/missed/abandoned counts
+    const cell = {};
+    rows.forEach(r=>{ if(r.h<0) return; const k=r.h+"|"+r.d;
+      cell[k]=cell[k]||{answered:0,missed:0,abandoned:0};
+      cell[k][r.st]=(cell[k][r.st]||0)+r.n; });
+    const hs = hk.slice(); for(let h=0;h<24;h++) if(!hs.includes(h)) hs.push(h); hs.sort((a,b)=>a-b);
+    // per-hour totals across all days
+    const hTot = {}; Object.keys(cell).forEach(k=>{ const h=+k.split("|")[0]; const c=cell[k];
+      hTot[h]=hTot[h]||{answered:0,missed:0,abandoned:0,total:0};
+      ["answered","missed","abandoned"].forEach(f=>hTot[h][f]+=c[f]); hTot[h].total=hTot[h].answered+hTot[h].missed+hTot[h].abandoned; });
+    const maxBar = Math.max(1, ...hs.map(h=>hTot[h]?hTot[h].total:0));
+    const bar = (v,max,cls) => v? '<div class="hv-cell"><span class="hv '+cls+'" style="width:'+Math.max(4,v/max*100)+'%"></span><b>'+nf(v)+'</b></div>' : '<div class="hv-cell hv-0"></div>';
+    let th = '<tr><th class="h">Hour</th>'+days.map(d=>'<th>'+esc(dayLabel(d))+'</th>').join("")+'<th class="h">Total</th></tr>';
+    let body = hs.map(h=>{
+      let td = '<td class="h">'+esc(hourLbl(h))+'</td>';
+      days.forEach(d=>{ const c=cell[h+"|"+d]; td += '<td class="hv-td">'+(c? (bar(c.answered,maxBar,"ans")+bar(c.missed,maxBar,"miss")+bar(c.abandoned,maxBar,"aband")) : "")+'</td>'; });
+      const ht=hTot[h]||{answered:0,missed:0,abandoned:0,total:0};
+      td += '<td class="h hv-tot">'+nf(ht.total)+'</td>';
+      return '<tr>'+td+'</tr>';
+    }).join("");
+    // total row
+    let foot = '<tr class="tot"><td class="h"><b>Total</b></td>';
+    days.forEach(d=>{ let a=0,mi=0,ab=0; Object.keys(cell).forEach(k=>{ if(k.split("|")[1]===d){ a+=cell[k].answered; mi+=cell[k].missed; ab+=cell[k].abandoned; } });
+      foot += '<td class="hv-td">'+bar(a,maxBar,"ans")+bar(mi,maxBar,"miss")+bar(ab,maxBar,"aband")+'</td>'; });
+    let gt=0; Object.values(hTot).forEach(t=>gt+=t.total);
+    foot += '<td class="h hv-tot"><b>'+nf(gt)+'</b></td></tr>';
+    hv.innerHTML = '<table class="hvmatrix"><thead>'+th+'</thead><tbody>'+body+foot+'</tbody></table>';
+  }
 
   tbl($("tHour"),
     [{t:"Hour",k:"h"},{t:"Total",k:"t",n:1},{t:"Answered",k:"a",n:1},{t:"Missed",k:"m",n:1},
@@ -174,11 +205,6 @@ function render(){
               ar:pf(m.answerRate), abr:pf(m.abandRate)}; })
       .concat([{_cls:"tot", h:"TOTAL", t:nf(M.total), a:nf(M.answered), m:nf(M.missed), ab:nf(M.abandoned),
                ni:nf(M.noIvrAband), o:nf(M.ooh), ar:pf(M.answerRate), abr:pf(M.abandRate)}]));
-
-  /* ---- answer rate trend ---- */
-  lineChart("chRate", vk.map(k=>{ const m=byV.get(k);
-    return {label: noneView ? "Full Range" : (gran==="monthly"?fmtMonth(k):fmtD(k)), v:m.answerRate,
-            note:nf(m.answered)+" of "+nf(m.total)+" answered"}; }));
 
   /* ---- period table (follows the date range above) ---- */
   const picks = [];

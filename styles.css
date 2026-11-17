@@ -208,14 +208,32 @@ th.sortable{cursor:pointer} th.sortable:hover{color:var(--rose-d)}
 .tag{display:inline-block;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:600;
   background:var(--blush2);color:var(--rose-d)}
 /* 4-week KPI overview table */
-table.kpiwk th, table.kpiwk td{padding:8px 10px;white-space:nowrap}
-table.kpiwk thead th{background:var(--blush);font-size:9.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--mauve)}
-table.kpiwk thead th.sub{color:var(--ink2);font-size:8.5px;font-weight:600}
-table.kpiwk td.sub{font-size:11px;color:var(--ink2)}
-table.kpiwk tr.wk-cur td{background:#FFF4B8;font-weight:700}
+table.kpiwk{border-collapse:separate;border-spacing:0;min-width:100%;border:2px solid var(--rose);border-radius:12px;overflow:hidden;box-shadow:var(--sh2)}
+table.kpiwk th, table.kpiwk td{padding:9px 11px;white-space:nowrap}
+table.kpiwk thead th{background:var(--rose-d);color:#fff;font-size:9.5px;letter-spacing:.05em;text-transform:uppercase;border:0}
+table.kpiwk thead th.sub{color:#ffe1ec;font-size:8.5px;font-weight:600}
+table.kpiwk tbody td{border-bottom:1px solid #FFE4EF}
+table.kpiwk td.sub{font-size:11px;color:var(--ink2);background:#FFF8FB}
+table.kpiwk tr.wk-cur td{background:linear-gradient(180deg,#FFF7C9,#FFEF9F);font-weight:700;border-top:2px solid #F0C000}
 table.kpiwk tr.wk-cur td.sub{color:var(--ink)}
 table.kpiwk tr.wk-cur td.sub .delta{font-weight:800}
+table.kpiwk tr:hover td{background:var(--blush)}
+table.kpiwk tr.wk-cur:hover td{background:#FFEF9F}
 table.kpiwk .wk-new{background:var(--rose-d);color:#fff}
+/* day × hour matrix */
+table.hvmatrix{border-collapse:separate;border-spacing:0;min-width:100%}
+table.hvmatrix th{padding:6px 8px;background:var(--blush);font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:var(--mauve);border-bottom:2px solid var(--line);white-space:nowrap}
+table.hvmatrix th.h, table.hvmatrix td.h{text-align:left;font-weight:700;color:var(--ink);position:sticky;left:0;background:var(--white);z-index:2}
+table.hvmatrix td{padding:4px 6px;border-bottom:1px solid #FAEDF3}
+table.hvmatrix td.hv-td{min-width:84px;text-align:left}
+table.hvmatrix tr.tot td{background:var(--blush2);font-weight:700;border-top:2px solid var(--line)}
+table.hvmatrix td.hv-tot{position:sticky;right:0;background:var(--white);z-index:2;font-weight:800;text-align:right;color:var(--ink);box-shadow:-2px 0 0 var(--line)}
+.hv-cell{display:flex;align-items:center;gap:3px;line-height:1.9}
+.hv-cell b{font-size:10.5px;font-weight:700;min-width:26px;text-align:right;color:var(--ink)}
+.hv .hv{display:inline-block;height:9px;border-radius:4px;min-width:4px}
+.hv .hv.ans{background:#E8578E}.hv .hv.miss{background:#D9455F}.hv .hv.aband{background:#B99BDD}
+table.hvmatrix tr:hover td{background:var(--blush)}
+table.hvmatrix tr.tot td.hv-tot,.hvmatrix tr.tot td{background:var(--blush2)}
 .tag.lav{background:var(--lav);color:#6C4A8E}
 .bar-cell{position:relative;min-width:110px}
 .bar-cell i{position:absolute;left:0;top:50%;transform:translateY(-50%);height:16px;border-radius:5px;
