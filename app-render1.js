@@ -186,16 +186,18 @@ function render(){
       ["inbound","answered","missed"].forEach(f=>hTot[h][f]+=c[f]); hTot[h].seated += (seatedMap[k]||new Set()).size; hTot[h].total += c.inbound; });
     // total seated per hour across days (distinct union)
     const hSeat = {}; Object.keys(seatedMap).forEach(k=>{ const h=+k.split("|")[0]; (hSeat[h]=hSeat[h]||new Set()); seatedMap[k].forEach(a=>hSeat[h].add(a)); });
-    const maxBar = Math.max(1, ...hs.map(h=>Math.max(hTot[h]?hTot[h].inbound:0, hTot[h]?hTot[h].seated:0)));
-    const bar = (v,max,cls) => v? '<div class="hv-cell"><span class="hv '+cls+'" style="width:'+Math.max(4,v/max*100)+'%"></span><b>'+nf(v)+'</b></div>' : '<div class="hv-cell hv-0"></div>';
+    const maxBar = Math.max(1, ...hs.map(h=>Math.max(hTot[h]?hTot[h].inbound:0, hTot[h]?hTot[h].seated:0), 1));
+    const bar = (v,max,cls,init) => '<span class="hvcol" title="'+init+': '+v+'"><span class="hv '+cls+'" style="height:'+Math.max(4,Math.round(v/max*100))+'%"></span><i>'+nf(v)+'</i></span>';
+    const cellHTML = (vals,maxB) => '<div class="hv-group">'+bar(vals[0],maxB,"inb","I")+bar(vals[1],maxB,"ans","A")+bar(vals[2],maxB,"miss","M")+bar(vals[3],maxB,"seat","S")+'</div>';
     let th = '<tr><th class="h">Hour</th>'+days.map(d=>'<th>'+esc(dayLabel(d))+'</th>').join("")+'<th class="h">Total</th></tr>';
     let body = hs.map(h=>{
       let td = '<td class="h">'+esc(hourLbl(h))+'</td>';
-      days.forEach(d=>{ const c=cell[h+"|"+d]; const st=seatedMap[h+"|"+d]||new Set();
-        td += '<td class="hv-td">'+(c||st.size? (bar(c?c.inbound:0,maxBar,"inb")+bar(c?c.answered:0,maxBar,"ans")+bar(c?c.missed:0,maxBar,"miss")+bar(st.size,maxBar,"seat")) : "")+'</td>'; });
       const ht=hTot[h]||{inbound:0,answered:0,missed:0,seated:0,total:0};
       const hse=hSeat[h]?hSeat[h].size:0;
-      td += '<td class="h hv-tot">'+nf(ht.total)+' '+bar(hse,maxBar,"seat").replace('class="hv-cell"','class="hv-cell seat-tag"')+'</td>';
+      const cellMax = Math.max(1, ht.inbound, hse);
+      days.forEach(d=>{ const c=cell[h+"|"+d]; const st=seatedMap[h+"|"+d]||new Set();
+        td += '<td class="hv-td">'+(c||st.size? cellHTML([c?c.inbound:0, c?c.answered:0, c?c.missed:0, st.size], cellMax) : "")+'</td>'; });
+      td += '<td class="h hv-tot">'+nf(ht.total)+' <b class="hv-s">'+nf(hse)+'</b></td>';
       return '<tr>'+td+'</tr>';
     }).join("");
     // total row
@@ -203,8 +205,8 @@ function render(){
     days.forEach(d=>{ let i=0,an=0,mi=0; const st=new Set();
       Object.keys(cell).forEach(k=>{ if(k.split("|")[1]===d){ i+=cell[k].inbound; an+=cell[k].answered; mi+=cell[k].missed; }});
       Object.keys(seatedMap).forEach(k=>{ if(k.split("|")[1]===d) seatedMap[k].forEach(a=>st.add(a)); });
-      foot += '<td class="hv-td">'+bar(i,maxBar,"inb")+bar(an,maxBar,"ans")+bar(mi,maxBar,"miss")+bar(st.size,maxBar,"seat")+'</td>'; });
-    let gt=0,gAns=0,gMis=0; const gSeat=new Set(); Object.values(hTot).forEach(t=>{gt+=t.total;gAns+=t.answered;gMis+=t.missed;}); Object.values(hSeat).forEach(s=>s.forEach(a=>gSeat.add(a)));
+      foot += '<td class="hv-td">'+cellHTML([i,an,mi,st.size], Math.max(1,i,st.size))+'</td>'; });
+    let gt=0; Object.values(hTot).forEach(t=>{gt+=t.total;});
     foot += '<td class="h hv-tot"><b>'+nf(gt)+'</b></td></tr>';
     hv.innerHTML = '<table class="hvmatrix"><thead>'+th+'</thead><tbody>'+body+foot+'</tbody></table>';
   }

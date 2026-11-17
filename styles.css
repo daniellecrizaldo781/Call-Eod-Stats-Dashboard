@@ -224,17 +224,19 @@ table.kpiwk .wk-new{background:var(--rose-d);color:#fff}
 table.hvmatrix{border-collapse:separate;border-spacing:0;min-width:100%}
 table.hvmatrix th{padding:6px 8px;background:var(--blush);font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:var(--mauve);border-bottom:2px solid var(--line);white-space:nowrap}
 table.hvmatrix th.h, table.hvmatrix td.h{text-align:left;font-weight:700;color:var(--ink);position:sticky;left:0;background:var(--white);z-index:2}
-table.hvmatrix td{padding:4px 6px;border-bottom:1px solid #FAEDF3}
-table.hvmatrix td.hv-td{min-width:84px;text-align:left}
+table.hvmatrix td{padding:3px 6px;border-bottom:1px solid #FAEDF3}
+table.hvmatrix td.hv-td{min-width:96px;text-align:center}
 table.hvmatrix tr.tot td{background:var(--blush2);font-weight:700;border-top:2px solid var(--line)}
-table.hvmatrix td.hv-tot{position:sticky;right:0;background:var(--white);z-index:2;font-weight:800;text-align:right;color:var(--ink);box-shadow:-2px 0 0 var(--line)}
-.hv-cell{display:flex;align-items:center;gap:3px;line-height:1.9}
-.hv-cell b{font-size:10.5px;font-weight:700;min-width:26px;text-align:right;color:var(--ink)}
-.hv .hv{display:inline-block;height:9px;border-radius:4px;min-width:4px}
-.hv .hv.inb{background:#E8578E}.hv .hv.ans{background:#4E9BE5}.hv .hv.miss{background:#D9455F}.hv .hv.seat{background:#8BC34A}
-.hv-cell.seat-tag{margin-top:2px}
+table.hvmatrix td.hv-tot{position:sticky;right:0;background:var(--white);z-index:2;font-weight:800;text-align:right;color:var(--ink);box-shadow:-2px 0 0 var(--line);white-space:nowrap}
+/* 4 vertical column-bars side by side (I=Inbound A=Answered M=Missed S=Seated) */
+.hv-group{display:flex;align-items:flex-end;justify-content:center;gap:4px;height:48px;border-radius:5px;background:#FFFBFD;padding:2px 3px}
+.hvcol{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%}
+.hvcol .hv{display:block;width:12px;border-radius:3px 3px 1px 1px;min-height:3px}
+.hvcol .hv.inb{background:#E8578E}.hvcol .hv.ans{background:#4E9BE5}.hvcol .hv.miss{background:#D9455F}.hvcol .hv.seat{background:#8BC34A}
+.hvcol i{font-size:9px;font-weight:800;color:var(--ink);font-style:normal;margin-top:2px;font-variant-numeric:tabular-nums}
 table.hvmatrix tr:hover td{background:var(--blush)}
 table.hvmatrix tr.tot td.hv-tot,.hvmatrix tr.tot td{background:var(--blush2)}
+table.hvmatrix .hv-s{color:var(--ok);font-weight:800;margin-left:3px}
 .tag.lav{background:var(--lav);color:#6C4A8E}
 .bar-cell{position:relative;min-width:110px}
 .bar-cell i{position:absolute;left:0;top:50%;transform:translateY(-50%);height:16px;border-radius:5px;
