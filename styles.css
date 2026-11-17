@@ -225,16 +225,14 @@ table.hvmatrix{border-collapse:separate;border-spacing:0;min-width:100%}
 table.hvmatrix th{padding:6px 8px;background:var(--blush);font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:var(--mauve);border-bottom:2px solid var(--line);white-space:nowrap}
 table.hvmatrix th.h, table.hvmatrix td.h{text-align:left;font-weight:700;color:var(--ink);position:sticky;left:0;background:var(--white);z-index:2}
 table.hvmatrix th.day{background:var(--rose);color:#fff;font-size:10px;border-right:1px solid rgba(255,255,255,.35)}
-table.hvmatrix th.sub{background:#FFF0F6;color:#B33a6b;font-size:10px;font-weight:800;padding:2px 8px;border-right:1px solid #FFE4EF}
-table.hvmatrix td{padding:3px 4px;border-bottom:1px solid #FAEDF3}
-table.hvmatrix td.hv-td{min-width:34px;text-align:center;padding:3px 2px}
+table.hvmatrix th.sub{font-size:10px;font-weight:800;padding:2px 8px;border-right:1px solid #FFE4EF;color:#fff}
+table.hvmatrix th.sub.inb{background:#E8578E}table.hvmatrix th.sub.ans{background:#4E9BE5}
+table.hvmatrix th.sub.miss{background:#D9455F}table.hvmatrix th.sub.seat{background:#8BC34A}
+table.hvmatrix td{padding:6px 4px;border-bottom:1px solid #FAEDF3}
+table.hvmatrix td.hv-td{min-width:40px;text-align:center;font-variant-numeric:tabular-nums}
 table.hvmatrix tr.tot td{background:var(--blush2);font-weight:700;border-top:2px solid var(--line)}
 table.hvmatrix td.hv-tot{position:sticky;right:0;background:var(--white);z-index:2;font-weight:800;text-align:right;color:var(--ink);box-shadow:-2px 0 0 var(--line);white-space:nowrap}
-/* single vertical column-bar per metric cell (aligned under the I/A/M/S sub-headers) */
-.hvcol{display:inline-flex;flex-direction:column;align-items:center;justify-content:flex-end;height:52px}
-.hvcol .hv{display:block;width:13px;border-radius:3px 3px 1px 1px;min-height:3px}
-.hvcol .hv.inb{background:#E8578E}.hvcol .hv.ans{background:#4E9BE5}.hvcol .hv.miss{background:#D9455F}.hvcol .hv.seat{background:#8BC34A}
-.hvcol i{font-size:9px;font-weight:800;color:var(--ink);font-style:normal;margin-top:2px;font-variant-numeric:tabular-nums}
+.hvval{font-size:11px;font-weight:700;color:var(--ink)}
 table.hvmatrix tr:hover td{background:var(--blush)}
 table.hvmatrix tr.tot td.hv-tot,.hvmatrix tr.tot td{background:var(--blush2)}
 table.hvmatrix .hv-s{color:var(--ok);font-weight:800;margin-left:3px}
