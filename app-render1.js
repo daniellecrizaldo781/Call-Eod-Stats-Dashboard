@@ -178,7 +178,7 @@ function render(){
     const sr = (D.status && D.status.rows) || [];
     const seatedMap = {};
     sr.forEach(e=>{ if(!e || e.t==null || NOT_SEATED.has(normStatus(e.status))) return;
-      const k=e.d+"|"+e.t; (seatedMap[k] = seatedMap[k]||new Set()).add(e.agent); });
+      const k=e.t+"|"+e.d; (seatedMap[k] = seatedMap[k]||new Set()).add(e.agent); });
     const hs = hk.slice(); for(let h=0;h<24;h++) if(!hs.includes(h)) hs.push(h); hs.sort((a,b)=>a-b);
     // per-hour totals across all days
     const hTot = {}; Object.keys(cell).forEach(k=>{ const h=+k.split("|")[0]; const c=cell[k];
