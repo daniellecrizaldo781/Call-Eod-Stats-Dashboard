@@ -2,6 +2,89 @@
 const $ = id => document.getElementById(id);
 function kpi(l,v,s,cls){ return '<div class="kpi '+(cls||"")+'"><div class="k-l">'+l+'</div><div class="k-v">'+v
   +'</div><div class="k-s">'+(s||"&nbsp;")+'</div></div>'; }
+/* Main-dashboard KPIs as a 4-week overview table (respects channel/IVR filter).
+   Keeps every metric the old chips showed, adds a per-week variance column, and
+   highlights the most recent week so it stands out. */
+function renderKpiWeek(){
+  const el = $("kpiWeek"); if (!el) return;
+  // rows filtered by channel+IVR only (span all dates so we always get the last 4 real weeks,
+  // regardless of the selected week — matching the reference "previous 4 weeks" overview)
+  const scopeOpt = {from:MIN_D, to:MAX_D, chan:F.chan, ivr:F.ivr};
+  const frows = ROWS.filter(r => pass(r, scopeOpt));
+  const g = groupBy(frows, r => weekStart(r.d));
+  const wks = [...g.keys()].sort().slice(-4);          // newest 4 weeks (may be <4 if few)
+  const curWk = weekStart(F.from);                       // Mon of the selected week
+
+  // variance helper: % change vs previous week; flat when no prior
+  const varCell = (cur, prev) => {
+    if (prev === undefined || prev === null || prev === 0) return "";
+    const pct = (cur - prev) / prev * 100;
+    if (Math.abs(pct) < 1e-9) return '<span class="delta flat">&mdash;</span>';
+    const up = pct > 0;
+    return '<span class="delta '+(up?"up":"down")+'">'+(up?"\u25B2 +":"\u25BC ")+Math.abs(pct).toFixed(1)+"%</span>";
+  };
+
+  // build rows newest -> oldest (selected week first if it exists)
+  const ordered = [...wks].reverse();
+  const rows = ordered.map((wk, i) => {
+    const m = g.get(wk);
+    const prevM = i < ordered.length - 1 ? g.get(ordered[i+1]) : null;
+    const isCur = (F.from === MIN_D ? i === 0 : wk === curWk);
+    return {
+      _cls: isCur ? "wk-cur" : "",
+      _wk: wk,
+      w: fmtWeek(wk) + (isCur ? ' <span class="tag">this week</span>' : "") + (isCur && F.from !== MIN_D ? "" : (i===0?"":""))
+         + (i === 0 ? ' <span class="tag wk-new">latest</span>' : ""),
+      t: nf(m.total),
+      tv: varCell(m.total, prevM ? prevM.total : undefined),
+      a: nf(m.answered),
+      m: nf(m.missed),
+      csr: nf(m.csrBase),
+      ab: nf(m.abandoned),
+      ni: nf(m.noIvrAband),
+      ivr: nf(m.ivrAband),
+      o: nf(m.ooh),
+      ar: pf(m.answerRate),
+      arv: varCell(m.answerRate, prevM ? prevM.answerRate : undefined),
+      mr: pf(m.missRate),
+      aht: mmss(m.aht),
+      ahtv: varCell(m.aht, prevM ? prevM.aht : undefined),
+      abr: pf(m.abandRate)
+    };
+  });
+
+  if (!el || !rows.length){ el.innerHTML = '<div class="empty">No data for the current filters.</div>'; return; }
+  el.innerHTML = '<div class="tscroll"><table class="kpiwk">' +
+    "<thead><tr>" +
+    '<th>Week</th>' +
+    '<th class="n">Total Calls</th><th class="n sub">+/- Wk</th>' +
+    '<th class="n">Received by Agents</th>' +
+    '<th class="n">Answered</th>' +
+    '<th class="n">Missed</th>' +
+    '<th class="n">Answer Rate</th><th class="n sub">+/- Wk</th>' +
+    '<th class="n">Missed Rate</th>' +
+    '<th class="n">AHT</th><th class="n sub">+/- Wk</th>' +
+    '<th class="n">Abandoned</th>' +
+    '<th class="n">No-IVR</th><th class="n">In-IVR</th>' +
+    '<th class="n">OOH</th>' +
+    "</tr></thead><tbody>" +
+    rows.map(r=>"<tr"+(r._cls?' class="'+r._cls+'"':"")+">" +
+      "<td>"+r.w+"</td>" +
+      "<td class=\"n\">"+r.t+"</td><td class=\"n sub\">"+r.tv+"</td>" +
+      "<td class=\"n\">"+r.csr+"</td>" +
+      "<td class=\"n\">"+r.a+"</td>" +
+      "<td class=\"n\">"+r.m+"</td>" +
+      "<td class=\"n\">"+r.ar+"</td><td class=\"n sub\">"+r.arv+"</td>" +
+      "<td class=\"n\">"+r.mr+"</td>" +
+      "<td class=\"n\">"+r.aht+"</td><td class=\"n sub\">"+r.ahtv+"</td>" +
+      "<td class=\"n\">"+r.ab+"</td>" +
+      "<td class=\"n\">"+r.ni+"</td><td class=\"n\">"+r.ivr+"</td>" +
+      "<td class=\"n\">"+r.o+"</td>" +
+      "</tr>").join("") +
+    "</tbody></table></div>";
+  makeTableResponsive(el);
+}
+
 function tbl(el, cols, rows, opts){
   const o = opts||{};
   let h = "<thead><tr>"+cols.map(c=>'<th class="'+(c.n?"n":"")+(c.sort?" sortable":"")+'"'
@@ -42,19 +125,8 @@ function render(){
   $("kpiScope").textContent = (F.chan==="ALL"?"All Channels":F.chan)
     + (F.ivr!=="ALL"? " \u00b7 "+F.ivr : "");
 
-  /* ---- KPIs (exact set requested) ---- */
-  $("kpiRow").innerHTML =
-      kpi("Total Calls", nf(M.total), fmtD(F.from)+" \u2013 "+fmtD(F.to))
-    + kpi("Total Calls Received by Agents", nf(M.csrBase), "answered + missed (agent-attempted)", "agent")
-    + kpi("Answered", nf(M.answered), pf(M.answerRate)+" answer rate", "good")
-    + kpi("Missed", nf(M.missed), pf(M.missRate)+" of agent calls", "bad");
-  $("kpiRow2").innerHTML =
-      kpi("Abandoned \u2014 No IVR Branch", nf(M.noIvrAband), pf(M.noIvrPct)+" of all abandoned", "bad")
-    + kpi("Total Abandoned in IVR", nf(M.ivrAband), M.abandoned? pf(M.ivrAband/M.abandoned*100)+" of all abandoned":"", "alt")
-    + kpi("Out of Business Hours", nf(M.ooh), M.total? pf(M.ooh/M.total*100)+" of volume":"", "warn")
-    + kpi("Answer Rate", pf(M.answerRate), nf(M.answered)+" / "+nf(M.csrBase)+" agent calls", M.answerRate>=70?"good":M.answerRate>=50?"warn":"bad")
-    + kpi("Missed Call Rate", pf(M.missRate), nf(M.missed)+" / "+nf(M.csrBase)+" agent calls", "bad")
-    + kpi("AHT", mmss(M.aht), "avg over "+nf(M.answered)+" answered calls");
+  /* ---- KPIs (4-week overview table) ---- */
+  renderKpiWeek();
 
   /* ---- trend / volume ---- */
   const volRows = dwRows;
