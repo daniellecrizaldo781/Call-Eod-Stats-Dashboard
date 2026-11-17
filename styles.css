@@ -233,6 +233,8 @@ table.hvmatrix td.hv-td{min-width:40px;text-align:center;font-variant-numeric:ta
 table.hvmatrix tr.tot td{background:var(--blush2);font-weight:700;border-top:2px solid var(--line)}
 table.hvmatrix td.hv-tot{position:sticky;right:0;background:var(--white);z-index:2;font-weight:800;text-align:right;color:var(--ink);box-shadow:-2px 0 0 var(--line);white-space:nowrap}
 .hvval{font-size:11px;font-weight:700;color:var(--ink)}
+.hvval.hl{padding:2px 5px;border-radius:5px;color:#fff;font-weight:800}
+.hvval.hl.hl-inb{background:#2C6FBF}.hvval.hl.hl-ans{background:#2E8B3C}.hvval.hl.hl-miss{background:#C62828}
 table.hvmatrix tr:hover td{background:var(--blush)}
 table.hvmatrix tr.tot td.hv-tot,.hvmatrix tr.tot td{background:var(--blush2)}
 table.hvmatrix .hv-s{color:var(--ok);font-weight:800;margin-left:3px}

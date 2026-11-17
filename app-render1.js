@@ -178,7 +178,16 @@ function render(){
     const hTot = {}; Object.keys(cell).forEach(k=>{ const h=+k.split("|")[0]; const c=cell[k];
       hTot[h]=hTot[h]||{inbound:0,answered:0,missed:0,total:0};
       ["inbound","answered","missed"].forEach(f=>hTot[h][f]+=c[f]); hTot[h].total += c.inbound; });
-    const bar = (v) => '<span class="hvval">'+nf(v||0)+'</span>';
+    const bar = (v, cls) => '<span class="hvval'+(cls?' '+cls:'')+'">'+nf(v||0)+'</span>';
+    // per-day max per metric: for red/green/blue highlight of the single highest cell per day
+    const dayMax = {};   // day -> {inbound, answered, missed}
+    days.forEach(d=>{ dayMax[d]={inbound:0,answered:0,missed:0}; });
+    Object.keys(cell).forEach(k=>{ const p=k.split("|"); const d=p[1];
+      if(dayMax[d]){ const c=cell[k];
+        if(c.inbound>dayMax[d].inbound) dayMax[d].inbound=c.inbound;
+        if(c.answered>dayMax[d].answered) dayMax[d].answered=c.answered;
+        if(c.missed>dayMax[d].missed) dayMax[d].missed=c.missed; } });
+    const hlv = (v, mx, cls) => v>0 && v===mx ? '<span class="hvval hl '+cls+'">'+nf(v)+'</span>' : '<span class="hvval">'+nf(v||0)+'</span>';
     // two-row grouped header: date on top, color-coded I/A/M sub-labels directly under each date
     const SUB=[["I","inb"],["A","ans"],["M","miss"]];
     let th = '<tr><th class="h" rowspan="2">Hour</th>'+days.map(d=>'<th class="day" colspan="3">'+esc(dayLabel(d))+'</th>').join("")+'<th class="h" rowspan="2">Total</th></tr>'
@@ -186,10 +195,10 @@ function render(){
     let body = hs.map(h=>{
       let td = '<td class="h">'+esc(hourLbl(h))+'</td>';
       const ht=hTot[h]||{inbound:0,answered:0,missed:0,total:0};
-      days.forEach(d=>{ const c=cell[h+"|"+d];
-        td += '<td class="hv-td">'+bar(c?c.inbound:0)+'</td>'
-            + '<td class="hv-td">'+bar(c?c.answered:0)+'</td>'
-            + '<td class="hv-td">'+bar(c?c.missed:0)+'</td>'; });
+      days.forEach(d=>{ const c=cell[h+"|"+d]; const mx=dayMax[d];
+        td += '<td class="hv-td">'+hlv(c?c.inbound:0, mx.inbound, "hl-inb")+'</td>'
+            + '<td class="hv-td">'+hlv(c?c.answered:0, mx.answered, "hl-ans")+'</td>'
+            + '<td class="hv-td">'+hlv(c?c.missed:0, mx.missed, "hl-miss")+'</td>'; });
       td += '<td class="h hv-tot">'+nf(ht.total)+'</td>';
       return '<tr>'+td+'</tr>';
     }).join("");
