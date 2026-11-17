@@ -231,7 +231,8 @@ table.hvmatrix td.hv-tot{position:sticky;right:0;background:var(--white);z-index
 .hv-cell{display:flex;align-items:center;gap:3px;line-height:1.9}
 .hv-cell b{font-size:10.5px;font-weight:700;min-width:26px;text-align:right;color:var(--ink)}
 .hv .hv{display:inline-block;height:9px;border-radius:4px;min-width:4px}
-.hv .hv.ans{background:#E8578E}.hv .hv.miss{background:#D9455F}.hv .hv.aband{background:#B99BDD}
+.hv .hv.inb{background:#E8578E}.hv .hv.ans{background:#4E9BE5}.hv .hv.miss{background:#D9455F}.hv .hv.seat{background:#8BC34A}
+.hv-cell.seat-tag{margin-top:2px}
 table.hvmatrix tr:hover td{background:var(--blush)}
 table.hvmatrix tr.tot td.hv-tot,.hvmatrix tr.tot td{background:var(--blush2)}
 .tag.lav{background:var(--lav);color:#6C4A8E}

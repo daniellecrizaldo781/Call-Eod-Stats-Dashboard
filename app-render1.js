@@ -150,7 +150,7 @@ function render(){
     {label:"Abandoned", value:M.abandoned, color:COL.abandoned},
     {label:"Out of Business Hours", value:M.ooh, color:COL.ooh}]);
 
-  /* ---- hourly: day × hour matrix (rows=hours, cols=days, 3 stacked bars per cell) ---- */
+  /* ---- hourly: day × hour matrix (rows=hours, cols=days, 4 color-coded bars per cell) ---- */
   const hv = $("hvHour");
   const byH = groupBy(rows, r=>r.h);
   const hk = [...byH.keys()].sort((a,b)=>a-b);
@@ -166,31 +166,45 @@ function render(){
     const DAYS = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
     const days = [...new Set(rows.map(r=>r.d))].sort();           // all days in scope
     const dayLabel = d => DAYS[(new Date(d+"T00:00:00").getDay()+6)%7]+" "+fmtD(d).split(" ")[1];
-    // cell[h][d] = answered/missed/abandoned counts
+    // cell[h][d] = {inbound, answered, missed, seated}
     const cell = {};
     rows.forEach(r=>{ if(r.h<0) return; const k=r.h+"|"+r.d;
-      cell[k]=cell[k]||{answered:0,missed:0,abandoned:0};
-      cell[k][r.st]=(cell[k][r.st]||0)+r.n; });
+      cell[k]=cell[k]||{inbound:0,answered:0,missed:0};
+      cell[k].inbound += r.n;
+      if(r.st==="answered") cell[k].answered += r.n;
+      else if(r.st==="missed") cell[k].missed += r.n; });
+    // seated agents per (date,hour) from the status sheet: logged-in = working statuses only
+    const NOT_SEATED = new Set(["offline","on_a_break","out_for_lunch","in_training","-"]);
+    const sr = (D.status && D.status.rows) || [];
+    const seatedMap = {};
+    sr.forEach(e=>{ if(!e || e.t==null || NOT_SEATED.has(normStatus(e.status))) return;
+      const k=e.d+"|"+e.t; (seatedMap[k] = seatedMap[k]||new Set()).add(e.agent); });
     const hs = hk.slice(); for(let h=0;h<24;h++) if(!hs.includes(h)) hs.push(h); hs.sort((a,b)=>a-b);
     // per-hour totals across all days
     const hTot = {}; Object.keys(cell).forEach(k=>{ const h=+k.split("|")[0]; const c=cell[k];
-      hTot[h]=hTot[h]||{answered:0,missed:0,abandoned:0,total:0};
-      ["answered","missed","abandoned"].forEach(f=>hTot[h][f]+=c[f]); hTot[h].total=hTot[h].answered+hTot[h].missed+hTot[h].abandoned; });
-    const maxBar = Math.max(1, ...hs.map(h=>hTot[h]?hTot[h].total:0));
+      hTot[h]=hTot[h]||{inbound:0,answered:0,missed:0,seated:0,total:0};
+      ["inbound","answered","missed"].forEach(f=>hTot[h][f]+=c[f]); hTot[h].seated += (seatedMap[k]||new Set()).size; hTot[h].total += c.inbound; });
+    // total seated per hour across days (distinct union)
+    const hSeat = {}; Object.keys(seatedMap).forEach(k=>{ const h=+k.split("|")[0]; (hSeat[h]=hSeat[h]||new Set()); seatedMap[k].forEach(a=>hSeat[h].add(a)); });
+    const maxBar = Math.max(1, ...hs.map(h=>Math.max(hTot[h]?hTot[h].inbound:0, hTot[h]?hTot[h].seated:0)));
     const bar = (v,max,cls) => v? '<div class="hv-cell"><span class="hv '+cls+'" style="width:'+Math.max(4,v/max*100)+'%"></span><b>'+nf(v)+'</b></div>' : '<div class="hv-cell hv-0"></div>';
     let th = '<tr><th class="h">Hour</th>'+days.map(d=>'<th>'+esc(dayLabel(d))+'</th>').join("")+'<th class="h">Total</th></tr>';
     let body = hs.map(h=>{
       let td = '<td class="h">'+esc(hourLbl(h))+'</td>';
-      days.forEach(d=>{ const c=cell[h+"|"+d]; td += '<td class="hv-td">'+(c? (bar(c.answered,maxBar,"ans")+bar(c.missed,maxBar,"miss")+bar(c.abandoned,maxBar,"aband")) : "")+'</td>'; });
-      const ht=hTot[h]||{answered:0,missed:0,abandoned:0,total:0};
-      td += '<td class="h hv-tot">'+nf(ht.total)+'</td>';
+      days.forEach(d=>{ const c=cell[h+"|"+d]; const st=seatedMap[h+"|"+d]||new Set();
+        td += '<td class="hv-td">'+(c||st.size? (bar(c?c.inbound:0,maxBar,"inb")+bar(c?c.answered:0,maxBar,"ans")+bar(c?c.missed:0,maxBar,"miss")+bar(st.size,maxBar,"seat")) : "")+'</td>'; });
+      const ht=hTot[h]||{inbound:0,answered:0,missed:0,seated:0,total:0};
+      const hse=hSeat[h]?hSeat[h].size:0;
+      td += '<td class="h hv-tot">'+nf(ht.total)+' '+bar(hse,maxBar,"seat").replace('class="hv-cell"','class="hv-cell seat-tag"')+'</td>';
       return '<tr>'+td+'</tr>';
     }).join("");
     // total row
     let foot = '<tr class="tot"><td class="h"><b>Total</b></td>';
-    days.forEach(d=>{ let a=0,mi=0,ab=0; Object.keys(cell).forEach(k=>{ if(k.split("|")[1]===d){ a+=cell[k].answered; mi+=cell[k].missed; ab+=cell[k].abandoned; } });
-      foot += '<td class="hv-td">'+bar(a,maxBar,"ans")+bar(mi,maxBar,"miss")+bar(ab,maxBar,"aband")+'</td>'; });
-    let gt=0; Object.values(hTot).forEach(t=>gt+=t.total);
+    days.forEach(d=>{ let i=0,an=0,mi=0; const st=new Set();
+      Object.keys(cell).forEach(k=>{ if(k.split("|")[1]===d){ i+=cell[k].inbound; an+=cell[k].answered; mi+=cell[k].missed; }});
+      Object.keys(seatedMap).forEach(k=>{ if(k.split("|")[1]===d) seatedMap[k].forEach(a=>st.add(a)); });
+      foot += '<td class="hv-td">'+bar(i,maxBar,"inb")+bar(an,maxBar,"ans")+bar(mi,maxBar,"miss")+bar(st.size,maxBar,"seat")+'</td>'; });
+    let gt=0,gAns=0,gMis=0; const gSeat=new Set(); Object.values(hTot).forEach(t=>{gt+=t.total;gAns+=t.answered;gMis+=t.missed;}); Object.values(hSeat).forEach(s=>s.forEach(a=>gSeat.add(a)));
     foot += '<td class="h hv-tot"><b>'+nf(gt)+'</b></td></tr>';
     hv.innerHTML = '<table class="hvmatrix"><thead>'+th+'</thead><tbody>'+body+foot+'</tbody></table>';
   }
